@@ -43,7 +43,7 @@ export function interpolate(template: string, vars: Record<string, string>): str
 
 /**
  * Send a plain-text message to a single recipient.
- * `to` must be in international format without the leading +, e.g. "27821234567".
+ * `to` must be in international format, e.g. "+27821234567" or "27821234567".
  */
 export async function sendWhatsAppText(
   to: string,
@@ -52,7 +52,20 @@ export async function sendWhatsAppText(
 ): Promise<boolean> {
   const pid = phoneNumberId(settings)
   const token = accessToken(settings)
-  if (!pid || !token || !to) return false
+  const result = await sendWhatsAppTextVerbose(to, body, pid, token)
+  return result.ok
+}
+
+/**
+ * Verbose version that returns the raw error string for diagnostics.
+ */
+export async function sendWhatsAppTextVerbose(
+  to: string,
+  body: string,
+  pid: string,
+  token: string,
+): Promise<{ ok: boolean; error: string }> {
+  if (!pid || !token || !to) return { ok: false, error: 'Missing credentials or recipient' }
 
   // Normalise: strip leading +, spaces, dashes
   const recipient = to.replace(/^\+/, '').replace(/[\s-]/g, '')
@@ -72,23 +85,28 @@ export async function sendWhatsAppText(
       }),
     })
     if (!res.ok) {
-      const err = await res.text()
-      console.error('[whatsapp] send failed', res.status, err)
-      return false
+      const errText = await res.text()
+      console.error('[whatsapp] send failed', res.status, errText)
+      // Parse Meta error message if possible
+      try {
+        const json = JSON.parse(errText)
+        const msg = json?.error?.message || json?.error?.error_data?.details || errText
+        return { ok: false, error: `${res.status}: ${msg}` }
+      } catch {
+        return { ok: false, error: `${res.status}: ${errText}` }
+      }
     }
-    return true
+    return { ok: true, error: '' }
   } catch (err) {
     console.error('[whatsapp] fetch error', err)
-    return false
+    return { ok: false, error: err instanceof Error ? err.message : 'Network error' }
   }
 }
 
 /**
- * Send the new-booking group alert.
- * The `group_chat_id` must be the WhatsApp ID of the group chat (the bot must
- * be a member of that group — it is the phone number you registered with Meta).
- *
- * Format: "XXXXXXXXXX-XXXXXXXXXX@g.us"
+ * Send the new-booking group alert to every phone number in group_chat_id.
+ * group_chat_id is a comma-separated list of E.164 numbers, e.g.
+ *   "+27821234567, +27831234567"
  */
 export async function sendGroupAlert(
   vars: { name: string; date: string; time: string; phone: string; email: string },
@@ -101,29 +119,10 @@ export async function sendGroupAlert(
   const template = settings.group_alert_message || 'New trial booking!\n\nName: {{name}}\nDate: {{date}}\nTime: {{time}}\nPhone: {{phone}}\nEmail: {{email}}'
   const body = interpolate(template, vars)
 
-  const pid = phoneNumberId(settings)
-  const token = accessToken(settings)
-  if (!pid || !token) return
+  // Support comma-separated list of numbers
+  const recipients = groupId.split(',').map((n) => n.trim()).filter(Boolean)
 
-  try {
-    const res = await fetch(`${WA_API_BASE}/${pid}/messages`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: groupId,
-        type: 'text',
-        text: { body, preview_url: false },
-      }),
-    })
-    if (!res.ok) {
-      const err = await res.text()
-      console.error('[whatsapp] group alert failed', res.status, err)
-    }
-  } catch (err) {
-    console.error('[whatsapp] group alert fetch error', err)
+  for (const recipient of recipients) {
+    await sendWhatsAppText(recipient, body, settings)
   }
 }

@@ -389,18 +389,34 @@ export async function saveWhatsappSettingState(_prev: SaveState, formData: FormD
   return runSave(() => saveWhatsappSetting(formData))
 }
 
-// Send a test WhatsApp message to the configured group (returns ok/error immediately).
-export async function sendWhatsappTest(formData: FormData): Promise<{ ok: boolean; message: string }> {
+// Send a test WhatsApp message to each configured alert number and return the actual API response.
+export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boolean; message: string }> {
   await requireAdmin()
-  const { sendGroupAlert, getWhatsappSettings } = await import('@/lib/whatsapp')
-  const settings = await getWhatsappSettings()
-  try {
-    await sendGroupAlert(
-      { name: 'Test User', date: 'Monday, 7 July 2025', time: '06:00 AM', phone: '+27 00 000 0000', email: 'test@example.com' },
-      settings,
-    )
-    return { ok: true, message: 'Test message sent to group.' }
-  } catch (err) {
-    return { ok: false, message: err instanceof Error ? err.message : 'Unknown error' }
+  const { getWhatsappSettings, interpolate, sendWhatsAppTextVerbose } = await import('@/lib/whatsapp')
+  const waSettings = await getWhatsappSettings()
+
+  const pid = waSettings.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID || ''
+  const token = waSettings.access_token || process.env.WHATSAPP_ACCESS_TOKEN || ''
+  const groupId = waSettings.group_chat_id || ''
+
+  if (!pid) return { ok: false, message: 'Phone Number ID is not set. Save it in the Credentials section first.' }
+  if (!token) return { ok: false, message: 'Access Token is not set. Save it in the Credentials section first.' }
+  if (!groupId) return { ok: false, message: 'Alert Phone Numbers are not set. Add at least one number in the Group Alert section.' }
+
+  const template = waSettings.group_alert_message || 'New trial booking!\n\nName: {{name}}\nDate: {{date}}\nTime: {{time}}\nPhone: {{phone}}\nEmail: {{email}}'
+  const body = interpolate(template, { name: 'Test User', date: 'Monday, 7 July 2025', time: '06:00 AM', phone: '+27 00 000 0000', email: 'test@example.com' })
+
+  const recipients = groupId.split(',').map((n: string) => n.trim()).filter(Boolean)
+  const results: string[] = []
+
+  for (const recipient of recipients) {
+    const result = await sendWhatsAppTextVerbose(recipient, body, pid, token)
+    results.push(`${recipient}: ${result.ok ? 'sent' : result.error}`)
+  }
+
+  const allOk = results.every((r) => r.endsWith('sent'))
+  return {
+    ok: allOk,
+    message: results.join(' | '),
   }
 }

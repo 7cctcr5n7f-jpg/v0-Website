@@ -83,8 +83,7 @@ export function CommsAdmin({ settings }: { settings: WaSettings }) {
       <div className={cardCls}>
         <SectionIcon icon={MessageSquare} label="New Booking Group Alert" />
         <p className="mb-5 text-sm text-light-grey">
-          When a trial is booked, a message is sent from your WhatsApp Business number into a group. The bot number must already be a member of the group. The Group Chat ID looks like{' '}
-          <code className="rounded bg-steel/30 px-1">27821234567-1234567890@g.us</code>.
+          When a trial is booked, a WhatsApp message is sent from your business number to each phone number listed below. Separate multiple numbers with a comma.
         </p>
         <AdminForm action={saveWhatsappSettingState} submitLabel="Save Group Settings">
           <CheckField
@@ -93,10 +92,10 @@ export function CommsAdmin({ settings }: { settings: WaSettings }) {
             defaultChecked={settings.group_alert_enabled !== 'false'}
           />
           <TextField
-            label="Group Chat ID"
+            label="Alert Phone Numbers (comma-separated, e.g. +27821234567, +27831234567)"
             name="wa_group_chat_id"
             defaultValue={settings.group_chat_id ?? ''}
-            placeholder="27821234567-1234567890@g.us"
+            placeholder="+27821234567, +27831234567"
           />
           <TextArea
             label="Alert message template"
