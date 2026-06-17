@@ -4,20 +4,35 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { galleryImages, galleryCategories, type GalleryImage } from '@/lib/gallery'
+import { galleryImages, galleryCategories as staticCategories, type GalleryImage } from '@/lib/gallery'
 
-type Filter = 'All' | (typeof galleryCategories)[number]
+type Filter = 'All' | string
 
-const filters: Filter[] = ['All', ...galleryCategories]
+export function GalleryGrid({
+  dbCategories,
+  dbPhotos,
+}: {
+  dbCategories?: string[]
+  dbPhotos?: { src: string; alt: string; category: string }[]
+}) {
+  // Use DB data when available, otherwise fall back to static list
+  const images: GalleryImage[] =
+    dbPhotos && dbPhotos.length > 0
+      ? (dbPhotos as GalleryImage[])
+      : galleryImages
 
-export function GalleryGrid() {
+  const categories: string[] =
+    dbCategories && dbCategories.length > 0
+      ? dbCategories
+      : (staticCategories as string[])
+
+  const filters: Filter[] = ['All', ...categories]
+
   const [active, setActive] = useState<Filter>('All')
   const [lightbox, setLightbox] = useState<number | null>(null)
 
   const visible: GalleryImage[] =
-    active === 'All'
-      ? galleryImages
-      : galleryImages.filter((img) => img.category === active)
+    active === 'All' ? images : images.filter((img) => img.category === active)
 
   const close = useCallback(() => setLightbox(null), [])
   const next = useCallback(
@@ -45,6 +60,7 @@ export function GalleryGrid() {
   }, [lightbox, close, next, prev])
 
   const current = lightbox === null ? null : visible[lightbox]
+  const isExternal = (src: string) => src.startsWith('http')
 
   return (
     <div>
@@ -71,7 +87,7 @@ export function GalleryGrid() {
       <div className="columns-2 gap-3 sm:gap-4 lg:columns-3 [&>*]:mb-3 sm:[&>*]:mb-4">
         {visible.map((img, i) => (
           <button
-            key={img.src}
+            key={img.src + i}
             type="button"
             onClick={() => setLightbox(i)}
             className="group relative block w-full break-inside-avoid overflow-hidden rounded-xl border border-steel/60 bg-charcoal focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"
@@ -83,6 +99,8 @@ export function GalleryGrid() {
               width={800}
               height={1000}
               sizes="(max-width: 1024px) 50vw, 33vw"
+              loading="lazy"
+              unoptimized={isExternal(img.src)}
               className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -144,6 +162,7 @@ export function GalleryGrid() {
               alt={current.alt}
               width={1400}
               height={1750}
+              unoptimized={isExternal(current.src)}
               className="h-auto max-h-[85vh] w-auto rounded-lg object-contain"
             />
             <figcaption className="mt-3 text-center text-sm text-light-grey">

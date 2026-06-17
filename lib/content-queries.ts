@@ -4,12 +4,16 @@ import { db } from '@/lib/db'
 import { sessionPacks } from '@/lib/memberships'
 import {
   chowWinners,
+  galleryCategories,
+  galleryPhotos,
   membershipSignups,
   sessionMilestones,
   sessionPurchases,
   settings,
   specials,
   type ChowWinner,
+  type GalleryCategory,
+  type GalleryPhoto,
   type MembershipSignup,
   type SessionMilestone,
   type SessionPurchase,
@@ -216,4 +220,32 @@ export async function getActiveSessionMilestones(): Promise<SessionMilestone[]> 
     .from(sessionMilestones)
     .where(eq(sessionMilestones.active, true))
     .orderBy(desc(sessionMilestones.createdAt))
+}
+
+// ── Gallery ────────────────────────────────────────────────────────────────
+
+export async function getGalleryCategories(): Promise<GalleryCategory[]> {
+  return db
+    .select()
+    .from(galleryCategories)
+    .orderBy(asc(galleryCategories.sortOrder), asc(galleryCategories.id))
+}
+
+export type GalleryPhotoWithCategory = GalleryPhoto & { categoryName: string }
+
+export async function getGalleryPhotos(): Promise<GalleryPhotoWithCategory[]> {
+  const rows = await db
+    .select({
+      id: galleryPhotos.id,
+      categoryId: galleryPhotos.categoryId,
+      categoryName: galleryCategories.name,
+      url: galleryPhotos.url,
+      alt: galleryPhotos.alt,
+      sortOrder: galleryPhotos.sortOrder,
+      createdAt: galleryPhotos.createdAt,
+    })
+    .from(galleryPhotos)
+    .innerJoin(galleryCategories, eq(galleryPhotos.categoryId, galleryCategories.id))
+    .orderBy(asc(galleryPhotos.sortOrder), asc(galleryPhotos.id))
+  return rows
 }

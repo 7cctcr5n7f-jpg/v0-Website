@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Tag, Trophy, Dumbbell, CalendarCheck, Users, CalendarOff, ShoppingCart } from 'lucide-react'
+import { Plus, Trash2, Tag, Trophy, Dumbbell, CalendarCheck, Users, CalendarOff, ShoppingCart, ImageIcon } from 'lucide-react'
 import {
   deleteSessionMilestone,
   deleteSpecial,
@@ -19,9 +19,11 @@ import { TrialBookingsTable } from '@/components/admin/trial-bookings-table'
 import { BlockedDaysManager } from '@/components/admin/blocked-days-manager'
 import { SignupsTable } from '@/components/admin/signups-table'
 import { SessionPurchasesTable } from '@/components/admin/session-purchases-table'
-import type { BlockedDay, ChowWinner, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
+import { GalleryAdmin } from '@/components/admin/gallery-admin'
+import type { BlockedDay, ChowWinner, GalleryCategory, GalleryPhoto, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
+import type { GalleryPhotoWithCategory } from '@/lib/content-queries'
 
-type TabKey = 'bookings' | 'signups' | 'purchases' | 'chow' | 'celebration' | 'specials'
+type TabKey = 'bookings' | 'signups' | 'purchases' | 'chow' | 'celebration' | 'specials' | 'gallery'
 
 function toLocalInput(d: Date | null) {
   if (!d) return ''
@@ -271,6 +273,8 @@ export function AdminDashboard({
   signups,
   purchases,
   chowChallenge,
+  galleryCategories: galleryCats,
+  galleryPhotos: galleryPics,
   }: {
   specials: Special[]
   winners: ChowWinner[]
@@ -280,6 +284,8 @@ export function AdminDashboard({
   signups: MembershipSignup[]
   purchases: SessionPurchase[]
   chowChallenge: string
+  galleryCategories: GalleryCategory[]
+  galleryPhotos: GalleryPhotoWithCategory[]
   }) {
   const femaleWinner = winners.find((w) => w.label.toLowerCase().includes('female'))
   const maleWinner = winners.find((w) => !w.label.toLowerCase().includes('female'))
@@ -295,6 +301,7 @@ export function AdminDashboard({
     { key: 'chow', label: 'CHOW', icon: Trophy },
     { key: 'celebration', label: 'Celebration', icon: Dumbbell },
     { key: 'specials', label: 'Specials', icon: Tag },
+    { key: 'gallery', label: 'Gallery', icon: ImageIcon },
   ]
 
   return (
@@ -311,8 +318,8 @@ export function AdminDashboard({
         </form>
       </div>
 
-      {/* Tab navigation — single row */}
-      <div className="mt-8 flex gap-1 overflow-x-auto rounded-xl border border-steel bg-card p-1.5" role="tablist">
+      {/* Tab navigation — single row, icon-only on small screens */}
+      <div className="mt-8 flex gap-0.5 rounded-xl border border-steel bg-card p-1" role="tablist">
         {tabs.map((t) => {
           const Icon = t.icon
           const active = tab === t.key
@@ -322,14 +329,15 @@ export function AdminDashboard({
               type="button"
               role="tab"
               aria-selected={active}
+              aria-label={t.label}
               onClick={() => setTab(t.key)}
               className={
-                'flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-bold uppercase tracking-wide transition-colors sm:text-sm ' +
+                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wide transition-colors lg:px-3 lg:py-2.5 lg:text-xs ' +
                 (active ? 'bg-neon-blue text-accent-foreground' : 'text-light-grey hover:bg-secondary hover:text-foreground')
               }
             >
               <Icon className="size-4 shrink-0" />
-              <span>{t.label}</span>
+              <span className="hidden lg:inline">{t.label}</span>
             </button>
           )
         })}
@@ -512,6 +520,22 @@ export function AdminDashboard({
         </div>
       </section>
       </div>
+      )}
+
+      {/* TAB — Gallery */}
+      {tab === 'gallery' && (
+        <section className="mt-10" role="tabpanel">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="size-5 text-neon-blue" />
+            <h2 className="font-display text-2xl font-black uppercase tracking-tight">Gallery</h2>
+          </div>
+          <p className="mt-1 text-sm text-light-grey">
+            Upload photos and manage categories. Photos appear on the public gallery page instantly.
+          </p>
+          <div className="mt-6">
+            <GalleryAdmin categories={galleryCats} photos={galleryPics} />
+          </div>
+        </section>
       )}
     </div>
   )
