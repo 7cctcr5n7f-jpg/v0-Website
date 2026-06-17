@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { blockedDays, trialBookings } from '@/lib/db/schema'
 import { sendEmail } from '@/lib/email'
 import { business } from '@/lib/business'
+import { sendGroupAlert, getWhatsappSettings } from '@/lib/whatsapp'
 import {
   formatDateLong,
   parseDateString,
@@ -116,5 +117,17 @@ Booking Time: ${appointmentTime}`,
   })
 
   revalidatePath('/admin')
+
+  // WhatsApp group alert — best-effort, never blocks the success response.
+  try {
+    const waSettings = await getWhatsappSettings()
+    await sendGroupAlert(
+      { name: fullName, date: dateLong, time: appointmentTime, phone, email },
+      waSettings,
+    )
+  } catch (err) {
+    console.error('[trial] whatsapp group alert failed:', err)
+  }
+
   return { ok: true }
 }

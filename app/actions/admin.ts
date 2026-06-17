@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { blockedDays, chowWinners, galleryCategories, galleryPhotos, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings } from '@/lib/db/schema'
+import { blockedDays, chowWinners, galleryCategories, galleryPhotos, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings, whatsappSettings } from '@/lib/db/schema'
 import {
   clearAdminCookie,
   isAdminAuthed,
@@ -362,4 +362,45 @@ export async function saveGalleryCategoryState(_prev: SaveState, formData: FormD
 
 export async function saveGalleryPhotoState(_prev: SaveState, formData: FormData): Promise<SaveState> {
   return runSave(() => saveGalleryPhoto(formData))
+}
+
+// ── WhatsApp settings ──────────────────────────────────────────────────────────
+
+// Save a single WhatsApp setting key/value pair.
+async function saveWhatsappSetting(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const entries: [string, string][] = []
+  for (const [key, val] of formData.entries()) {
+    if (key.startsWith('wa_')) {
+      const settingKey = key.slice(3) // strip "wa_" prefix
+      entries.push([settingKey, String(val)])
+    }
+  }
+  for (const [key, value] of entries) {
+    await db
+      .insert(whatsappSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: whatsappSettings.key, set: { value, updatedAt: new Date() } })
+  }
+  revalidatePath('/admin')
+}
+
+export async function saveWhatsappSettingState(_prev: SaveState, formData: FormData): Promise<SaveState> {
+  return runSave(() => saveWhatsappSetting(formData))
+}
+
+// Send a test WhatsApp message to the configured group (returns ok/error immediately).
+export async function sendWhatsappTest(formData: FormData): Promise<{ ok: boolean; message: string }> {
+  await requireAdmin()
+  const { sendGroupAlert, getWhatsappSettings } = await import('@/lib/whatsapp')
+  const settings = await getWhatsappSettings()
+  try {
+    await sendGroupAlert(
+      { name: 'Test User', date: 'Monday, 7 July 2025', time: '06:00 AM', phone: '+27 00 000 0000', email: 'test@example.com' },
+      settings,
+    )
+    return { ok: true, message: 'Test message sent to group.' }
+  } catch (err) {
+    return { ok: false, message: err instanceof Error ? err.message : 'Unknown error' }
+  }
 }
