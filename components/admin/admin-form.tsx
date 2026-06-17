@@ -33,11 +33,15 @@ export function AdminForm({
   action,
   submitLabel,
   className,
+  onSuccess,
+  compact,
   children,
 }: {
   action: Action
   submitLabel: string
   className?: string
+  onSuccess?: () => void
+  compact?: boolean
   children: React.ReactNode
 }) {
   const [state, formAction] = useActionState<SaveState, FormData>(action, null)
@@ -48,10 +52,19 @@ export function AdminForm({
     if (state?.ok && state.at !== lastAt.current) {
       lastAt.current = state.at
       setShowSaved(true)
+      onSuccess?.()
       const t = setTimeout(() => setShowSaved(false), 3000)
       return () => clearTimeout(t)
     }
-  }, [state])
+  }, [state, onSuccess])
+
+  if (compact) {
+    return (
+      <form action={formAction} className={className ?? 'flex flex-1 items-center gap-2'}>
+        {children}
+      </form>
+    )
+  }
 
   return (
     <form action={formAction} className={className ?? 'flex flex-col gap-4'}>

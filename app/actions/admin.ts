@@ -345,6 +345,17 @@ export async function deleteGalleryPhoto(formData: FormData) {
   revalidatePath('/gallery')
 }
 
+// Inline category change — called directly (no useActionState wrapper needed)
+export async function updateGalleryPhotoCategory(formData: FormData) {
+  await requireAdmin()
+  const id = num(formData, 'id')
+  const categoryId = num(formData, 'categoryId')
+  if (!id || !categoryId) return
+  await db.update(galleryPhotos).set({ categoryId }).where(eq(galleryPhotos.id, id))
+  revalidatePath('/admin')
+  revalidatePath('/gallery')
+}
+
 export async function saveGalleryCategoryState(_prev: SaveState, formData: FormData): Promise<SaveState> {
   return runSave(() => saveGalleryCategory(formData))
 }

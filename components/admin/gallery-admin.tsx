@@ -1,148 +1,174 @@
 'use client'
 
-import { useState } from 'react'
 import Image from 'next/image'
-import { ImagePlus, Pencil, Plus, Trash2, X, FolderPlus } from 'lucide-react'
+import { useState, useTransition } from 'react'
+import { Trash2, Plus, FolderEdit, X, Check, Upload } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
-  deleteGalleryCategory,
-  deleteGalleryPhoto,
   saveGalleryCategoryState,
   saveGalleryPhotoState,
+  deleteGalleryCategory,
+  deleteGalleryPhoto,
+  updateGalleryPhotoCategory,
 } from '@/app/actions/admin'
-import { AdminForm } from '@/components/admin/admin-form'
-import { FieldGrid, TextField } from '@/components/admin/fields'
 import { ImageField } from '@/components/admin/image-field'
-import type { GalleryCategory, GalleryPhoto } from '@/lib/db/schema'
+import { AdminForm } from '@/components/admin/admin-form'
+import { TextField } from '@/components/admin/fields'
+import type { GalleryCategory } from '@/lib/db/schema'
 import type { GalleryPhotoWithCategory } from '@/lib/content-queries'
-import { cn } from '@/lib/utils'
 
-const cardCls = 'rounded-2xl border border-steel bg-card p-5 sm:p-6'
-const deleteBtn =
-  'inline-flex items-center gap-1.5 rounded-md border border-steel px-3 py-2 text-xs font-semibold text-light-grey transition-colors hover:border-red-500 hover:text-red-400'
+// ── Category row ───────────────────────────────────────────────────────────
 
-// ── Category form ─────────────────────────────────────────────────────────
+function CategoryRow({ cat }: { cat: GalleryCategory }) {
+  const [editing, setEditing] = useState(false)
+  const [pending, startTransition] = useTransition()
 
-function CategoryForm({
-  category,
-  onDone,
-}: {
-  category?: GalleryCategory
-  onDone?: () => void
-}) {
+  function handleDelete(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!confirm(`Delete category "${cat.name}" and ALL its photos? This cannot be undone.`)) return
+    const fd = new FormData(e.currentTarget)
+    startTransition(() => { deleteGalleryCategory(fd) })
+  }
+
   return (
-    <div className={cn(cardCls, 'relative')}>
-      {onDone && (
-        <button
-          type="button"
-          onClick={onDone}
-          className="absolute right-4 top-4 rounded-full p-1 text-light-grey hover:text-foreground"
-          aria-label="Close"
+    <div className="flex items-center gap-3 rounded-lg border border-steel/60 bg-white/[0.02] px-4 py-3">
+      {editing ? (
+        <AdminForm
+          action={saveGalleryCategoryState}
+          submitLabel="Save"
+          onSuccess={() => setEditing(false)}
+          compact
         >
-          <X className="size-4" />
-        </button>
-      )}
-      <AdminForm action={saveGalleryCategoryState} submitLabel={category ? 'Save Category' : 'Add Category'}>
-        <input type="hidden" name="id" defaultValue={category?.id ?? 0} />
-        <FieldGrid>
-          <TextField
-            label="Category name"
-            name="name"
-            defaultValue={category?.name}
-            required
-            placeholder="e.g. Competition Night"
-          />
-          <TextField
-            label="Sort order"
-            name="sortOrder"
-            type="number"
-            defaultValue={String(category?.sortOrder ?? 0)}
-          />
-        </FieldGrid>
-      </AdminForm>
-      {category && (
-        <form action={deleteGalleryCategory} className="mt-3 border-t border-steel/60 pt-3">
-          <input type="hidden" name="id" value={category.id} />
-          <button type="submit" className={deleteBtn}>
-            <Trash2 className="size-3.5" /> Delete category &amp; all its photos
+          <input type="hidden" name="id" value={cat.id} />
+          <input type="hidden" name="sortOrder" value={cat.sortOrder} />
+          <div className="flex flex-1 items-center gap-2">
+            <input
+              name="name"
+              defaultValue={cat.name}
+              autoFocus
+              className="flex-1 rounded-md border border-steel bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-neon-blue"
+            />
+            <button type="submit" className="rounded-md bg-neon-green/20 p-1.5 text-neon-green hover:bg-neon-green/30">
+              <Check className="size-4" />
+            </button>
+            <button type="button" onClick={() => setEditing(false)} className="rounded-md p-1.5 text-light-grey hover:text-foreground">
+              <X className="size-4" />
+            </button>
+          </div>
+        </AdminForm>
+      ) : (
+        <>
+          <span className="flex-1 text-sm font-semibold text-foreground">{cat.name}</span>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded p-1 text-light-grey transition-colors hover:text-neon-blue"
+            title="Rename category"
+          >
+            <FolderEdit className="size-4" />
           </button>
-        </form>
+          <form onSubmit={handleDelete}>
+            <input type="hidden" name="id" value={cat.id} />
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded p-1 text-light-grey transition-colors hover:text-red-400 disabled:opacity-40"
+              title="Delete category and all photos"
+            >
+              <Trash2 className="size-4" />
+            </button>
+          </form>
+        </>
       )}
     </div>
   )
 }
 
-// ── Photo form ────────────────────────────────────────────────────────────
+// ── Photo list row ─────────────────────────────────────────────────────────
 
-function PhotoForm({
+function PhotoRow({
   photo,
   categories,
-  defaultCategoryId,
-  onDone,
 }: {
-  photo?: GalleryPhoto
+  photo: GalleryPhotoWithCategory
   categories: GalleryCategory[]
-  defaultCategoryId?: number
-  onDone?: () => void
 }) {
+  const [pending, startTransition] = useTransition()
+
+  function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const fd = new FormData()
+    fd.set('id', String(photo.id))
+    fd.set('categoryId', e.target.value)
+    startTransition(() => { updateGalleryPhotoCategory(fd) })
+  }
+
+  function handleDelete(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!confirm('Delete this photo?')) return
+    const fd = new FormData(e.currentTarget)
+    startTransition(() => { deleteGalleryPhoto(fd) })
+  }
+
+  const filename = photo.url.split('/').pop() ?? photo.url
+  const isExternal = photo.url.startsWith('http')
+
   return (
-    <div className={cn(cardCls, 'relative')}>
-      {onDone && (
-        <button
-          type="button"
-          onClick={onDone}
-          className="absolute right-4 top-4 rounded-full p-1 text-light-grey hover:text-foreground"
-          aria-label="Close"
-        >
-          <X className="size-4" />
-        </button>
-      )}
-      <AdminForm action={saveGalleryPhotoState} submitLabel={photo ? 'Save Photo' : 'Add Photo'}>
-        <input type="hidden" name="id" defaultValue={photo?.id ?? 0} />
-        <ImageField label="Photo" name="url" defaultValue={photo?.url} />
-        <FieldGrid>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-light-grey">
-              Category
-            </span>
-            <select
-              name="categoryId"
-              defaultValue={photo?.categoryId ?? defaultCategoryId ?? categories[0]?.id ?? 0}
-              className="w-full rounded-md border border-steel bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-neon-blue"
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <TextField
-            label="Sort order"
-            name="sortOrder"
-            type="number"
-            defaultValue={String(photo?.sortOrder ?? 0)}
+    <tr className={cn(
+      'border-b border-steel/40 transition-colors hover:bg-white/[0.02]',
+      pending && 'opacity-40 pointer-events-none'
+    )}>
+      {/* Thumbnail */}
+      <td className="px-3 py-2">
+        <div className="relative size-11 shrink-0 overflow-hidden rounded-md border border-steel/60 bg-charcoal">
+          <Image
+            src={photo.url}
+            alt={photo.alt || filename}
+            fill
+            sizes="44px"
+            className="object-cover"
+            unoptimized={isExternal}
           />
-        </FieldGrid>
-        <TextField
-          label="Alt text (for accessibility & SEO)"
-          name="alt"
-          defaultValue={photo?.alt}
-          placeholder="e.g. Member throwing a left hook at TENROUNDS Garsfontein"
-        />
-      </AdminForm>
-      {photo && (
-        <form action={deleteGalleryPhoto} className="mt-3 border-t border-steel/60 pt-3">
+        </div>
+      </td>
+      {/* Filename / alt */}
+      <td className="px-3 py-2">
+        <p className="truncate text-xs font-medium text-foreground" title={filename}>{filename}</p>
+        {photo.alt && (
+          <p className="mt-0.5 line-clamp-1 text-xs text-light-grey" title={photo.alt}>{photo.alt}</p>
+        )}
+      </td>
+      {/* Category dropdown — changes save instantly */}
+      <td className="px-3 py-2">
+        <select
+          defaultValue={photo.categoryId}
+          onChange={handleCategoryChange}
+          disabled={pending}
+          className="rounded-md border border-steel bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue disabled:opacity-50"
+        >
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </td>
+      {/* Delete */}
+      <td className="px-3 py-2 text-right">
+        <form onSubmit={handleDelete}>
           <input type="hidden" name="id" value={photo.id} />
-          <button type="submit" className={deleteBtn}>
-            <Trash2 className="size-3.5" /> Delete photo
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded p-1.5 text-light-grey transition-colors hover:text-red-400 disabled:opacity-40"
+            title="Delete photo"
+          >
+            <Trash2 className="size-4" />
           </button>
         </form>
-      )}
-    </div>
+      </td>
+    </tr>
   )
 }
 
-// ── Main Gallery Admin component ──────────────────────────────────────────
+// ── Main component ─────────────────────────────────────────────────────────
 
 export function GalleryAdmin({
   categories,
@@ -151,174 +177,178 @@ export function GalleryAdmin({
   categories: GalleryCategory[]
   photos: GalleryPhotoWithCategory[]
 }) {
-  const [activeCategory, setActiveCategory] = useState<number | null>(
-    categories[0]?.id ?? null,
-  )
-  const [editingCategory, setEditingCategory] = useState<number | null>(null)
-  const [addingCategory, setAddingCategory] = useState(false)
-  const [addingPhoto, setAddingPhoto] = useState(false)
-  const [editingPhotoId, setEditingPhotoId] = useState<number | null>(null)
+  const [showAddPhoto, setShowAddPhoto] = useState(false)
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [filterCat, setFilterCat] = useState<number | 'all'>('all')
 
-  const visiblePhotos =
-    activeCategory === null
-      ? photos
-      : photos.filter((p) => p.categoryId === activeCategory)
+  const filteredPhotos =
+    filterCat === 'all' ? photos : photos.filter((p) => p.categoryId === filterCat)
 
   return (
-    <div className="space-y-8">
-      {/* ── Category strip ── */}
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          {categories.map((cat) => (
-            <div key={cat.id} className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveCategory(cat.id)
-                  setEditingCategory(null)
-                  setAddingPhoto(false)
-                }}
-                className={cn(
-                  'rounded-full border px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors',
-                  activeCategory === cat.id
-                    ? 'border-neon-blue bg-cobalt text-accent-foreground'
-                    : 'border-steel text-light-grey hover:border-neon-blue hover:text-foreground',
-                )}
-              >
-                {cat.name}
-                <span className="ml-1.5 opacity-60">
-                  ({photos.filter((p) => p.categoryId === cat.id).length})
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setEditingCategory(editingCategory === cat.id ? null : cat.id)
-                }
-                aria-label={`Edit ${cat.name} category`}
-                className="rounded p-1 text-light-grey transition-colors hover:text-neon-blue"
-              >
-                <Pencil className="size-3.5" />
-              </button>
-            </div>
-          ))}
+    <div className="space-y-10">
 
+      {/* ── Categories ── */}
+      <div>
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-base font-black uppercase tracking-tight text-foreground">
+            Categories
+          </h3>
           <button
             type="button"
-            onClick={() => {
-              setAddingCategory(!addingCategory)
-              setEditingCategory(null)
-            }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-neon-blue/50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-neon-blue transition-colors hover:bg-neon-blue/10"
+            onClick={() => setShowAddCategory((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-neon-blue/50 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-neon-blue transition-colors hover:bg-neon-blue/10"
           >
-            <FolderPlus className="size-3.5" />
-            New Category
+            <Plus className="size-3.5" /> New Category
           </button>
         </div>
 
-        {/* Add category inline form */}
-        {addingCategory && (
-          <div className="mt-4">
-            <CategoryForm onDone={() => setAddingCategory(false)} />
+        {showAddCategory && (
+          <div className="mt-4 rounded-xl border border-steel/60 bg-background/50 p-5">
+            <AdminForm
+              action={saveGalleryCategoryState}
+              submitLabel="Create Category"
+              onSuccess={() => setShowAddCategory(false)}
+            >
+              <input type="hidden" name="id" value={0} />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <TextField label="Category name" name="name" required placeholder="e.g. Events" />
+                </div>
+                <div className="w-28">
+                  <TextField label="Sort order" name="sortOrder" type="number" defaultValue="0" />
+                </div>
+              </div>
+            </AdminForm>
           </div>
         )}
 
-        {/* Edit category inline form */}
-        {editingCategory !== null && (
-          <div className="mt-4">
-            <CategoryForm
-              category={categories.find((c) => c.id === editingCategory)}
-              onDone={() => setEditingCategory(null)}
-            />
-          </div>
-        )}
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {categories.map((cat) => (
+            <CategoryRow key={cat.id} cat={cat} />
+          ))}
+        </div>
       </div>
 
-      {/* ── Photos grid for active category ── */}
-      <div>
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-sm text-light-grey">
-            {activeCategory === null
-              ? `All photos (${photos.length})`
-              : `${categories.find((c) => c.id === activeCategory)?.name ?? ''} — ${visiblePhotos.length} photo${visiblePhotos.length === 1 ? '' : 's'}`}
-          </p>
+      {/* ── Photos list ── */}
+      <div className="border-t border-steel pt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-display text-base font-black uppercase tracking-tight text-foreground">
+            Photos{' '}
+            <span className="ml-1 text-sm font-normal text-light-grey">({filteredPhotos.length})</span>
+          </h3>
           <button
             type="button"
-            onClick={() => {
-              setAddingPhoto(!addingPhoto)
-              setEditingPhotoId(null)
-            }}
-            className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-neon-green/50 px-3.5 py-2 text-xs font-bold uppercase tracking-wide text-neon-green transition-colors hover:bg-neon-green/10"
+            onClick={() => setShowAddPhoto((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-neon-green px-3 py-2 text-xs font-bold uppercase tracking-wide text-background transition-colors hover:bg-neon-green/80"
           >
-            <ImagePlus className="size-4" />
-            Add Photo
+            <Upload className="size-3.5" /> Upload Photo
           </button>
         </div>
 
         {/* Add photo form */}
-        {addingPhoto && (
-          <div className="mt-4">
-            <PhotoForm
-              categories={categories}
-              defaultCategoryId={activeCategory ?? undefined}
-              onDone={() => setAddingPhoto(false)}
-            />
+        {showAddPhoto && (
+          <div className="mt-4 rounded-xl border border-steel/60 bg-background/50 p-5">
+            <h4 className="mb-4 text-xs font-bold uppercase tracking-wide text-light-grey">New Photo</h4>
+            <AdminForm
+              action={saveGalleryPhotoState}
+              submitLabel="Add Photo"
+              onSuccess={() => setShowAddPhoto(false)}
+            >
+              <input type="hidden" name="id" value={0} />
+              <ImageField label="Photo" name="url" required />
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="sm:col-span-2">
+                  <TextField
+                    label="Alt text (SEO & accessibility)"
+                    name="alt"
+                    placeholder="e.g. Member throwing a combination at TENROUNDS"
+                  />
+                </div>
+                <div>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-light-grey">Category</span>
+                    <select
+                      name="categoryId"
+                      required
+                      className="rounded-md border border-steel bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-neon-blue"
+                    >
+                      <option value="">Select…</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="mt-4 w-32">
+                <TextField label="Sort order" name="sortOrder" type="number" defaultValue="0" />
+              </div>
+            </AdminForm>
           </div>
         )}
 
-        {visiblePhotos.length === 0 && !addingPhoto ? (
-          <div className="mt-6 rounded-xl border border-dashed border-steel py-12 text-center text-sm text-light-grey">
-            No photos in this category yet. Click &ldquo;Add Photo&rdquo; above to upload the first one.
-          </div>
-        ) : (
-          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-            {visiblePhotos.map((photo) => (
-              <div key={photo.id} className="group relative">
-                {editingPhotoId === photo.id ? (
-                  <PhotoForm
-                    photo={photo}
-                    categories={categories}
-                    onDone={() => setEditingPhotoId(null)}
-                  />
-                ) : (
-                  <div className="relative overflow-hidden rounded-xl border border-steel bg-charcoal">
-                    <div className="relative aspect-square">
-                      <Image
-                        src={photo.url}
-                        alt={photo.alt || 'Gallery photo'}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className="object-cover"
-                        unoptimized={photo.url.includes('blob.vercel-storage.com') || photo.url.startsWith('https://')}
-                      />
-                    </div>
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                      <button
-                        type="button"
-                        onClick={() => setEditingPhotoId(photo.id)}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-cobalt px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-neon-blue"
-                      >
-                        <Pencil className="size-3.5" /> Edit
-                      </button>
-                      <form action={deleteGalleryPhoto}>
-                        <input type="hidden" name="id" value={photo.id} />
-                        <button
-                          type="submit"
-                          className="inline-flex items-center gap-1.5 rounded-md bg-black/60 px-3 py-1.5 text-xs font-semibold text-red-400 transition-colors hover:bg-red-900/40"
-                        >
-                          <Trash2 className="size-3.5" /> Delete
-                        </button>
-                      </form>
-                    </div>
-                    {/* Category badge */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 text-xs font-medium uppercase tracking-wide text-light-grey">
-                      {photo.categoryName}
-                    </div>
-                  </div>
+        {/* Category filter chips */}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setFilterCat('all')}
+            className={cn(
+              'rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
+              filterCat === 'all'
+                ? 'border-neon-blue bg-cobalt text-accent-foreground'
+                : 'border-steel text-light-grey hover:border-neon-blue hover:text-foreground',
+            )}
+          >
+            All ({photos.length})
+          </button>
+          {categories.map((c) => {
+            const count = photos.filter((p) => p.categoryId === c.id).length
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setFilterCat(c.id)}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition-colors',
+                  filterCat === c.id
+                    ? 'border-neon-blue bg-cobalt text-accent-foreground'
+                    : 'border-steel text-light-grey hover:border-neon-blue hover:text-foreground',
                 )}
-              </div>
-            ))}
+              >
+                {c.name} ({count})
+              </button>
+            )
+          })}
+        </div>
+
+        {/* List table */}
+        {filteredPhotos.length === 0 ? (
+          <p className="mt-6 text-sm text-light-grey">No photos yet. Click &ldquo;Upload Photo&rdquo; to add one.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-xl border border-steel/60">
+            <table className="w-full min-w-[520px] text-sm">
+              <thead>
+                <tr className="border-b border-steel/60 bg-white/[0.03]">
+                  <th className="w-14 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-light-grey">
+                    Thumb
+                  </th>
+                  <th className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-light-grey">
+                    File / Alt text
+                  </th>
+                  <th className="w-48 px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-light-grey">
+                    Category
+                  </th>
+                  <th className="w-14 px-3 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-light-grey">
+                    Del
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPhotos.map((photo) => (
+                  <PhotoRow key={photo.id} photo={photo} categories={categories} />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
