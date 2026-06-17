@@ -1,8 +1,8 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useState } from 'react'
 import Image from 'next/image'
-import { ImagePlus, Pencil, Plus, Trash2, X, FolderPlus, Check } from 'lucide-react'
+import { ImagePlus, Pencil, Plus, Trash2, X, FolderPlus } from 'lucide-react'
 import {
   deleteGalleryCategory,
   deleteGalleryPhoto,
@@ -29,7 +29,6 @@ function CategoryForm({
   category?: GalleryCategory
   onDone?: () => void
 }) {
-  const [state, action] = useActionState(saveGalleryCategoryState, null)
   return (
     <div className={cn(cardCls, 'relative')}>
       {onDone && (
@@ -42,7 +41,7 @@ function CategoryForm({
           <X className="size-4" />
         </button>
       )}
-      <AdminForm action={action} submitLabel={category ? 'Save Category' : 'Add Category'}>
+      <AdminForm action={saveGalleryCategoryState} submitLabel={category ? 'Save Category' : 'Add Category'}>
         <input type="hidden" name="id" defaultValue={category?.id ?? 0} />
         <FieldGrid>
           <TextField
@@ -60,11 +59,6 @@ function CategoryForm({
           />
         </FieldGrid>
       </AdminForm>
-      {state?.ok && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-neon-green">
-          <Check className="size-3.5" /> Saved
-        </p>
-      )}
       {category && (
         <form action={deleteGalleryCategory} className="mt-3 border-t border-steel/60 pt-3">
           <input type="hidden" name="id" value={category.id} />
@@ -90,7 +84,6 @@ function PhotoForm({
   defaultCategoryId?: number
   onDone?: () => void
 }) {
-  const [state, action] = useActionState(saveGalleryPhotoState, null)
   return (
     <div className={cn(cardCls, 'relative')}>
       {onDone && (
@@ -103,7 +96,7 @@ function PhotoForm({
           <X className="size-4" />
         </button>
       )}
-      <AdminForm action={action} submitLabel={photo ? 'Save Photo' : 'Add Photo'}>
+      <AdminForm action={saveGalleryPhotoState} submitLabel={photo ? 'Save Photo' : 'Add Photo'}>
         <input type="hidden" name="id" defaultValue={photo?.id ?? 0} />
         <ImageField label="Photo" name="url" defaultValue={photo?.url} />
         <FieldGrid>
@@ -137,11 +130,6 @@ function PhotoForm({
           placeholder="e.g. Member throwing a left hook at TENROUNDS Garsfontein"
         />
       </AdminForm>
-      {state?.ok && (
-        <p className="mt-2 flex items-center gap-1.5 text-xs text-neon-green">
-          <Check className="size-3.5" /> Saved
-        </p>
-      )}
       {photo && (
         <form action={deleteGalleryPhoto} className="mt-3 border-t border-steel/60 pt-3">
           <input type="hidden" name="id" value={photo.id} />
@@ -217,7 +205,10 @@ export function GalleryAdmin({
 
           <button
             type="button"
-            onClick={() => setAddingCategory(!addingCategory)}
+            onClick={() => {
+              setAddingCategory(!addingCategory)
+              setEditingCategory(null)
+            }}
             className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-neon-blue/50 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-neon-blue transition-colors hover:bg-neon-blue/10"
           >
             <FolderPlus className="size-3.5" />
@@ -298,6 +289,7 @@ export function GalleryAdmin({
                         fill
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         className="object-cover"
+                        unoptimized={photo.url.includes('blob.vercel-storage.com') || photo.url.startsWith('https://')}
                       />
                     </div>
                     {/* Hover overlay */}

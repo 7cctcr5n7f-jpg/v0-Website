@@ -60,6 +60,7 @@ export function GalleryGrid({
   }, [lightbox, close, next, prev])
 
   const current = lightbox === null ? null : visible[lightbox]
+  const isExternal = (src: string) => src.startsWith('http')
 
   return (
     <div>
@@ -98,6 +99,8 @@ export function GalleryGrid({
               width={800}
               height={1000}
               sizes="(max-width: 1024px) 50vw, 33vw"
+              loading="lazy"
+              unoptimized={isExternal(img.src)}
               className="h-auto w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -159,6 +162,7 @@ export function GalleryGrid({
               alt={current.alt}
               width={1400}
               height={1750}
+              unoptimized={isExternal(current.src)}
               className="h-auto max-h-[85vh] w-auto rounded-lg object-contain"
             />
             <figcaption className="mt-3 text-center text-sm text-light-grey">
