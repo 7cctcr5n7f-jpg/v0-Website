@@ -411,7 +411,8 @@ export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boole
 
   for (const recipient of recipients) {
     const result = await sendWhatsAppTextVerbose(recipient, body, pid, token)
-    results.push(`${recipient}: ${result.ok ? 'sent' : result.error}`)
+    const detail = result.ok ? 'sent' : `${result.error}${result.raw ? ` | raw: ${result.raw}` : ''}`
+    results.push(`${recipient}: ${detail}`)
   }
 
   const allOk = results.every((r) => r.endsWith('sent'))

@@ -64,7 +64,7 @@ export async function sendWhatsAppTextVerbose(
   body: string,
   pid: string,
   token: string,
-): Promise<{ ok: boolean; error: string }> {
+): Promise<{ ok: boolean; error: string; raw?: string }> {
   if (!pid || !token || !to) return { ok: false, error: 'Missing credentials or recipient' }
 
   // Normalise: strip leading +, spaces, dashes
@@ -84,19 +84,29 @@ export async function sendWhatsAppTextVerbose(
         text: { body, preview_url: false },
       }),
     })
+    const rawText = await res.text()
     if (!res.ok) {
-      const errText = await res.text()
-      console.error('[whatsapp] send failed', res.status, errText)
-      // Parse Meta error message if possible
+      console.error('[whatsapp] send failed', res.status, rawText)
       try {
-        const json = JSON.parse(errText)
-        const msg = json?.error?.message || json?.error?.error_data?.details || errText
-        return { ok: false, error: `${res.status}: ${msg}` }
+        const json = JSON.parse(rawText)
+        const msg = json?.error?.message || json?.error?.error_data?.details || rawText
+        return { ok: false, error: `${res.status}: ${msg}`, raw: rawText }
       } catch {
-        return { ok: false, error: `${res.status}: ${errText}` }
+        return { ok: false, error: `${res.status}: ${rawText}`, raw: rawText }
       }
     }
-    return { ok: true, error: '' }
+    // Even on 200, check if the response body indicates a real error
+    try {
+      const json = JSON.parse(rawText)
+      if (json?.error) {
+        return { ok: false, error: `200 but error: ${json.error.message}`, raw: rawText }
+      }
+      // Check messages array exists — real success has messages[].id
+      if (!json?.messages?.[0]?.id) {
+        return { ok: false, error: `200 but no message ID in response: ${rawText}`, raw: rawText }
+      }
+    } catch { /* not json, treat as ok */ }
+    return { ok: true, error: '', raw: rawText }
   } catch (err) {
     console.error('[whatsapp] fetch error', err)
     return { ok: false, error: err instanceof Error ? err.message : 'Network error' }
