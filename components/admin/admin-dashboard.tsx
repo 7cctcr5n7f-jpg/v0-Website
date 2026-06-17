@@ -318,8 +318,8 @@ export function AdminDashboard({
         </form>
       </div>
 
-      {/* Tab navigation — single row */}
-      <div className="mt-8 flex gap-1 overflow-x-auto rounded-xl border border-steel bg-card p-1.5" role="tablist">
+      {/* Tab navigation — single row, icon-only on small screens */}
+      <div className="mt-8 flex gap-0.5 rounded-xl border border-steel bg-card p-1" role="tablist">
         {tabs.map((t) => {
           const Icon = t.icon
           const active = tab === t.key
@@ -329,14 +329,15 @@ export function AdminDashboard({
               type="button"
               role="tab"
               aria-selected={active}
+              aria-label={t.label}
               onClick={() => setTab(t.key)}
               className={
-                'flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-bold uppercase tracking-wide transition-colors sm:text-sm ' +
+                'flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-2 text-[10px] font-bold uppercase tracking-wide transition-colors lg:px-3 lg:py-2.5 lg:text-xs ' +
                 (active ? 'bg-neon-blue text-accent-foreground' : 'text-light-grey hover:bg-secondary hover:text-foreground')
               }
             >
               <Icon className="size-4 shrink-0" />
-              <span>{t.label}</span>
+              <span className="hidden lg:inline">{t.label}</span>
             </button>
           )
         })}
