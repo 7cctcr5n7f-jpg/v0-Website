@@ -403,6 +403,22 @@ export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boole
   if (!token) return { ok: false, message: 'Access Token is not set. Save it in the Credentials section first.' }
   if (!groupId) return { ok: false, message: 'Alert Phone Numbers are not set. Add at least one number in the Group Alert section.' }
 
+  // Step 1: Verify the Phone Number ID is valid by calling the Meta API
+  let registeredNumber = ''
+  try {
+    const verifyRes = await fetch(`https://graph.facebook.com/v19.0/${pid}?fields=display_phone_number,verified_name,quality_rating`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const verifyJson = await verifyRes.json()
+    if (!verifyRes.ok || verifyJson.error) {
+      const errMsg = verifyJson?.error?.message || JSON.stringify(verifyJson)
+      return { ok: false, message: `Credential check failed — ${errMsg}. Check your Phone Number ID and Access Token.` }
+    }
+    registeredNumber = verifyJson.display_phone_number || ''
+  } catch (err) {
+    return { ok: false, message: `Could not verify credentials: ${err instanceof Error ? err.message : 'Network error'}` }
+  }
+
   const template = waSettings.group_alert_message || 'New trial booking!\n\nName: {{name}}\nDate: {{date}}\nTime: {{time}}\nPhone: {{phone}}\nEmail: {{email}}'
   const body = interpolate(template, { name: 'Test User', date: 'Monday, 7 July 2025', time: '06:00 AM', phone: '+27 00 000 0000', email: 'test@example.com' })
 
@@ -418,6 +434,6 @@ export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boole
   const allOk = results.every((r) => r.endsWith('sent'))
   return {
     ok: allOk,
-    message: results.join(' | '),
+    message: `Sending from ${registeredNumber} (ID: ${pid}) → ${results.join(' | ')}`,
   }
 }
