@@ -170,6 +170,24 @@ export const sessionPurchases = pgTable('session_purchases', {
   paidAt: timestamp('paid_at', { withTimezone: true }),
 })
 
+// Gallery categories — managed in the admin Gallery tab
+export const galleryCategories = pgTable('gallery_categories', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Gallery photos — each belongs to a category; deleted when the category is deleted
+export const galleryPhotos = pgTable('gallery_photos', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull().references(() => galleryCategories.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  alt: text('alt').notNull().default(''),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type Special = typeof specials.$inferSelect
 export type ChowWinner = typeof chowWinners.$inferSelect
 export type SettingRow = typeof settings.$inferSelect
@@ -178,3 +196,5 @@ export type TrialBooking = typeof trialBookings.$inferSelect
 export type BlockedDay = typeof blockedDays.$inferSelect
 export type MembershipSignup = typeof membershipSignups.$inferSelect
 export type SessionPurchase = typeof sessionPurchases.$inferSelect
+export type GalleryCategory = typeof galleryCategories.$inferSelect
+export type GalleryPhoto = typeof galleryPhotos.$inferSelect

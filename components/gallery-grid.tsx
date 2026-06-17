@@ -4,20 +4,35 @@ import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { galleryImages, galleryCategories, type GalleryImage } from '@/lib/gallery'
+import { galleryImages, galleryCategories as staticCategories, type GalleryImage } from '@/lib/gallery'
 
-type Filter = 'All' | (typeof galleryCategories)[number]
+type Filter = 'All' | string
 
-const filters: Filter[] = ['All', ...galleryCategories]
+export function GalleryGrid({
+  dbCategories,
+  dbPhotos,
+}: {
+  dbCategories?: string[]
+  dbPhotos?: { src: string; alt: string; category: string }[]
+}) {
+  // Use DB data when available, otherwise fall back to static list
+  const images: GalleryImage[] =
+    dbPhotos && dbPhotos.length > 0
+      ? (dbPhotos as GalleryImage[])
+      : galleryImages
 
-export function GalleryGrid() {
+  const categories: string[] =
+    dbCategories && dbCategories.length > 0
+      ? dbCategories
+      : (staticCategories as string[])
+
+  const filters: Filter[] = ['All', ...categories]
+
   const [active, setActive] = useState<Filter>('All')
   const [lightbox, setLightbox] = useState<number | null>(null)
 
   const visible: GalleryImage[] =
-    active === 'All'
-      ? galleryImages
-      : galleryImages.filter((img) => img.category === active)
+    active === 'All' ? images : images.filter((img) => img.category === active)
 
   const close = useCallback(() => setLightbox(null), [])
   const next = useCallback(
@@ -71,7 +86,7 @@ export function GalleryGrid() {
       <div className="columns-2 gap-3 sm:gap-4 lg:columns-3 [&>*]:mb-3 sm:[&>*]:mb-4">
         {visible.map((img, i) => (
           <button
-            key={img.src}
+            key={img.src + i}
             type="button"
             onClick={() => setLightbox(i)}
             className="group relative block w-full break-inside-avoid overflow-hidden rounded-xl border border-steel/60 bg-charcoal focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-blue"

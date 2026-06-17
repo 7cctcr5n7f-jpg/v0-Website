@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { blockedDays, chowWinners, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings } from '@/lib/db/schema'
+import { blockedDays, chowWinners, galleryCategories, galleryPhotos, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings } from '@/lib/db/schema'
 import {
   clearAdminCookie,
   isAdminAuthed,
@@ -289,4 +289,66 @@ export async function saveSessionMilestoneState(_prev: SaveState, formData: Form
 
 export async function saveSpecialState(_prev: SaveState, formData: FormData): Promise<SaveState> {
   return runSave(() => saveSpecial(formData))
+}
+
+// ── Gallery categories CRUD ──
+export async function saveGalleryCategory(formData: FormData) {
+  await requireAdmin()
+  const id = num(formData, 'id')
+  const name = str(formData, 'name')
+  const sortOrder = num(formData, 'sortOrder')
+  if (!name) return
+  if (id > 0) {
+    await db.update(galleryCategories).set({ name, sortOrder }).where(eq(galleryCategories.id, id))
+  } else {
+    await db.insert(galleryCategories).values({ name, sortOrder })
+  }
+  revalidatePath('/admin')
+  revalidatePath('/gallery')
+}
+
+export async function deleteGalleryCategory(formData: FormData) {
+  await requireAdmin()
+  const id = num(formData, 'id')
+  if (id > 0) {
+    await db.delete(galleryCategories).where(eq(galleryCategories.id, id))
+  }
+  revalidatePath('/admin')
+  revalidatePath('/gallery')
+}
+
+// ── Gallery photos CRUD ──
+export async function saveGalleryPhoto(formData: FormData) {
+  await requireAdmin()
+  const id = num(formData, 'id')
+  const categoryId = num(formData, 'categoryId')
+  const url = str(formData, 'url')
+  const alt = str(formData, 'alt')
+  const sortOrder = num(formData, 'sortOrder')
+  if (!url || !categoryId) return
+  if (id > 0) {
+    await db.update(galleryPhotos).set({ categoryId, url, alt, sortOrder }).where(eq(galleryPhotos.id, id))
+  } else {
+    await db.insert(galleryPhotos).values({ categoryId, url, alt, sortOrder })
+  }
+  revalidatePath('/admin')
+  revalidatePath('/gallery')
+}
+
+export async function deleteGalleryPhoto(formData: FormData) {
+  await requireAdmin()
+  const id = num(formData, 'id')
+  if (id > 0) {
+    await db.delete(galleryPhotos).where(eq(galleryPhotos.id, id))
+  }
+  revalidatePath('/admin')
+  revalidatePath('/gallery')
+}
+
+export async function saveGalleryCategoryState(_prev: SaveState, formData: FormData): Promise<SaveState> {
+  return runSave(() => saveGalleryCategory(formData))
+}
+
+export async function saveGalleryPhotoState(_prev: SaveState, formData: FormData): Promise<SaveState> {
+  return runSave(() => saveGalleryPhoto(formData))
 }

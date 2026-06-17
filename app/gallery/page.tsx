@@ -5,6 +5,7 @@ import { CtaBanner } from '@/components/cta-banner'
 import { JsonLd } from '@/components/json-ld'
 import { breadcrumbSchema } from '@/lib/seo'
 import { business } from '@/lib/business'
+import { getGalleryCategories, getGalleryPhotos } from '@/lib/content-queries'
 import { galleryImages } from '@/lib/gallery'
 
 export const metadata: Metadata = {
@@ -20,21 +21,36 @@ export const metadata: Metadata = {
   },
 }
 
-const imageGallerySchema = {
-  '@context': 'https://schema.org',
-  '@type': 'ImageGallery',
-  name: 'TENROUNDS Gym Gallery',
-  description:
-    'Photo gallery of the TENROUNDS boxing-inspired HIIT gym in Garsfontein, Pretoria East.',
-  url: `${business.url}/gallery`,
-  image: galleryImages.map((img) => ({
-    '@type': 'ImageObject',
-    contentUrl: `${business.url}${img.src}`,
-    caption: img.alt,
-  })),
-}
+export default async function GalleryPage() {
+  const [categories, photos] = await Promise.all([
+    getGalleryCategories(),
+    getGalleryPhotos(),
+  ])
 
-export default function GalleryPage() {
+  // Build schema from DB photos; fall back to the static list if DB is empty
+  const schemaImages =
+    photos.length > 0
+      ? photos.map((img) => ({
+          '@type': 'ImageObject',
+          contentUrl: img.url.startsWith('http') ? img.url : `${business.url}${img.url}`,
+          caption: img.alt,
+        }))
+      : galleryImages.map((img) => ({
+          '@type': 'ImageObject',
+          contentUrl: `${business.url}${img.src}`,
+          caption: img.alt,
+        }))
+
+  const imageGallerySchema = {
+    '@context': 'https://schema.org',
+    '@type': 'ImageGallery',
+    name: 'TENROUNDS Gym Gallery',
+    description:
+      'Photo gallery of the TENROUNDS boxing-inspired HIIT gym in Garsfontein, Pretoria East.',
+    url: `${business.url}/gallery`,
+    image: schemaImages,
+  }
+
   return (
     <main>
       <JsonLd
@@ -57,7 +73,10 @@ export default function GalleryPage() {
 
       <section className="bg-background py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <GalleryGrid />
+          <GalleryGrid
+            dbCategories={categories.map((c) => c.name)}
+            dbPhotos={photos.map((p) => ({ src: p.url, alt: p.alt, category: p.categoryName }))}
+          />
         </div>
       </section>
 
