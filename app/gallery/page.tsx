@@ -73,10 +73,14 @@ export default async function GalleryPage() {
 
       <section className="bg-background py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <GalleryGrid
-            dbCategories={categories.map((c) => c.name)}
-            dbPhotos={photos.map((p) => ({ src: p.url, alt: p.alt, category: p.categoryName }))}
-          />
+          {photos.length > 0 ? (
+            <GalleryGrid
+              dbCategories={categories.map((c) => c.name)}
+              dbPhotos={photos.map((p) => ({ src: p.url, alt: p.alt, category: p.categoryName }))}
+            />
+          ) : (
+            <GalleryGrid />
+          )}
         </div>
       </section>
 
