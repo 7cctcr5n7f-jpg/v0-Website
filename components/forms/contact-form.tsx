@@ -6,6 +6,9 @@ import { CheckCircle2, Send, Loader2 } from 'lucide-react'
 // Recipient inbox for all contact submissions.
 const CONTACT_EMAIL = 'hello@tenrounds.co.za'
 
+// Reject messages containing URLs or emoji in the name field.
+const SPAM_NAME_RE = /https?:\/\/|bit\.ly|www\.|\.com|\.net|[\u{1F300}-\u{1FAFF}]/u
+
 export function ContactForm({
   heading = 'Send Us A Message',
   subheading = 'We usually reply within one business day.',
@@ -21,9 +24,23 @@ export function ContactForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setStatus('sending')
     const formEl = e.currentTarget
     const data = new FormData(formEl)
+
+    // Honeypot check — if the hidden "website" field is filled, it's a bot.
+    if (data.get('website')) {
+      setStatus('sent') // Silently fake success.
+      return
+    }
+
+    // Reject spam names.
+    const nameVal = String(data.get('name') ?? '')
+    if (SPAM_NAME_RE.test(nameVal)) {
+      setStatus('error')
+      return
+    }
+
+    setStatus('sending')
     data.append('_subject', `New ${withCompany ? 'corporate' : 'website'} enquiry — TENROUNDS`)
     data.append('_captcha', 'false')
     data.append('_template', 'table')
@@ -62,6 +79,10 @@ export function ContactForm({
       onSubmit={handleSubmit}
       className="rounded-2xl border border-steel bg-card p-6 sm:p-8"
     >
+      {/* Honeypot fields — invisible to real users, bots fill them and get blocked */}
+      <input type="text" name="website" defaultValue="" aria-hidden="true" tabIndex={-1} autoComplete="off" style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }} />
+      <input type="text" name="_honey" defaultValue="" aria-hidden="true" tabIndex={-1} autoComplete="off" style={{ display: 'none' }} />
+
       <h3 className="font-display text-2xl font-extrabold uppercase tracking-tight">
         {heading}
       </h3>
