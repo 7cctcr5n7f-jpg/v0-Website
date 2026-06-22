@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { membershipSignups } from '@/lib/db/schema'
 import { getMembership, computePricing, formatRand, type ContractLength } from '@/lib/memberships'
@@ -20,10 +21,17 @@ function bool(fd: FormData, key: string) {
   return v === 'true' || v === 'on'
 }
 
+// Spam: URLs, emoji, or non-name characters in name fields.
+const SPAM_NAME_RE = /https?:\/\/|bit\.ly|www\.|\.com|\.net|[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
+
 export async function submitMembershipSignup(
   _prev: SignupState,
   formData: FormData,
 ): Promise<SignupState> {
+  // Honeypot — bots fill hidden fields, real users never see this input.
+  const honeypot = String(formData.get('website') ?? '')
+  if (honeypot) return { ok: true } // Silently succeed so bots don't know they were blocked.
+
   // ── Selected membership ──
   const membershipId = str(formData, 'membershipId')
   const contractLength = Number(str(formData, 'contractLength')) || 12
@@ -76,6 +84,21 @@ export async function submitMembershipSignup(
   }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: 'Please enter a valid email address.' }
+  }
+  // Reject spam names containing URLs, emoji or other non-name content.
+  if (SPAM_NAME_RE.test(firstName) || SPAM_NAME_RE.test(surname)) {
+    return { ok: false, error: 'Please enter your real full name.' }
+  }
+  // Rate limit: max 3 signups per email address per calendar day.
+  const { and, gte } = await import('drizzle-orm')
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const recentSignups = await db
+    .select({ id: membershipSignups.id })
+    .from(membershipSignups)
+    .where(and(eq(membershipSignups.email, email.toLowerCase()), gte(membershipSignups.createdAt, todayStart)))
+  if (recentSignups.length >= 3) {
+    return { ok: false, error: 'Too many signup attempts today. Please try again tomorrow or contact us directly.' }
   }
   if (payerType === 'other' && (!accountHolderName || !accountHolderId || !accountHolderContact)) {
     return { ok: false, error: 'Please complete the account holder details.' }

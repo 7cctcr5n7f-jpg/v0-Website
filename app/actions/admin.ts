@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { blockedDays, chowWinners, galleryCategories, galleryPhotos, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings } from '@/lib/db/schema'
+import { blockedDays, chowWinners, galleryCategories, galleryPhotos, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings, whatsappSettings } from '@/lib/db/schema'
 import {
   clearAdminCookie,
   isAdminAuthed,
@@ -362,4 +362,78 @@ export async function saveGalleryCategoryState(_prev: SaveState, formData: FormD
 
 export async function saveGalleryPhotoState(_prev: SaveState, formData: FormData): Promise<SaveState> {
   return runSave(() => saveGalleryPhoto(formData))
+}
+
+// ── WhatsApp settings ──────────────────────────────────────────────────────────
+
+// Save a single WhatsApp setting key/value pair.
+async function saveWhatsappSetting(formData: FormData): Promise<void> {
+  await requireAdmin()
+  const entries: [string, string][] = []
+  for (const [key, val] of formData.entries()) {
+    if (key.startsWith('wa_')) {
+      const settingKey = key.slice(3) // strip "wa_" prefix
+      entries.push([settingKey, String(val)])
+    }
+  }
+  for (const [key, value] of entries) {
+    await db
+      .insert(whatsappSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: whatsappSettings.key, set: { value, updatedAt: new Date() } })
+  }
+  revalidatePath('/admin')
+}
+
+export async function saveWhatsappSettingState(_prev: SaveState, formData: FormData): Promise<SaveState> {
+  return runSave(() => saveWhatsappSetting(formData))
+}
+
+// Send a test WhatsApp message to each configured alert number and return the actual API response.
+export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boolean; message: string }> {
+  await requireAdmin()
+  const { getWhatsappSettings, interpolate, sendWhatsAppTextVerbose } = await import('@/lib/whatsapp')
+  const waSettings = await getWhatsappSettings()
+
+  const pid = waSettings.phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID || ''
+  const token = waSettings.access_token || process.env.WHATSAPP_ACCESS_TOKEN || ''
+  const groupId = waSettings.group_chat_id || ''
+
+  if (!pid) return { ok: false, message: 'Phone Number ID is not set. Save it in the Credentials section first.' }
+  if (!token) return { ok: false, message: 'Access Token is not set. Save it in the Credentials section first.' }
+  if (!groupId) return { ok: false, message: 'Alert Phone Numbers are not set. Add at least one number in the Group Alert section.' }
+
+  // Step 1: Verify the Phone Number ID is valid by calling the Meta API
+  let registeredNumber = ''
+  try {
+    const verifyRes = await fetch(`https://graph.facebook.com/v19.0/${pid}?fields=display_phone_number,verified_name,quality_rating`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    const verifyJson = await verifyRes.json()
+    if (!verifyRes.ok || verifyJson.error) {
+      const errMsg = verifyJson?.error?.message || JSON.stringify(verifyJson)
+      return { ok: false, message: `Credential check failed — ${errMsg}. Check your Phone Number ID and Access Token.` }
+    }
+    registeredNumber = verifyJson.display_phone_number || ''
+  } catch (err) {
+    return { ok: false, message: `Could not verify credentials: ${err instanceof Error ? err.message : 'Network error'}` }
+  }
+
+  const template = waSettings.group_alert_message || 'New trial booking!\n\nName: {{name}}\nDate: {{date}}\nTime: {{time}}\nPhone: {{phone}}\nEmail: {{email}}'
+  const body = interpolate(template, { name: 'Test User', date: 'Monday, 7 July 2025', time: '06:00 AM', phone: '+27 00 000 0000', email: 'test@example.com' })
+
+  const recipients = groupId.split(',').map((n: string) => n.trim()).filter(Boolean)
+  const results: string[] = []
+
+  for (const recipient of recipients) {
+    const result = await sendWhatsAppTextVerbose(recipient, body, pid, token)
+    const detail = result.ok ? 'sent' : `${result.error}${result.raw ? ` | raw: ${result.raw}` : ''}`
+    results.push(`${recipient}: ${detail}`)
+  }
+
+  const allOk = results.every((r) => r.endsWith('sent'))
+  return {
+    ok: allOk,
+    message: `Sending from ${registeredNumber} (ID: ${pid}) → ${results.join(' | ')}`,
+  }
 }

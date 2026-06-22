@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Tag, Trophy, Dumbbell, CalendarCheck, Users, CalendarOff, ShoppingCart, ImageIcon } from 'lucide-react'
+import { Plus, Trash2, Tag, Trophy, Dumbbell, CalendarCheck, Users, CalendarOff, ShoppingCart, ImageIcon, MessageSquare } from 'lucide-react'
 import {
   deleteSessionMilestone,
   deleteSpecial,
@@ -20,10 +20,12 @@ import { BlockedDaysManager } from '@/components/admin/blocked-days-manager'
 import { SignupsTable } from '@/components/admin/signups-table'
 import { SessionPurchasesTable } from '@/components/admin/session-purchases-table'
 import { GalleryAdmin } from '@/components/admin/gallery-admin'
+import { CommsAdmin } from '@/components/admin/comms-admin'
 import type { BlockedDay, ChowWinner, GalleryCategory, GalleryPhoto, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
 import type { GalleryPhotoWithCategory } from '@/lib/content-queries'
+import type { WaSettings } from '@/lib/whatsapp'
 
-type TabKey = 'bookings' | 'signups' | 'purchases' | 'chow' | 'celebration' | 'specials' | 'gallery'
+type TabKey = 'bookings' | 'signups' | 'purchases' | 'chow' | 'celebration' | 'specials' | 'gallery' | 'comms'
 
 function toLocalInput(d: Date | null) {
   if (!d) return ''
@@ -275,6 +277,7 @@ export function AdminDashboard({
   chowChallenge,
   galleryCategories: galleryCats,
   galleryPhotos: galleryPics,
+  waSettings,
   }: {
   specials: Special[]
   winners: ChowWinner[]
@@ -286,6 +289,7 @@ export function AdminDashboard({
   chowChallenge: string
   galleryCategories: GalleryCategory[]
   galleryPhotos: GalleryPhotoWithCategory[]
+  waSettings: WaSettings
   }) {
   const femaleWinner = winners.find((w) => w.label.toLowerCase().includes('female'))
   const maleWinner = winners.find((w) => !w.label.toLowerCase().includes('female'))
@@ -302,6 +306,7 @@ export function AdminDashboard({
     { key: 'celebration', label: 'Celebration', icon: Dumbbell },
     { key: 'specials', label: 'Specials', icon: Tag },
     { key: 'gallery', label: 'Gallery', icon: ImageIcon },
+    { key: 'comms', label: 'Comms', icon: MessageSquare },
   ]
 
   return (
@@ -534,6 +539,22 @@ export function AdminDashboard({
           </p>
           <div className="mt-6">
             <GalleryAdmin categories={galleryCats} photos={galleryPics} />
+          </div>
+        </section>
+      )}
+
+      {/* TAB — Communications */}
+      {tab === 'comms' && (
+        <section className="mt-10" role="tabpanel">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="size-5 text-neon-blue" />
+            <h2 className="font-display text-2xl font-black uppercase tracking-tight">Communications</h2>
+          </div>
+          <p className="mt-1 text-sm text-light-grey">
+            Configure WhatsApp group alerts and automated member reminder messages.
+          </p>
+          <div className="mt-6">
+            <CommsAdmin settings={waSettings} />
           </div>
         </section>
       )}

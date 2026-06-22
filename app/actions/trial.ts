@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { blockedDays, trialBookings } from '@/lib/db/schema'
 import { sendEmail } from '@/lib/email'
 import { business } from '@/lib/business'
+import { sendGroupAlert, getWhatsappSettings } from '@/lib/whatsapp'
 import {
   formatDateLong,
   parseDateString,
@@ -18,10 +19,17 @@ export type BookingState = { ok: boolean; error?: string }
 
 const UPTIVO_LINK = 'https://uptivo.page.link/XX5n'
 
+// Spam: URLs, emoji, or clearly non-name characters in the name field.
+const SPAM_NAME_RE = /https?:\/\/|bit\.ly|www\.|\.com|\.net|[\p{Emoji_Presentation}\p{Extended_Pictographic}]/u
+
 export async function submitTrialBooking(
   _prev: BookingState,
   formData: FormData,
 ): Promise<BookingState> {
+  // Honeypot — bots fill hidden fields, real users never see this input.
+  const honeypot = String(formData.get('website') ?? '')
+  if (honeypot) return { ok: true } // Silently succeed so bots don't know they were blocked.
+
   const fullName = String(formData.get('fullName') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim()
   const phone = String(formData.get('phone') ?? '').trim()
@@ -35,6 +43,33 @@ export async function submitTrialBooking(
   }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { ok: false, error: 'Please enter a valid email address.' }
+  }
+
+  // Reject spam names containing URLs, emoji or other non-name content.
+  if (SPAM_NAME_RE.test(fullName)) {
+    return { ok: false, error: 'Please enter your real full name.' }
+  }
+
+  // Reject bookings more than 90 days in the future (bots book years ahead).
+  const parsedDate = parseDateString(appointmentDate)
+  if (parsedDate) {
+    const maxDate = new Date()
+    maxDate.setDate(maxDate.getDate() + 90)
+    if (parsedDate > maxDate) {
+      return { ok: false, error: 'Bookings cannot be made more than 90 days in advance.' }
+    }
+  }
+
+  // Rate limit: max 3 bookings per email address per calendar day.
+  const { and, gte } = await import('drizzle-orm')
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const recentBookings = await db
+    .select({ id: trialBookings.id })
+    .from(trialBookings)
+    .where(and(eq(trialBookings.email, email.toLowerCase()), gte(trialBookings.createdAt, todayStart)))
+  if (recentBookings.length >= 3) {
+    return { ok: false, error: 'Too many booking attempts. Please try again tomorrow or contact us directly.' }
   }
   if (!agreementsAccepted) {
     return { ok: false, error: 'All agreements must be accepted.' }
@@ -116,5 +151,17 @@ Booking Time: ${appointmentTime}`,
   })
 
   revalidatePath('/admin')
+
+  // WhatsApp group alert — best-effort, never blocks the success response.
+  try {
+    const waSettings = await getWhatsappSettings()
+    await sendGroupAlert(
+      { name: fullName, date: dateLong, time: appointmentTime, phone, email },
+      waSettings,
+    )
+  } catch (err) {
+    console.error('[trial] whatsapp group alert failed:', err)
+  }
+
   return { ok: true }
 }

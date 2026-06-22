@@ -149,6 +149,16 @@ export function MembershipSignupForm({ selection }: { selection: Selection }) {
       }}
       className="space-y-6"
     >
+      {/* Honeypot — hidden from real users, bots fill it in and get silently blocked */}
+      <input
+        type="text"
+        name="website"
+        defaultValue=""
+        aria-hidden="true"
+        tabIndex={-1}
+        autoComplete="off"
+        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+      />
       {/* hidden selection + signature payload */}
       <input type="hidden" name="membershipId" value={selection.membershipId} />
       <input type="hidden" name="membershipType" value={selection.membershipType} />

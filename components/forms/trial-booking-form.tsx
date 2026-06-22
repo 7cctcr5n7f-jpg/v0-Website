@@ -105,6 +105,16 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
       <input type="hidden" name="appointmentDate" value={date ? toDateString(date) : ''} />
       <input type="hidden" name="appointmentTime" value={time} />
       <input type="hidden" name="agreementsAccepted" value={allAgreed ? 'true' : 'false'} />
+      {/* Honeypot — hidden from real users, bots fill it in and get silently blocked */}
+      <input
+        type="text"
+        name="website"
+        defaultValue=""
+        aria-hidden="true"
+        tabIndex={-1}
+        autoComplete="off"
+        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+      />
 
       <div className="flex items-center justify-between gap-4">
         <div>

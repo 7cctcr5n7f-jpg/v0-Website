@@ -188,6 +188,21 @@ export const galleryPhotos = pgTable('gallery_photos', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// WhatsApp comms settings — key/value store
+export const whatsappSettings = pgTable('whatsapp_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Tracks which reminder types have been sent per booking (prevents duplicates)
+export const whatsappReminderLog = pgTable('whatsapp_reminder_log', {
+  id: serial('id').primaryKey(),
+  bookingId: integer('booking_id').notNull(),
+  reminderType: text('reminder_type').notNull(), // 'day_before' | 'same_day'
+  sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type Special = typeof specials.$inferSelect
 export type ChowWinner = typeof chowWinners.$inferSelect
 export type SettingRow = typeof settings.$inferSelect
@@ -198,3 +213,4 @@ export type MembershipSignup = typeof membershipSignups.$inferSelect
 export type SessionPurchase = typeof sessionPurchases.$inferSelect
 export type GalleryCategory = typeof galleryCategories.$inferSelect
 export type GalleryPhoto = typeof galleryPhotos.$inferSelect
+export type WhatsappSetting = typeof whatsappSettings.$inferSelect

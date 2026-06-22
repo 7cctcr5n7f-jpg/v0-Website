@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { blockedDays, chowWinners, sessionMilestones, specials, trialBookings } from '@/lib/db/schema'
 import { isAdminAuthed } from '@/lib/admin-auth'
 import { getSetting, getMembershipSignups, getSessionPurchases, getGalleryCategories, getGalleryPhotos } from '@/lib/content-queries'
+import { getWhatsappSettings } from '@/lib/whatsapp'
 import { AdminLogin } from '@/components/admin/admin-login'
 import { AdminDashboard } from '@/components/admin/admin-dashboard'
 
@@ -19,7 +20,7 @@ export default async function AdminPage() {
     return <AdminLogin />
   }
 
-  const [allSpecials, allWinners, allMilestones, allBookings, allBlocked, allSignups, allPurchases, chowChallenge, galleryCats, galleryPics] = await Promise.all([
+  const [allSpecials, allWinners, allMilestones, allBookings, allBlocked, allSignups, allPurchases, chowChallenge, galleryCats, galleryPics, waSettings] = await Promise.all([
     db.select().from(specials).orderBy(asc(specials.sortOrder), asc(specials.id)),
     db.select().from(chowWinners).orderBy(asc(chowWinners.sortOrder), asc(chowWinners.id)),
     db.select().from(sessionMilestones).orderBy(desc(sessionMilestones.createdAt)),
@@ -30,6 +31,7 @@ export default async function AdminPage() {
     getSetting('chow_challenge'),
     getGalleryCategories(),
     getGalleryPhotos(),
+    getWhatsappSettings(),
   ])
 
   return (
@@ -44,6 +46,7 @@ export default async function AdminPage() {
       chowChallenge={chowChallenge}
       galleryCategories={galleryCats}
       galleryPhotos={galleryPics}
+      waSettings={waSettings}
     />
   )
 }
