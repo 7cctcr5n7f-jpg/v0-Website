@@ -253,17 +253,21 @@ export function MembershipFinder({
                   <p className="mt-2 text-sm font-medium text-neon-blue">
                     Save {formatRand(pricing.monthlySaving)}/month vs the 3-month plan
                   </p>
-                ) : length === 3 ? (
-                  <p className="mt-2 text-sm text-light-grey">Flexible short-term commitment</p>
+                ) : length === 3 && pricing.hasDiscount ? (
+                  <p className="mt-2 text-sm font-medium text-neon-blue">
+                    Save {formatRand(pricing.listTotalContract - pricing.totalContract)} over 3 months
+                  </p>
                 ) : null}
                 {perMember && (
                   <p className="mt-1 text-xs text-light-grey">
                     Total for two members: {formatRand(pricing.monthly * 2)} / month
                   </p>
                 )}
-                <p className="mt-1 text-xs text-light-grey">
-                  {formatRand(pricing.totalContract)} total over {length} months
-                </p>
+                {length > 3 && (
+                  <p className="mt-1 text-xs text-light-grey">
+                    {formatRand(pricing.totalContract)} total over {length} months
+                  </p>
+                )}
               </div>
 
               {/* off-peak hours notice */}
