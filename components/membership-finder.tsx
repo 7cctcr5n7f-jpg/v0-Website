@@ -77,7 +77,7 @@ export function MembershipFinder({
           {/* STEP 1 */}
           <div>
             <StepBadge n={1} label="Select Access Type" />
-            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
               {accessTiers.map((t) => {
                 const Icon = iconMap[t.icon]
                 const active = t.id === tierId
@@ -87,25 +87,25 @@ export function MembershipFinder({
                     type="button"
                     onClick={() => selectTier(t)}
                     className={cn(
-                      'group flex flex-col rounded-xl border p-2.5 text-center transition-all duration-200 sm:p-4 sm:text-left',
+                      'group flex flex-col rounded-xl border p-3 text-left transition-all duration-200 sm:p-4',
                       active
                         ? 'border-neon-blue bg-cobalt/10 blue-glow'
                         : 'border-steel bg-card hover:border-neon-blue/60',
                     )}
                     aria-pressed={active}
                   >
-                    <span className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-2.5">
+                    <span className="flex flex-row items-center gap-2.5">
                       <Icon
                         className={cn(
                           'size-5 shrink-0 transition-colors sm:size-6',
                           active ? 'text-neon-blue' : 'text-light-grey group-hover:text-neon-blue',
                         )}
                       />
-                      <span className="font-display text-xs font-bold uppercase leading-tight tracking-tight text-foreground sm:text-base">
+                      <span className="font-display text-sm font-bold uppercase leading-tight tracking-tight text-foreground sm:text-base">
                         {t.name}
                       </span>
                     </span>
-                    <span className="mt-2 hidden text-xs leading-relaxed text-light-grey sm:block">
+                    <span className="mt-2 text-xs leading-relaxed text-light-grey">
                       {t.tagline}
                     </span>
                   </button>
@@ -205,14 +205,7 @@ export function MembershipFinder({
                 <Badge icon={<Sparkles className="size-3.5" />}>Best Value</Badge>
               )}
               {perMember && <Badge>Train Together &amp; Save</Badge>}
-              {pricing.hasDiscount && (
-                <Badge highlight icon={<Sparkles className="size-3.5" />}>
-                  {pricing.discountPercent}% Off Special
-                </Badge>
-              )}
-              {pricing.monthlySaving > 0 && (
-                <Badge highlight>Save {formatRand(pricing.annualSaving)} / year</Badge>
-              )}
+
             </div>
 
             <div className="px-6 py-6">
@@ -249,21 +242,27 @@ export function MembershipFinder({
                     / month{perMember ? ' · per member' : ''}
                   </span>
                 </p>
-                {pricing.monthlySaving > 0 ? (
+                {length > 3 && pricing.contractSaving > 0 && !pricing.hasDiscount && (
                   <p className="mt-2 text-sm font-medium text-neon-blue">
-                    Save {formatRand(pricing.monthlySaving)}/month vs the 3-month plan
+                    Save {formatRand(pricing.contractSaving)}/month vs the 3-month plan
                   </p>
-                ) : (
-                  <p className="mt-2 text-sm text-light-grey">Flexible short-term commitment</p>
+                )}
+                {length > 3 && pricing.contractSaving > 0 && pricing.hasDiscount && (
+                  <p className="mt-2 text-sm font-medium text-neon-blue">
+                    Save {formatRand(pricing.contractSaving)}/month vs the 3-month plan
+                    {' + '}save {formatRand(pricing.specialSaving)}/month with special
+                  </p>
+                )}
+                {length === 3 && pricing.hasDiscount && (
+                  <p className="mt-2 text-sm font-medium text-neon-blue">
+                    Save {formatRand(pricing.listTotalContract - pricing.totalContract)} over 3 months with special
+                  </p>
                 )}
                 {perMember && (
                   <p className="mt-1 text-xs text-light-grey">
                     Total for two members: {formatRand(pricing.monthly * 2)} / month
                   </p>
                 )}
-                <p className="mt-1 text-xs text-light-grey">
-                  {formatRand(pricing.totalContract)} total over {length} months
-                </p>
               </div>
 
               {/* off-peak hours notice */}
