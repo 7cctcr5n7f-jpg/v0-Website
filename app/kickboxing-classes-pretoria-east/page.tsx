@@ -10,8 +10,10 @@ export const metadata: Metadata = {
     title: 'Kickboxing Classes Pretoria East | TENROUNDS Garsfontein',
     description:
       'Coach-led kickboxing and boxing-bag fitness in Pretoria East. 30-minute sessions, no class times, all levels welcome.',
-    images: [{ url: '/round-boxing-bag.webp' }],
+    images: [{ url: '/round-boxing-bag.webp', width: 1200, height: 630, alt: 'Kickboxing classes Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/round-boxing-bag.webp'] },
+  keywords: ['kickboxing classes Pretoria East', 'kickboxing Garsfontein', 'boxing fitness classes Pretoria', 'HIIT kickboxing Pretoria East', 'boxing for fitness Pretoria'],
 }
 
 const config: LandingConfig = {

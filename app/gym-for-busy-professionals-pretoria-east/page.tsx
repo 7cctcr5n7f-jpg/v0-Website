@@ -10,8 +10,10 @@ export const metadata: Metadata = {
     title: 'Gym For Busy Professionals Pretoria East | TENROUNDS',
     description:
       'A complete 30-minute workout with no class times for busy professionals in Pretoria East. Train on your schedule.',
-    images: [{ url: '/gym-stations.png' }],
+    images: [{ url: '/gym-stations.png', width: 1200, height: 630, alt: 'Gym for busy professionals Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/gym-stations.png'] },
+  keywords: ['gym for busy professionals Pretoria East', 'quick gym Pretoria', 'time efficient gym Garsfontein', 'gym before work Pretoria East', 'lunch break gym Pretoria'],
 }
 
 const config: LandingConfig = {

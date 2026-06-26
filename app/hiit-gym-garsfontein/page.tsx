@@ -10,8 +10,10 @@ export const metadata: Metadata = {
     title: 'HIIT Gym Garsfontein | TENROUNDS Pretoria East',
     description:
       'Coach-supported 30-minute HIIT workouts in Garsfontein. No class times. Heart-rate tracking. All fitness levels welcome.',
-    images: [{ url: '/functional-zone.png' }],
+    images: [{ url: '/functional-zone.png', width: 1200, height: 630, alt: 'HIIT gym Garsfontein — TENROUNDS Pretoria East' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/functional-zone.png'] },
+  keywords: ['HIIT gym Garsfontein', 'HIIT gym Pretoria East', 'boutique HIIT gym Garsfontein', 'no class times gym Pretoria', '30 minute workout Garsfontein'],
 }
 
 const config: LandingConfig = {

@@ -10,8 +10,10 @@ export const metadata: Metadata = {
     title: 'Weight Loss Gym Pretoria East | TENROUNDS Garsfontein',
     description:
       'Lose weight with coach-supported 30-minute HIIT in Pretoria East. Burn up to 500 calories per session with real heart-rate tracking.',
-    images: [{ url: '/heart-rate-watch.png' }],
+    images: [{ url: '/heart-rate-watch.png', width: 1200, height: 630, alt: 'Weight loss gym Pretoria East — TENROUNDS HIIT heart rate training' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/heart-rate-watch.png'] },
+  keywords: ['weight loss gym Pretoria East', 'fat burning gym Garsfontein', 'HIIT weight loss Pretoria', 'calorie burn gym Pretoria East', 'heart rate training Pretoria'],
 }
 
 const config: LandingConfig = {

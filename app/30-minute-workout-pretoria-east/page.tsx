@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     title: '30 Minute Workout Pretoria East | TENROUNDS',
     description:
       'Efficient coach-supported 30-minute HIIT workouts in Pretoria East. No class times. Real results. Start your free trial.',
-    images: [{ url: '/hero-athlete.png' }],
+    images: [{ url: '/hero-athlete.png', width: 1200, height: 630, alt: '30 minute workout Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/hero-athlete.png'] },
+  keywords: ['30 minute workout Pretoria East', 'quick gym workout Pretoria', 'efficient workout Garsfontein', 'short workout gym Pretoria East', 'busy professional gym Pretoria'],
 }
 
 const config: LandingConfig = {

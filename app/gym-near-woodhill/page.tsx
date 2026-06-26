@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     title: 'Gym Near Woodhill | TENROUNDS Pretoria East',
     description:
       'The closest premium HIIT gym to Woodhill. Coach-supported 30-minute sessions with no class times. Start your free trial today.',
-    images: [{ url: '/gym-stations.png' }],
+    images: [{ url: '/gym-stations.png', width: 1200, height: 630, alt: 'Gym near Woodhill Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/gym-stations.png'] },
+  keywords: ['gym near Woodhill', 'gym Woodhill Pretoria', 'HIIT gym near Woodhill', 'fitness Woodhill Pretoria East', 'gym near Boardwalk Pretoria'],
 }
 
 const config: LandingConfig = {

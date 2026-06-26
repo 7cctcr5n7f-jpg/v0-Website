@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     title: 'Gym Near Moreleta Park | TENROUNDS Pretoria East',
     description:
       'The closest premium HIIT gym to Moreleta Park. Coach-supported 30-minute sessions with no class times. Start your free trial today.',
-    images: [{ url: '/gym-exterior-night.jpg' }],
+    images: [{ url: '/gym-exterior-night.jpg', width: 1200, height: 630, alt: 'Gym near Moreleta Park Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/gym-exterior-night.jpg'] },
+  keywords: ['gym near Moreleta Park', 'gym Moreleta Park Pretoria', 'HIIT gym Moreleta Park', 'fitness Moreleta Park Pretoria East', 'gym near Constantia Park Pretoria'],
 }
 
 const config: LandingConfig = {

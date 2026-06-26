@@ -10,8 +10,10 @@ export const metadata: Metadata = {
     title: 'Boxing Gym Pretoria East | TENROUNDS Garsfontein',
     description:
       'Four boxing-bag stations, coach-led technique and 30-minute HIIT in Pretoria East. No class times. Free trial available.',
-    images: [{ url: '/round-boxing-bag.webp' }],
+    images: [{ url: '/round-boxing-bag.webp', width: 1200, height: 630, alt: 'Boxing gym Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/round-boxing-bag.webp'] },
+  keywords: ['boxing gym Pretoria East', 'boxing gym Garsfontein', 'boxing bag Pretoria', 'boxing fitness Pretoria East', 'HIIT boxing Garsfontein'],
 }
 
 const config: LandingConfig = {
