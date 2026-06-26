@@ -249,13 +249,13 @@ export function MembershipFinder({
                     / month{perMember ? ' · per member' : ''}
                   </span>
                 </p>
-                {pricing.monthlySaving > 0 ? (
+                {length > 3 && pricing.monthlySaving > 0 ? (
                   <p className="mt-2 text-sm font-medium text-neon-blue">
                     Save {formatRand(pricing.monthlySaving)}/month vs the 3-month plan
                   </p>
-                ) : (
+                ) : length === 3 ? (
                   <p className="mt-2 text-sm text-light-grey">Flexible short-term commitment</p>
-                )}
+                ) : null}
                 {perMember && (
                   <p className="mt-1 text-xs text-light-grey">
                     Total for two members: {formatRand(pricing.monthly * 2)} / month
