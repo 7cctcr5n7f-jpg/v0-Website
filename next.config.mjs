@@ -13,11 +13,21 @@ const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
 ]
 
+// ── www → apex 301 redirect ───────────────────────────────────────────────────
+// Ensures www.tenrounds.co.za permanently redirects to tenrounds.co.za so
+// Google only ever indexes one canonical origin. This complements (and
+// duplicates) the Vercel dashboard domain setting as a belt-and-braces measure.
+const wwwRedirect = {
+  source: '/:path*',
+  has: [{ type: 'host', value: 'www.tenrounds.co.za' }],
+  destination: 'https://tenrounds.co.za/:path*',
+  permanent: true,
+}
+
 // ── Legacy WordPress → new Next.js redirect map (all permanent 301s) ──
 // Each entry maps an OLD url (source) to the NEW canonical url (destination).
 // `permanent: true` emits a 301 so Google transfers ranking signal and existing
-// backlinks / bookmarks keep working. Host-level www→apex and http→https are
-// handled by the Vercel domain config, so these path rules apply on both hosts.
+// backlinks / bookmarks keep working.
 const legacyRedirects = [
   // The one explicitly requested by the business.
   { source: '/book-a-trial', destination: '/free-trial' },
@@ -111,7 +121,7 @@ const nextConfig = {
     ]
   },
   async redirects() {
-    return legacyRedirects
+    return [wwwRedirect, ...legacyRedirects]
   },
 }
 
