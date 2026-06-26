@@ -249,23 +249,25 @@ export function MembershipFinder({
                     / month{perMember ? ' · per member' : ''}
                   </span>
                 </p>
-                {length > 3 && pricing.monthlySaving > 0 ? (
+                {length > 3 && pricing.contractSaving > 0 && !pricing.hasDiscount && (
                   <p className="mt-2 text-sm font-medium text-neon-blue">
-                    Save {formatRand(pricing.monthlySaving)}/month vs the 3-month plan
+                    Save {formatRand(pricing.contractSaving)}/month vs the 3-month plan
                   </p>
-                ) : length === 3 && pricing.hasDiscount ? (
+                )}
+                {length > 3 && pricing.contractSaving > 0 && pricing.hasDiscount && (
                   <p className="mt-2 text-sm font-medium text-neon-blue">
-                    Save {formatRand(pricing.listTotalContract - pricing.totalContract)} over 3 months
+                    Save {formatRand(pricing.contractSaving)}/month vs the 3-month plan
+                    {' + '}save {formatRand(pricing.specialSaving)}/month with special
                   </p>
-                ) : null}
+                )}
+                {length === 3 && pricing.hasDiscount && (
+                  <p className="mt-2 text-sm font-medium text-neon-blue">
+                    Save {formatRand(pricing.listTotalContract - pricing.totalContract)} over 3 months with special
+                  </p>
+                )}
                 {perMember && (
                   <p className="mt-1 text-xs text-light-grey">
                     Total for two members: {formatRand(pricing.monthly * 2)} / month
-                  </p>
-                )}
-                {length > 3 && (
-                  <p className="mt-1 text-xs text-light-grey">
-                    {formatRand(pricing.totalContract)} total over {length} months
                   </p>
                 )}
               </div>

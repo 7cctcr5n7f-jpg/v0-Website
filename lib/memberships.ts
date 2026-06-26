@@ -161,14 +161,18 @@ export function computePricing(
   const pct = Math.min(Math.max(discountPercent, 0), 100)
   const discounted = pct > 0 ? Math.round(listMonthly * (1 - pct / 100)) : listMonthly
   const monthly = discounted
-  const base = membership.prices[3]
-  const monthlySaving = base - monthly
+  const base = membership.prices[3]         // 3-month list price (no special)
+  const monthlySaving = base - monthly       // total saving vs 3-month list (contract + special combined)
+  const contractSaving = base - listMonthly  // saving purely from choosing a longer contract (no special)
+  const specialSaving = listMonthly - monthly // saving purely from the special discount
   const annualSaving = monthlySaving * 12
   const totalContract = monthly * length
   return {
     monthly,
     base,
     monthlySaving,
+    contractSaving,
+    specialSaving,
     annualSaving,
     totalContract,
     // promo-specific fields
