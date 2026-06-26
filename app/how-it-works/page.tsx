@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     title: 'How It Works | TENROUNDS',
     description:
       'Ten structured rounds combining boxing, functional strength and heart-rate guided intensity — a complete 30-minute workout with no class times.',
-    images: [{ url: '/round-warmup.webp', width: 1200, height: 630, alt: 'TENROUNDS boxing workout' }],
+    images: [{ url: '/round-warmup.webp', width: 1200, height: 630, alt: 'How a TENROUNDS 30-minute HIIT boxing workout works' }],
   },
 }
 

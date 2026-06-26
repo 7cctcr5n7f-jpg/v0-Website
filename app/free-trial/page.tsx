@@ -15,13 +15,15 @@ import { blockedDays as blockedDaysTable } from '@/lib/db/schema'
 export const metadata: Metadata = {
   title: 'Free Trial | Your First 30-Minute Session Is On Us',
   description:
-    'Claim your free TENROUNDS trial in Garsfontein, Pretoria East. Experience a coach-supported 30-minute HIIT boxing workout with real-time heart rate tracking — no experience and no payment required.',
+    'Claim your free TENROUNDS trial in Garsfontein, Pretoria East. Experience a coach-supported 30-minute HIIT boxing workout with real-time heart rate tracking — no experience, no payment, no class times.',
   alternates: { canonical: '/free-trial' },
   openGraph: {
-    title: 'Free Trial | TENROUNDS',
-    description:
-      "Your first coach-supported 30-minute HIIT session in Garsfontein is on us. No experience required. No class times. No pressure to join.",
+    title: 'Free Trial | TENROUNDS Garsfontein, Pretoria East',
+    description: 'Your first coach-supported 30-minute HIIT session in Garsfontein is on us. No experience required. No class times. No pressure to join.',
+    images: [{ url: '/hero-athlete.png', width: 1200, height: 630, alt: 'Free trial HIIT session at TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/hero-athlete.png'] },
+  keywords: ['free gym trial Pretoria East', 'free trial HIIT gym Garsfontein', 'try gym for free Pretoria', 'no commitment gym trial Pretoria East'],
 }
 
 const heroPoints = ['No experience required', 'No class times', 'No pressure to join']

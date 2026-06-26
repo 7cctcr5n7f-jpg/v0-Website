@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     title: 'Boxing Fitness Pretoria East | TENROUNDS',
     description:
       'Coach-supported boxing fitness in Pretoria East. Weight loss, conditioning and confidence — no sparring, no class times.',
-    images: [{ url: '/coach-support.png' }],
+    images: [{ url: '/coach-support.png', width: 1200, height: 630, alt: 'Boxing fitness Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/coach-support.png'] },
+  keywords: ['boxing fitness Pretoria East', 'boxing workout Garsfontein', 'non-contact boxing Pretoria', 'boxing HIIT Pretoria East', 'boxing bag workout Pretoria'],
 }
 
 const boxingTestimonials: Testimonial[] = [

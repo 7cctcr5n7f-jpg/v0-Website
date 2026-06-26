@@ -21,15 +21,17 @@ import {
 } from '@/lib/content-queries'
 
 export const metadata: Metadata = {
-  title: 'Pricing & Memberships',
+  title: 'Gym Memberships & Pricing Pretoria East',
   description:
-    'Build your TENROUNDS membership in seconds. Anytime, Off-Peak and Pair-Up access with 3, 6 and 12 month options. Boutique 30-minute HIIT training in Garsfontein, Pretoria East.',
+    'Build your TENROUNDS membership in seconds. Anytime, Off-Peak and Pair-Up access from R650/month with 3, 6 and 12-month options. Boutique 30-minute HIIT gym in Garsfontein, Pretoria East.',
   alternates: { canonical: '/memberships' },
   openGraph: {
-    title: 'Pricing & Memberships | TENROUNDS',
-    description:
-      'Anytime, Off-Peak and Pair-Up memberships with transparent pricing. Find your plan in 15 seconds.',
+    title: 'Gym Memberships & Pricing | TENROUNDS Pretoria East',
+    description: 'Anytime, Off-Peak and Pair-Up memberships from R650/month. Transparent pricing, no lock-in pressure. Find your plan in 15 seconds.',
+    images: [{ url: '/hero-athlete.png', width: 1200, height: 630, alt: 'TENROUNDS gym memberships Pretoria East' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/hero-athlete.png'] },
+  keywords: ['gym membership Pretoria East', 'gym pricing Pretoria', 'HIIT gym membership Garsfontein', 'affordable gym Pretoria East', 'boutique gym membership Pretoria'],
 }
 
 const benefits = [

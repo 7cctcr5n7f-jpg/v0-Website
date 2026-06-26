@@ -7,14 +7,17 @@ import { breadcrumbSchema } from '@/lib/seo'
 import { business, whatsappHref, fullAddress } from '@/lib/business'
 
 export const metadata: Metadata = {
-  title: 'Contact',
+  title: 'Contact Us | 649 Borzoi Street, Garsfontein',
   description:
-    'Visit or contact TENROUNDS at 649 Borzoi Street, Garsfontein, Pretoria East. Operating hours, WhatsApp, phone, email and directions to our boutique HIIT gym.',
+    'Visit or contact TENROUNDS at 649 Borzoi Street, Garsfontein, Pretoria East. Operating hours, WhatsApp, phone, email and directions to our boutique HIIT boxing gym.',
   alternates: { canonical: '/contact' },
   openGraph: {
-    title: 'Contact | TENROUNDS',
-    description: 'Visit TENROUNDS in Garsfontein, Pretoria East. Hours, directions and WhatsApp.',
+    title: 'Contact TENROUNDS | Garsfontein, Pretoria East',
+    description: 'Visit TENROUNDS at 649 Borzoi Street, Garsfontein. Mon–Fri 05:00–10:00 & 13:00–19:00, Sat 07:00–10:00.',
+    images: [{ url: '/hero-athlete.png', width: 1200, height: 630, alt: 'TENROUNDS gym location in Garsfontein, Pretoria East' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/hero-athlete.png'] },
+  keywords: ['gym Garsfontein contact', 'TENROUNDS address', 'gym near me Pretoria East', '649 Borzoi Street Garsfontein', 'HIIT gym contact Pretoria'],
 }
 
 export default function ContactPage() {

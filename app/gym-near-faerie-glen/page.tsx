@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     title: 'Gym Near Faerie Glen | TENROUNDS Pretoria East',
     description:
       'Premium coach-supported 30-minute HIIT training minutes from Faerie Glen. No class times. Start your free trial today.',
-    images: [{ url: '/strength-training.png' }],
+    images: [{ url: '/strength-training.png', width: 1200, height: 630, alt: 'Gym near Faerie Glen — TENROUNDS Garsfontein Pretoria East' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/strength-training.png'] },
+  keywords: ['gym near Faerie Glen', 'gym Faerie Glen Pretoria', 'HIIT gym near Faerie Glen', 'fitness Faerie Glen Pretoria East'],
 }
 
 const config: LandingConfig = {

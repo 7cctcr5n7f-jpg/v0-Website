@@ -29,10 +29,17 @@ import { ContactForm } from '@/components/forms/contact-form'
 import { Reveal } from '@/components/reveal'
 
 export const metadata: Metadata = {
-  title: 'Corporate Wellness',
+  title: 'Corporate Wellness Pretoria East | Employee Fitness',
   description:
-    'The Power of HIIT at Work. Boost productivity, focus and retention with the TENROUNDS corporate wellness challenge. Exclusive employee pricing from R850/month in Pretoria East.',
+    'Boost productivity, reduce sick days and retain top talent with the TENROUNDS corporate wellness programme. Exclusive employee pricing from R850/month. Boutique HIIT gym in Garsfontein, Pretoria East.',
   alternates: { canonical: '/corporate-wellness' },
+  openGraph: {
+    title: 'Corporate Wellness Pretoria East | TENROUNDS',
+    description: 'Exclusive employee gym memberships from R850/month. Boost productivity and reduce sick days with coach-supported HIIT in Garsfontein, Pretoria East.',
+    images: [{ url: '/hero-athlete.png', width: 1200, height: 630, alt: 'Corporate wellness HIIT training at TENROUNDS Pretoria East' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/hero-athlete.png'] },
+  keywords: ['corporate wellness Pretoria', 'employee fitness Pretoria East', 'corporate gym membership Pretoria', 'workplace wellness Pretoria', 'group fitness corporate Pretoria East'],
 }
 
 const researchStats = [

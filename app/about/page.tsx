@@ -11,8 +11,15 @@ import { CtaBanner } from '@/components/cta-banner'
 export const metadata: Metadata = {
   title: 'About Us',
   description:
-    'The TENROUNDS story — a boutique HIIT gym in Pretoria built for busy people who want real results through coach-supported 30-minute workouts.',
+    'The TENROUNDS story — a boutique HIIT gym in Garsfontein, Pretoria East built for busy people who want real results through coach-supported 30-minute workouts.',
   alternates: { canonical: '/about' },
+  openGraph: {
+    title: 'About Us | TENROUNDS',
+    description: 'The TENROUNDS story — a boutique HIIT gym in Garsfontein, Pretoria East built for busy people who want real results in 30 minutes.',
+    images: [{ url: '/hero-athlete.png', width: 1200, height: 630, alt: 'TENROUNDS coaching team in Garsfontein, Pretoria East' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/hero-athlete.png'] },
+  keywords: ['TENROUNDS story', 'boutique gym Pretoria', 'HIIT gym Garsfontein', 'about TENROUNDS', 'gym coaches Pretoria East'],
 }
 
 const pillars = [

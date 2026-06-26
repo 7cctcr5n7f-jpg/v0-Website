@@ -11,8 +11,10 @@ export const metadata: Metadata = {
     title: 'Group Fitness Classes Pretoria East | TENROUNDS Garsfontein',
     description:
       'The energy of group fitness with the freedom of no class times. Coach-supported 30-minute sessions in Pretoria East.',
-    images: [{ url: '/community.png' }],
+    images: [{ url: '/community.png', width: 1200, height: 630, alt: 'Group fitness classes Pretoria East — TENROUNDS Garsfontein' }],
   },
+  twitter: { card: 'summary_large_image', images: ['/community.png'] },
+  keywords: ['group fitness classes Pretoria East', 'group exercise Garsfontein', 'fitness classes no timetable Pretoria', 'HIIT group training Pretoria East'],
 }
 
 const config: LandingConfig = {

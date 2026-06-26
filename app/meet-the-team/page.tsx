@@ -9,8 +9,15 @@ import { CtaBanner } from '@/components/cta-banner'
 export const metadata: Metadata = {
   title: 'Meet The Team',
   description:
-    'Meet the TENROUNDS coaching team — qualified trainers providing guidance, motivation and support on the floor every round in Pretoria East.',
+    'Meet the TENROUNDS coaching team — qualified trainers providing guidance, motivation and real-time support on the floor every round in Garsfontein, Pretoria East.',
   alternates: { canonical: '/meet-the-team' },
+  openGraph: {
+    title: 'Meet The Team | TENROUNDS',
+    description: 'Qualified coaches on the floor every session in Garsfontein, Pretoria East. Real guidance, real support, real results.',
+    images: [{ url: '/coach-support.png', width: 1200, height: 630, alt: 'TENROUNDS coaches in Garsfontein, Pretoria East' }],
+  },
+  twitter: { card: 'summary_large_image', images: ['/coach-support.png'] },
+  keywords: ['gym coaches Pretoria East', 'HIIT trainer Garsfontein', 'personal trainer Pretoria East', 'boxing coach Pretoria'],
 }
 
 const onFloor = [
