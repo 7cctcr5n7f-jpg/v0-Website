@@ -101,17 +101,17 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-[17px] font-black leading-tight text-foreground">{s.firstName} {s.surname}</p>
-                      <p className="truncate text-sm font-bold leading-tight text-foreground">{packageLabel}</p>
+                      <p className="truncate text-sm leading-tight text-foreground">{packageLabel}</p>
                       <p className="truncate text-xs text-light-grey">{s.membershipType}</p>
                     </div>
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-0.5 pt-0.5">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${peak ? 'bg-neon-blue/15 text-neon-blue' : 'bg-neon-green/15 text-neon-green'}`}>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] ${peak ? 'bg-neon-blue/15 text-neon-blue' : 'bg-neon-green/15 text-neon-green'}`}>
                       {peak ? <Flame className="size-2.5" /> : <Clock className="size-2.5" />}
                       {peak ? 'Peak' : 'Off-Peak'}
                     </span>
-                    <span className="text-[11px] font-semibold text-light-grey">{price}</span>
+                    <span className="text-[11px] text-light-grey">{price}</span>
                     <span className="text-[10px] text-mid-grey">{timeInJhb(s.createdAt)}</span>
                   </div>
                 </div>
