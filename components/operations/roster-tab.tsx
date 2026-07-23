@@ -10,8 +10,7 @@ import {
   Check,
   X,
   ChevronDown,
-  Sun,
-  Sunset,
+  Clock,
 } from 'lucide-react'
 import { saveShiftAssignment, deleteShiftAssignment } from '@/app/actions/operations'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
@@ -42,25 +41,29 @@ function getWeekDates(anchor: Date): Date[] {
   })
 }
 
-function getMonthRange(monthOffset: number): { start: string; end: string; label: string } {
+function getMonthRange(monthOffset: number) {
   const now = new Date()
   const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
   const start = toIso(d)
   const end = toIso(new Date(d.getFullYear(), d.getMonth() + 1, 0))
   const label = d.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
-  return { start, end, label }
+  const shortLabel = d.toLocaleDateString('en-ZA', { month: 'short' })
+  return { start, end, label, shortLabel }
+}
+
+// colour for shift type dot/accent
+const SHIFT_STYLES: Record<string, { dot: string; bg: string; border: string; label: string }> = {
+  morning:   { dot: 'bg-amber-400',  bg: 'bg-amber-400/10',  border: 'border-amber-400/30',  label: 'AM' },
+  afternoon: { dot: 'bg-neon-blue',  bg: 'bg-neon-blue/10',  border: 'border-neon-blue/30',  label: 'PM' },
+  saturday:  { dot: 'bg-neon-green', bg: 'bg-neon-green/10', border: 'border-neon-green/30', label: 'SAT' },
 }
 
 export function RosterTab({ staff, assignments, shiftSettings }: Props) {
   const [anchor, setAnchor] = useState(() => new Date())
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor])
-  const weekStart = toIso(weekDates[0])
-  const weekEnd = toIso(weekDates[5])
-
   const weekLabel = `${weekDates[0].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} – ${weekDates[5].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}`
 
-  // Build a map: date → shiftType → assignments[]
   const shiftMap = useMemo(() => {
     const m: Record<string, Record<string, ShiftAssignment[]>> = {}
     for (const a of assignments) {
@@ -71,11 +74,6 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
     return m
   }, [assignments])
 
-  const morningShift = shiftSettings.find((s) => s.shiftType === 'morning')
-  const afternoonShift = shiftSettings.find((s) => s.shiftType === 'afternoon')
-  const saturdayShift = shiftSettings.find((s) => s.shiftType === 'saturday')
-
-  // ── Hours summary (current + previous month) ──────────────────────────────
   const currentMonth = getMonthRange(0)
   const prevMonth = getMonthRange(-1)
 
@@ -85,104 +83,110 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
       .reduce((sum, a) => sum + (parseFloat(a.hours) || 0), 0)
   }
 
+  function calcDays(staffId: number, start: string, end: string) {
+    const dates = new Set(
+      assignments
+        .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
+        .map((a) => a.shiftDate),
+    )
+    return dates.size
+  }
+
   function getShiftDetails(staffId: number, start: string, end: string) {
     return assignments
       .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
       .sort((a, b) => a.shiftDate.localeCompare(b.shiftDate))
   }
 
+  // Non-Saturday shifts for the weekly grid
+  const gridShifts = shiftSettings.filter((s) => s.shiftType !== 'saturday')
+  const saturdayShift = shiftSettings.find((s) => s.shiftType === 'saturday')
+
   return (
-    <div className="space-y-6">
-      {/* ── Staff Hours Summary ─────────────────────────────────────────── */}
+    <div className="space-y-4">
+      {/* ── Staff Hours Summary ─────────────────────────────────── */}
       <StaffHoursSummary
         staff={staff}
         currentMonth={currentMonth}
         prevMonth={prevMonth}
         calcHours={calcHours}
+        calcDays={calcDays}
         getShiftDetails={getShiftDetails}
         shiftSettings={shiftSettings}
       />
 
-      {/* ── Weekly Roster ──────────────────────────────────────────────── */}
+      {/* ── Weekly Schedule ─────────────────────────────────────── */}
       <div>
         {/* Week navigator */}
-        <div className="mb-4 flex items-center gap-3">
+        <div className="mb-3 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setAnchor((a) => { const d = new Date(a); d.setDate(d.getDate() - 7); return d })}
-            className="flex size-8 items-center justify-center rounded-lg border border-steel text-light-grey transition-colors hover:border-neon-blue hover:text-neon-blue"
+            className="flex size-8 items-center justify-center rounded-lg border border-steel/60 text-mid-grey transition-colors hover:border-neon-blue hover:text-neon-blue active:scale-95"
             aria-label="Previous week"
           >
             <ChevronLeft className="size-4" />
           </button>
-          <p className="flex-1 text-center text-sm font-bold text-foreground">{weekLabel}</p>
+          <p className="flex-1 text-center text-sm font-semibold text-foreground">{weekLabel}</p>
           <button
             type="button"
             onClick={() => setAnchor((a) => { const d = new Date(a); d.setDate(d.getDate() + 7); return d })}
-            className="flex size-8 items-center justify-center rounded-lg border border-steel text-light-grey transition-colors hover:border-neon-blue hover:text-neon-blue"
+            className="flex size-8 items-center justify-center rounded-lg border border-steel/60 text-mid-grey transition-colors hover:border-neon-blue hover:text-neon-blue active:scale-95"
             aria-label="Next week"
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
 
-        {/* 7-column roster grid: Shift label + Mon-Sat */}
-        <div className="overflow-x-auto">
-          <div className="min-w-[680px]">
-            {/* Header row */}
-            <div className="mb-1 grid grid-cols-7 gap-1.5">
-              <div /> {/* shift label column */}
-              {weekDates.map((d, i) => {
-                const isToday = toIso(d) === toIso(new Date())
-                const isSat = i === 5
-                return (
-                  <div
-                    key={i}
-                    className={`rounded-lg px-2 py-2 text-center ${
-                      isToday
-                        ? 'bg-neon-blue/20 ring-1 ring-neon-blue/50'
-                        : isSat
-                        ? 'bg-neon-green/10'
-                        : 'bg-steel/20'
-                    }`}
-                  >
-                    <p className={`text-xs font-bold ${isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-foreground'}`}>
-                      {WEEK_DAYS[i]}
-                    </p>
-                    <p className={`text-[10px] ${isToday ? 'text-neon-blue/70' : 'text-mid-grey'}`}>
-                      {d.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })}
-                    </p>
+        {/* Day cards — horizontal scroll on small screens */}
+        <div className="overflow-x-auto pb-1">
+          <div className="grid min-w-[520px] grid-cols-6 gap-2">
+            {weekDates.map((d, i) => {
+              const dateStr = toIso(d)
+              const isToday = toIso(d) === toIso(new Date())
+              const isSat = i === 5
+              // Which shifts appear on this day? Mon–Fri: gridShifts. Sat: saturdayShift only.
+              const dayShifts = isSat
+                ? saturdayShift ? [saturdayShift] : []
+                : gridShifts
+
+              return (
+                <div
+                  key={dateStr}
+                  className={`rounded-xl border p-2 ${
+                    isToday
+                      ? 'border-neon-blue/50 bg-neon-blue/5'
+                      : isSat
+                      ? 'border-neon-green/30 bg-neon-green/5'
+                      : 'border-steel/40 bg-card/40'
+                  }`}
+                >
+                  {/* Day header */}
+                  <div className={`mb-2 text-center ${isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-mid-grey'}`}>
+                    <p className="text-[11px] font-bold uppercase tracking-wide">{WEEK_DAYS[i]}</p>
+                    <p className="text-[10px]">{d.getDate()}</p>
                   </div>
-                )
-              })}
-            </div>
 
-            {/* Morning row */}
-            {morningShift && (
-              <ShiftRow
-                shiftSetting={morningShift}
-                weekDates={weekDates}
-                shiftMap={shiftMap}
-                staff={staff}
-                icon={<Sun className="size-3.5 text-amber-400" />}
-                rowColor="border-amber-400/20 bg-amber-400/5"
-              />
-            )}
-
-            {/* Afternoon row */}
-            {afternoonShift && (
-              <ShiftRow
-                shiftSetting={afternoonShift}
-                weekDates={weekDates}
-                shiftMap={shiftMap}
-                staff={staff}
-                icon={<Sunset className="size-3.5 text-cobalt" />}
-                rowColor="border-cobalt/20 bg-cobalt/5"
-              />
-            )}
-
-            {/* Saturday row spans the whole grid if saturday shift is separate */}
-            {/* Saturday is already column 7 (index 5) in the Mon–Sat grid above */}
+                  {/* Shift sections */}
+                  <div className="space-y-1.5">
+                    {dayShifts.map((shift) => {
+                      const style = SHIFT_STYLES[shift.shiftType] ?? SHIFT_STYLES.morning
+                      const dayAssignments = shiftMap[dateStr]?.[shift.shiftType] ?? []
+                      return (
+                        <ShiftBlock
+                          key={shift.shiftType}
+                          date={dateStr}
+                          shift={shift}
+                          style={style}
+                          assignments={dayAssignments}
+                          staff={staff}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </div>
@@ -190,94 +194,24 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
   )
 }
 
-// ── Shift Row ────────────────────────────────────────────────────────────────
+// ── Shift Block (inside a day card) ─────────────────────────────────────────
 
-function ShiftRow({
-  shiftSetting,
-  weekDates,
-  shiftMap,
-  staff,
-  icon,
-  rowColor,
-}: {
-  shiftSetting: ShiftSetting
-  weekDates: Date[]
-  shiftMap: Record<string, Record<string, ShiftAssignment[]>>
-  staff: Staff[]
-  icon: React.ReactNode
-  rowColor: string
-}) {
-  return (
-    <div className={`mb-1.5 grid grid-cols-7 gap-1.5 rounded-xl border ${rowColor} p-1.5`}>
-      {/* Label */}
-      <div className="flex flex-col items-start justify-center px-1.5">
-        <div className="flex items-center gap-1">
-          {icon}
-          <span className="text-xs font-bold text-foreground">{shiftSetting.label}</span>
-        </div>
-        <span className="text-[10px] text-mid-grey">{shiftSetting.startTime}–{shiftSetting.endTime}</span>
-      </div>
-
-      {/* One cell per day */}
-      {weekDates.map((d) => {
-        const dateStr = toIso(d)
-        const isSat = d.getDay() === 6
-        const shiftType = isSat && shiftSetting.shiftType !== 'saturday' ? null : shiftSetting.shiftType
-        // Saturday uses its own shift type only for the saturday column
-        const effectiveType = isSat && shiftSetting.shiftType !== 'saturday'
-          ? 'saturday_skip'
-          : shiftSetting.shiftType
-        const cell = effectiveType !== 'saturday_skip'
-          ? (shiftMap[dateStr]?.[shiftSetting.shiftType] ?? [])
-          : []
-
-        if (effectiveType === 'saturday_skip') {
-          // Saturday column: show the saturday shift if the shiftSetting is for morning/afternoon
-          // Actually we handle sat inline in the same row — for morning row col 7, show saturday shift
-          return (
-            <div
-              key={dateStr}
-              className="min-h-[56px] rounded-lg bg-black/10 px-1.5 py-1.5 opacity-20"
-            />
-          )
-        }
-
-        return (
-          <DayCell
-            key={dateStr}
-            date={dateStr}
-            shiftType={shiftSetting.shiftType}
-            defaultHours={shiftSetting.defaultHours}
-            assignments={cell}
-            staff={staff}
-            isSat={isSat}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-// ── Day Cell ─────────────────────────────────────────────────────────────────
-
-function DayCell({
+function ShiftBlock({
   date,
-  shiftType,
-  defaultHours,
+  shift,
+  style,
   assignments,
   staff,
-  isSat,
 }: {
   date: string
-  shiftType: string
-  defaultHours: string
+  shift: ShiftSetting
+  style: { dot: string; bg: string; border: string; label: string }
   assignments: ShiftAssignment[]
   staff: Staff[]
-  isSat: boolean
 }) {
   const [adding, setAdding] = useState(false)
   const [selectedId, setSelectedId] = useState('')
-  const [hours, setHours] = useState(defaultHours)
+  const [hours, setHours] = useState(shift.defaultHours)
   const [pending, setPending] = useState(false)
 
   const assignedIds = new Set(assignments.map((a) => a.staffId))
@@ -288,81 +222,104 @@ function DayCell({
     setPending(true)
     const fd = new FormData()
     fd.set('shiftDate', date)
-    fd.set('shiftType', shiftType)
+    fd.set('shiftType', shift.shiftType)
     fd.set('staffId', selectedId)
     fd.set('hours', hours)
     await saveShiftAssignment(fd)
     setAdding(false)
     setSelectedId('')
-    setHours(defaultHours)
+    setHours(shift.defaultHours)
     setPending(false)
   }
 
   return (
-    <div className={`min-h-[56px] rounded-lg px-1.5 py-1.5 ${isSat ? 'bg-neon-green/5' : 'bg-background/40'}`}>
-      <div className="flex flex-col gap-1">
-        {assignments.map((a) => {
-          const member = staff.find((s) => s.id === a.staffId)
-          return <AssignmentChip key={a.id} assignment={a} name={member?.name ?? 'Unknown'} defaultHours={defaultHours} />
-        })}
-
-        {adding ? (
-          <div className="flex flex-col gap-1">
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full rounded border border-steel bg-card px-1.5 py-1 text-[10px] text-foreground outline-none focus:border-neon-blue"
-              autoFocus
-            >
-              <option value="">Staff…</option>
-              {available.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              className="w-full rounded border border-steel bg-card px-1.5 py-1 text-[10px] text-foreground outline-none focus:border-neon-blue"
-              aria-label="Hours"
-            />
-            <div className="flex gap-1">
-              <button
-                type="button"
-                onClick={handleAdd}
-                disabled={pending || !selectedId}
-                className="flex-1 rounded bg-neon-green py-1 text-[9px] font-bold text-black disabled:opacity-50"
-              >
-                {pending ? '…' : 'Add'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setAdding(false)}
-                className="rounded px-1.5 py-1 text-[9px] text-light-grey hover:text-foreground"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : available.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="flex w-full items-center justify-center gap-0.5 rounded border border-dashed border-steel/50 py-1 text-[9px] text-light-grey/60 transition-colors hover:border-neon-green/60 hover:text-neon-green"
-          >
-            <Plus className="size-2.5" />
-          </button>
-        ) : null}
+    <div className={`rounded-lg border px-1.5 py-1 ${style.bg} ${style.border}`}>
+      {/* Shift label */}
+      <div className="mb-1 flex items-center gap-1">
+        <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
+        <span className="text-[9px] font-bold uppercase tracking-wider text-mid-grey">{style.label}</span>
+        <span className="ml-auto text-[9px] text-mid-grey">{shift.startTime}–{shift.endTime}</span>
       </div>
+
+      {/* Assignment pills */}
+      {assignments.map((a) => {
+        const member = staff.find((s) => s.id === a.staffId)
+        return (
+          <AssignmentChip
+            key={a.id}
+            assignment={a}
+            name={member?.name ?? 'Unknown'}
+            defaultHours={shift.defaultHours}
+          />
+        )
+      })}
+
+      {/* Add form or add button */}
+      {adding ? (
+        <div className="mt-1 space-y-1">
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="w-full rounded border border-steel/60 bg-background px-1.5 py-1 text-[10px] text-foreground outline-none focus:border-neon-blue"
+            autoFocus
+          >
+            <option value="">Select staff…</option>
+            {available.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            step="0.5"
+            min="0"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            placeholder="Hours"
+            className="w-full rounded border border-steel/60 bg-background px-1.5 py-1 text-[10px] text-foreground outline-none focus:border-neon-blue"
+          />
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={pending || !selectedId}
+              className="flex-1 rounded-md bg-neon-green py-1.5 text-[10px] font-bold text-black disabled:opacity-50"
+            >
+              {pending ? '…' : 'Add'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAdding(false); setSelectedId(''); setHours(shift.defaultHours) }}
+              className="rounded-md border border-steel/60 px-2 py-1.5 text-[10px] text-light-grey hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      ) : available.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="mt-1 flex w-full items-center justify-center rounded border border-dashed border-steel/40 py-1 text-[9px] text-mid-grey transition-colors hover:border-neon-green/50 hover:text-neon-green"
+          aria-label="Add staff to shift"
+        >
+          <Plus className="size-2.5" />
+        </button>
+      ) : null}
     </div>
   )
 }
 
 // ── Assignment Chip ──────────────────────────────────────────────────────────
 
-function AssignmentChip({ assignment, name, defaultHours }: { assignment: ShiftAssignment; name: string; defaultHours: string }) {
+function AssignmentChip({
+  assignment,
+  name,
+  defaultHours,
+}: {
+  assignment: ShiftAssignment
+  name: string
+  defaultHours: string
+}) {
   const [editing, setEditing] = useState(false)
   const [hours, setHours] = useState(assignment.hours || defaultHours)
   const [pending, setPending] = useState(false)
@@ -391,22 +348,23 @@ function AssignmentChip({ assignment, name, defaultHours }: { assignment: ShiftA
 
   if (editing) {
     return (
-      <div className="flex items-center gap-0.5 rounded-md border border-neon-blue/60 bg-card px-1.5 py-1">
+      <div className="my-0.5 flex items-center gap-1 rounded-md border border-neon-blue/50 bg-card px-1.5 py-1">
+        <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">{name}</span>
         <input
           type="number"
           step="0.5"
           min="0"
           value={hours}
           onChange={(e) => setHours(e.target.value)}
-          className="w-10 bg-transparent text-[10px] text-foreground outline-none"
+          className="w-9 rounded bg-steel/30 px-1 py-0.5 text-center text-[10px] text-foreground outline-none"
           autoFocus
           aria-label="Hours"
         />
         <span className="text-[9px] text-mid-grey">h</span>
-        <button type="button" onClick={handleSave} disabled={pending} className="ml-0.5 text-neon-green disabled:opacity-50">
+        <button type="button" onClick={handleSave} disabled={pending} className="text-neon-green disabled:opacity-50">
           <Check className="size-3" />
         </button>
-        <button type="button" onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }} className="text-light-grey hover:text-foreground">
+        <button type="button" onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }} className="text-mid-grey hover:text-foreground">
           <X className="size-3" />
         </button>
       </div>
@@ -414,32 +372,27 @@ function AssignmentChip({ assignment, name, defaultHours }: { assignment: ShiftA
   }
 
   return (
-    <div
-      className={`group flex items-center justify-between gap-1 rounded-md bg-steel/30 px-1.5 py-1 ${pending ? 'opacity-50' : ''}`}
-    >
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-[10px] font-semibold text-foreground leading-tight">{name}</p>
-        {hours && (
-          <p className="text-[9px] text-mid-grey leading-tight">{hours}h</p>
-        )}
-      </div>
-      <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className={`group my-0.5 flex items-center gap-1 rounded-md bg-background/60 px-1.5 py-1 ${pending ? 'opacity-40' : ''}`}>
+      <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-foreground">{name}</span>
+      <span className="shrink-0 text-[9px] text-mid-grey">{hours || defaultHours}h</span>
+      {/* Touch-friendly action buttons — always visible on mobile, hover on desktop */}
+      <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded p-0.5 text-light-grey hover:text-neon-blue"
-          aria-label={`Edit ${name}`}
+          className="rounded p-1 text-mid-grey hover:text-neon-blue"
+          aria-label={`Edit ${name} hours`}
         >
-          <Pencil className="size-2.5" />
+          <Pencil className="size-3" />
         </button>
         <button
           type="button"
           onClick={handleDelete}
           disabled={pending}
-          className="rounded p-0.5 text-light-grey hover:text-red-400"
+          className="rounded p-1 text-mid-grey hover:text-red-400 disabled:opacity-50"
           aria-label={`Remove ${name}`}
         >
-          <Trash2 className="size-2.5" />
+          <Trash2 className="size-3" />
         </button>
       </div>
     </div>
@@ -453,13 +406,15 @@ function StaffHoursSummary({
   currentMonth,
   prevMonth,
   calcHours,
+  calcDays,
   getShiftDetails,
   shiftSettings,
 }: {
   staff: Staff[]
-  currentMonth: { start: string; end: string; label: string }
-  prevMonth: { start: string; end: string; label: string }
+  currentMonth: ReturnType<typeof getMonthRange>
+  prevMonth: ReturnType<typeof getMonthRange>
   calcHours: (id: number, start: string, end: string) => number
+  calcDays: (id: number, start: string, end: string) => number
   getShiftDetails: (id: number, start: string, end: string) => ShiftAssignment[]
   shiftSettings: ShiftSetting[]
 }) {
@@ -471,38 +426,41 @@ function StaffHoursSummary({
       staff
         .map((s) => ({
           ...s,
-          currentHours: calcHours(s.id, currentMonth.start, currentMonth.end),
-          prevHours: calcHours(s.id, prevMonth.start, prevMonth.end),
+          curH: calcHours(s.id, currentMonth.start, currentMonth.end),
+          curD: calcDays(s.id, currentMonth.start, currentMonth.end),
+          prevH: calcHours(s.id, prevMonth.start, prevMonth.end),
+          prevD: calcDays(s.id, prevMonth.start, prevMonth.end),
         }))
-        .sort((a, b) => b.currentHours - a.currentHours),
-    [staff, currentMonth, prevMonth, calcHours],
+        .sort((a, b) => b.curH - a.curH),
+    [staff, currentMonth, prevMonth, calcHours, calcDays],
   )
 
   if (staff.length === 0) return null
 
   return (
-    <div className="rounded-2xl border border-steel/60 bg-card/50">
-      {/* Header */}
-      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-steel/40 px-4 py-3">
-        <p className="text-xs font-bold text-foreground">Staff</p>
-        <p className="w-24 text-center text-[10px] font-semibold uppercase tracking-widest text-mid-grey">
-          {currentMonth.label.split(' ')[0]}
-        </p>
-        <p className="w-24 text-center text-[10px] font-semibold uppercase tracking-widest text-mid-grey">
-          {prevMonth.label.split(' ')[0]}
-        </p>
+    <div className="rounded-xl border border-steel/50 bg-card/40 overflow-hidden">
+      {/* Compact header */}
+      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b border-steel/30 bg-steel/10 px-3 py-2">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-mid-grey">Staff</p>
+        <div className="w-28 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">{currentMonth.shortLabel}</p>
+        </div>
+        <div className="w-24 text-right">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">{prevMonth.shortLabel}</p>
+        </div>
       </div>
 
       {staffWithHours.map((s) => {
         const isExpanded = expandedId === s.id
-        const detailAssignments = isExpanded
-          ? getShiftDetails(s.id, (expandMonth === 'current' ? currentMonth : prevMonth).start, (expandMonth === 'current' ? currentMonth : prevMonth).end)
-          : []
+        const month = expandMonth === 'current' ? currentMonth : prevMonth
+        const detailAssignments = isExpanded ? getShiftDetails(s.id, month.start, month.end) : []
 
         return (
           <Fragment key={s.id}>
-            <div
-              className="grid cursor-pointer grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-steel/30 px-4 py-3 last:border-0 transition-colors hover:bg-steel/10"
+            {/* Single compact row */}
+            <button
+              type="button"
+              className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-2 border-b border-steel/20 px-3 py-2 text-left last:border-0 transition-colors hover:bg-steel/10"
               onClick={() => {
                 if (expandedId === s.id) {
                   setExpandedId(null)
@@ -512,41 +470,53 @@ function StaffHoursSummary({
                 }
               }}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-steel/50 text-[10px] font-bold text-foreground">
-                  {s.name.charAt(0).toUpperCase()}
+              {/* Name + chevron */}
+              <div className="flex min-w-0 items-center gap-1.5">
+                <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-steel/60 text-[9px] font-bold text-foreground">
+                  {s.name.charAt(0)}
                 </div>
-                <span className="truncate text-sm font-semibold text-foreground">{s.name}</span>
+                <span className="truncate text-xs font-semibold text-foreground">{s.name}</span>
                 <ChevronDown
-                  className={`size-3.5 shrink-0 text-mid-grey transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`size-3 shrink-0 text-mid-grey transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                 />
               </div>
-              {/* Current month hours */}
-              <div className="w-24 text-center">
-                <span className={`text-sm font-bold tabular-nums ${s.currentHours > 0 ? 'text-neon-green' : 'text-mid-grey'}`}>
-                  {s.currentHours > 0 ? `${s.currentHours}h` : '—'}
-                </span>
-              </div>
-              {/* Previous month hours */}
-              <div className="w-24 text-center">
-                <span className={`text-sm tabular-nums ${s.prevHours > 0 ? 'text-light-grey' : 'text-mid-grey'}`}>
-                  {s.prevHours > 0 ? `${s.prevHours}h` : '—'}
-                </span>
-              </div>
-            </div>
 
-            {/* Expandable detail */}
+              {/* Current month: Xh · Yd */}
+              <div className="w-28 text-right">
+                {s.curH > 0 ? (
+                  <span className="text-xs font-bold tabular-nums text-neon-green">
+                    {s.curH}h&nbsp;<span className="font-normal text-mid-grey text-[10px]">· {s.curD}d</span>
+                  </span>
+                ) : (
+                  <span className="text-xs text-mid-grey">—</span>
+                )}
+              </div>
+
+              {/* Prev month */}
+              <div className="w-24 text-right">
+                {s.prevH > 0 ? (
+                  <span className="text-xs tabular-nums text-light-grey/70">
+                    {s.prevH}h&nbsp;<span className="text-[10px] text-mid-grey">· {s.prevD}d</span>
+                  </span>
+                ) : (
+                  <span className="text-xs text-mid-grey">—</span>
+                )}
+              </div>
+            </button>
+
+            {/* Expandable detail — inline below the row */}
             {isExpanded && (
-              <div className="border-b border-steel/30 bg-background/40 px-4 py-3 last:border-0">
-                {/* Month toggle */}
-                <div className="mb-3 flex gap-2">
+              <div className="border-b border-steel/20 bg-background/30 px-3 py-2 last:border-0">
+                {/* Month toggle — small pills */}
+                <div className="mb-2 flex items-center gap-2">
+                  <Clock className="size-3 text-mid-grey" />
                   <button
                     type="button"
                     onClick={() => setExpandMonth('current')}
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
                       expandMonth === 'current'
-                        ? 'bg-neon-green text-black'
-                        : 'border border-steel text-light-grey hover:text-foreground'
+                        ? 'bg-neon-green/20 text-neon-green'
+                        : 'text-mid-grey hover:text-foreground'
                     }`}
                   >
                     {currentMonth.label}
@@ -554,10 +524,10 @@ function StaffHoursSummary({
                   <button
                     type="button"
                     onClick={() => setExpandMonth('prev')}
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
                       expandMonth === 'prev'
-                        ? 'bg-neon-green text-black'
-                        : 'border border-steel text-light-grey hover:text-foreground'
+                        ? 'bg-steel/50 text-foreground'
+                        : 'text-mid-grey hover:text-foreground'
                     }`}
                   >
                     {prevMonth.label}
@@ -565,26 +535,29 @@ function StaffHoursSummary({
                 </div>
 
                 {detailAssignments.length === 0 ? (
-                  <p className="text-xs text-light-grey">No shifts this month.</p>
+                  <p className="text-[11px] text-mid-grey">No shifts recorded.</p>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {detailAssignments.map((a) => {
                       const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
+                      const style = SHIFT_STYLES[a.shiftType] ?? SHIFT_STYLES.morning
                       const date = new Date(a.shiftDate + 'T00:00:00')
+                      const hrs = a.hours || shift?.defaultHours || '?'
                       return (
-                        <div key={a.id} className="flex items-center justify-between gap-4 text-xs">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="shrink-0 text-light-grey">
-                              {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
-                            </span>
-                            <span className="truncate text-mid-grey">{shift?.label ?? a.shiftType}</span>
+                        <div key={a.id} className="flex items-center gap-2 py-0.5">
+                          <span className="w-28 shrink-0 text-[11px] text-light-grey">
+                            {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className={`size-1.5 rounded-full ${style.dot}`} />
+                            <span className="text-[11px] text-mid-grey">{shift?.label ?? a.shiftType}</span>
                           </div>
-                          <span className="shrink-0 font-bold text-foreground">{a.hours || shift?.defaultHours || '?'}h</span>
+                          <span className="ml-auto text-[11px] font-bold text-foreground">{hrs}h</span>
                         </div>
                       )
                     })}
-                    <div className="mt-2 flex justify-end border-t border-steel/40 pt-2">
-                      <span className="text-xs font-bold text-neon-green">
+                    <div className="flex justify-end border-t border-steel/30 pt-1.5 mt-1">
+                      <span className="text-[11px] font-bold text-neon-green">
                         Total: {detailAssignments.reduce((sum, a) => {
                           const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
                           return sum + (parseFloat(a.hours) || parseFloat(shift?.defaultHours ?? '0') || 0)
