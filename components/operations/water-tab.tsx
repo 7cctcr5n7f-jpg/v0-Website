@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Plus, Trash2, Droplets, ChevronDown, ChevronRight } from 'lucide-react'
-import { adjustWaterCredit, addWaterMember, deleteWaterMember } from '@/app/actions/operations'
+import { useState, useTransition } from 'react'
+import { Droplets, X, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { adjustWaterCredit, addWaterMember, deleteWaterMember, setWaterBalance } from '@/app/actions/operations'
 import type { WaterCredit, WaterAuditLog } from '@/lib/db/schema'
 
 interface Props {
@@ -11,258 +11,317 @@ interface Props {
 }
 
 export function WaterTab({ credits, auditLog }: Props) {
-  const [newName, setNewName] = useState('')
-  const [addPending, setAddPending] = useState(false)
-  const [showAdd, setShowAdd] = useState(false)
+  const [showManage, setShowManage] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [pending, startTransition] = useTransition()
 
-  async function handleAddMember() {
-    if (!newName.trim()) return
-    setAddPending(true)
-    const fd = new FormData()
-    fd.set('memberName', newName.trim())
-    await addWaterMember(fd)
-    setNewName('')
-    setAddPending(false)
-    setShowAdd(false)
+  function deductOne(credit: WaterCredit) {
+    startTransition(async () => {
+      const fd = new FormData()
+      fd.set('memberName', credit.memberName)
+      fd.set('delta', '-1')
+      fd.set('note', '')
+      await adjustWaterCredit(fd)
+    })
   }
 
-  if (credits.length === 0 && !showAdd) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-4 text-center">
-        <p className="text-xs text-light-grey">No members yet.</p>
-        <button
-          type="button"
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-neon-green px-3 py-1.5 text-xs font-semibold text-neon-green hover:bg-neon-green/10"
-        >
-          <Plus className="size-3.5" /> Add member
-        </button>
-      </div>
-    )
+  function toggleExpand(id: number) {
+    setExpandedId((prev) => (prev === id ? null : id))
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {/* Add new member row */}
-      {showAdd ? (
-        <div className="flex gap-1.5 rounded-lg border border-neon-green/40 bg-background p-2">
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddMember()
-              if (e.key === 'Escape') setShowAdd(false)
-            }}
-            placeholder="Member name…"
-            autoFocus
-            className="flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-light-grey"
-          />
-          <button
-            type="button"
-            onClick={handleAddMember}
-            disabled={addPending || !newName.trim()}
-            className="rounded px-2 py-1 text-[10px] font-bold text-neon-green transition-colors hover:bg-neon-green/10 disabled:opacity-50"
-          >
-            {addPending ? '…' : 'Add'}
-          </button>
-          <button
-            type="button"
-            onClick={() => { setShowAdd(false); setNewName('') }}
-            className="rounded px-2 py-1 text-[10px] text-light-grey hover:text-foreground"
-          >
-            Cancel
-          </button>
+    <div>
+      {/* Header with Manage link */}
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex size-7 items-center justify-center rounded-full bg-neon-blue/15">
+            <Droplets className="size-3.5 text-neon-blue" />
+          </div>
+          <span className="text-xs font-bold text-foreground">Water Tracker</span>
         </div>
-      ) : (
         <button
           type="button"
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1 self-end rounded-md border border-dashed border-steel px-2 py-1 text-[10px] text-light-grey transition-colors hover:border-neon-green hover:text-neon-green"
+          onClick={() => setShowManage(true)}
+          className="text-xs font-semibold text-neon-blue transition-colors hover:text-neon-blue/70"
         >
-          <Plus className="size-3" /> Add
+          Manage
         </button>
+      </div>
+
+      {/* Member list */}
+      {credits.length === 0 ? (
+        <p className="py-3 text-center text-xs text-light-grey">No members yet — tap Manage to add.</p>
+      ) : (
+        <div className="space-y-2">
+          {credits.map((c) => {
+            const memberLog = auditLog.filter((l) => l.creditId === c.id)
+            const isExpanded = expandedId === c.id
+            const isNegative = c.balance < 0
+
+            return (
+              <div key={c.id} className="overflow-hidden rounded-2xl border border-steel/60 bg-card">
+                {/* Main row */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  {/* Name — click to expand history */}
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(c.id)}
+                    className="flex min-w-0 flex-1 flex-col items-start text-left"
+                    aria-expanded={isExpanded}
+                  >
+                    <span className="text-sm font-semibold text-foreground">{c.memberName}</span>
+                    <span className={`text-[11px] ${isNegative ? 'text-red-400' : 'text-light-grey'}`}>
+                      {c.balance} {c.balance === 1 ? 'bottle' : 'bottles'} remaining
+                    </span>
+                  </button>
+
+                  {/* Balance badge */}
+                  <div
+                    className={`flex min-w-[2.75rem] items-center justify-center rounded-xl px-2.5 py-2 text-sm font-black tabular-nums ${
+                      isNegative
+                        ? 'bg-red-500/15 text-red-400'
+                        : c.balance === 0
+                        ? 'bg-steel/50 text-light-grey'
+                        : 'bg-neon-green/15 text-neon-green'
+                    }`}
+                  >
+                    {c.balance}
+                  </div>
+
+                  {/* Minus button */}
+                  <button
+                    type="button"
+                    onClick={() => deductOne(c)}
+                    disabled={pending}
+                    className="flex size-9 items-center justify-center rounded-xl border border-steel/80 bg-background text-lg font-bold text-light-grey transition-colors hover:border-red-400/60 hover:text-red-400 disabled:opacity-40"
+                    aria-label={`Use 1 bottle for ${c.memberName}`}
+                  >
+                    &minus;
+                  </button>
+                </div>
+
+                {/* Expandable history */}
+                {isExpanded && (
+                  <div className="border-t border-steel/40 bg-background/50 px-4 py-3">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-mid-grey">History</p>
+                    {memberLog.length === 0 ? (
+                      <p className="text-xs text-light-grey">No history yet.</p>
+                    ) : (
+                      <div className="max-h-44 space-y-1.5 overflow-y-auto">
+                        {memberLog.map((entry) => {
+                          const d = new Date(entry.createdAt)
+                          return (
+                            <div key={entry.id} className="flex items-center justify-between gap-3 text-xs">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`w-8 font-bold tabular-nums ${entry.delta > 0 ? 'text-neon-green' : 'text-red-400'}`}
+                                >
+                                  {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
+                                </span>
+                                {entry.note && entry.note !== 'manual adjust' && (
+                                  <span className="text-light-grey">{entry.note}</span>
+                                )}
+                              </div>
+                              <span className="shrink-0 text-[11px] text-mid-grey">
+                                {d.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', timeZone: 'Africa/Johannesburg' })}{' '}
+                                {d.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' })}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
       )}
 
-      {/* Member rows */}
-      <div className="space-y-1">
-        {credits.map((c) => {
-          const log = auditLog.filter((l) => l.creditId === c.id)
-          return <WaterRow key={c.id} credit={c} log={log} />
-        })}
-      </div>
+      {/* Manage Modal */}
+      {showManage && (
+        <ManageModal
+          credits={credits}
+          onClose={() => setShowManage(false)}
+        />
+      )}
     </div>
   )
 }
 
-function WaterRow({ credit: c, log }: { credit: WaterCredit; log: WaterAuditLog[] }) {
-  const [expanded, setExpanded] = useState(false)
-  const [showCreditForm, setShowCreditForm] = useState(false)
-  const [amount, setAmount] = useState('1')
-  const [note, setNote] = useState('')
-  const [pending, setPending] = useState(false)
+function ManageModal({ credits, onClose }: { credits: WaterCredit[]; onClose: () => void }) {
+  const [newName, setNewName] = useState('')
+  const [newQty, setNewQty] = useState(0)
+  const [addPending, startAdd] = useTransition()
+  const [setPending, startSet] = useTransition()
 
-  const balanceColor =
-    c.balance > 0 ? 'text-neon-green' : c.balance < 0 ? 'text-red-400' : 'text-light-grey'
-
-  async function deductOne() {
-    setPending(true)
-    const fd = new FormData()
-    fd.set('memberName', c.memberName)
-    fd.set('delta', '-1')
-    fd.set('note', '')
-    await adjustWaterCredit(fd)
-    setPending(false)
+  function handleAdd() {
+    if (!newName.trim()) return
+    startAdd(async () => {
+      const fd = new FormData()
+      fd.set('memberName', newName.trim())
+      await addWaterMember(fd)
+      // If qty > 0, also credit that amount
+      if (newQty > 0) {
+        const fd2 = new FormData()
+        fd2.set('memberName', newName.trim())
+        fd2.set('delta', String(newQty))
+        fd2.set('note', 'initial credit')
+        await adjustWaterCredit(fd2)
+      }
+      setNewName('')
+      setNewQty(0)
+    })
   }
 
-  async function addCredits() {
-    const amt = parseFloat(amount) || 1
-    setPending(true)
-    const fd = new FormData()
-    fd.set('memberName', c.memberName)
-    fd.set('delta', String(amt))
-    fd.set('note', note.trim())
-    await adjustWaterCredit(fd)
-    setAmount('1')
-    setNote('')
-    setShowCreditForm(false)
-    setPending(false)
+  function handleSetBalance(credit: WaterCredit, val: number) {
+    startSet(async () => {
+      const fd = new FormData()
+      fd.set('id', String(credit.id))
+      fd.set('balance', String(val))
+      await setWaterBalance(fd)
+    })
+  }
+
+  function handleDelete(credit: WaterCredit) {
+    if (!confirm(`Remove ${credit.memberName}?`)) return
+    startSet(async () => {
+      const fd = new FormData()
+      fd.set('id', String(credit.id))
+      await deleteWaterMember(fd)
+    })
   }
 
   return (
-    <div className="rounded-xl border border-steel/60 bg-background">
-      {/* Main row */}
-      <div className="flex items-center gap-2 px-3 py-2">
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="mr-0.5 text-light-grey"
-          aria-label={expanded ? 'Collapse' : 'Expand'}
-        >
-          {expanded ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-        </button>
-
-        <Droplets className={`size-3.5 shrink-0 ${balanceColor}`} />
-
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="flex-1 text-left text-xs font-semibold text-foreground hover:text-neon-blue"
-        >
-          {c.memberName}
-        </button>
-
-        <span className={`tabular-nums text-sm font-black ${balanceColor}`}>
-          {c.balance > 0 ? '+' : ''}{c.balance}
-        </span>
-
-        {/* Use button — 1-click deduct */}
-        <button
-          type="button"
-          onClick={deductOne}
-          disabled={pending}
-          className="rounded-md bg-red-500/15 px-2 py-1 text-[10px] font-bold text-red-400 transition-colors hover:bg-red-500/25 disabled:opacity-50"
-          aria-label={`Use 1 credit for ${c.memberName}`}
-        >
-          Use
-        </button>
-
-        {/* + Credit toggle */}
-        <button
-          type="button"
-          onClick={() => { setShowCreditForm((v) => !v); setExpanded(true) }}
-          className="rounded-md bg-neon-green/15 px-2 py-1 text-[10px] font-bold text-neon-green transition-colors hover:bg-neon-green/25"
-          aria-label={`Add credit for ${c.memberName}`}
-        >
-          + Credit
-        </button>
-
-        {/* Delete */}
-        <form action={deleteWaterMember}>
-          <input type="hidden" name="id" value={c.id} />
-          <button
-            type="submit"
-            onClick={(e) => { if (!confirm(`Remove ${c.memberName}?`)) e.preventDefault() }}
-            className="rounded p-1 text-light-grey transition-colors hover:text-red-400"
-            aria-label="Remove member"
-          >
-            <Trash2 className="size-3" />
-          </button>
-        </form>
-      </div>
-
-      {/* Add credit form (shown when + Credit clicked) */}
-      {showCreditForm && (
-        <div className="flex gap-1.5 border-t border-steel/40 px-3 py-2">
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            min="1"
-            step="1"
-            className="w-14 rounded border border-steel bg-card px-2 py-1 text-xs text-foreground outline-none focus:border-neon-green"
-            aria-label="Amount to credit"
-            autoFocus
-          />
-          <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) addCredits() }}
-            placeholder="Note (optional)"
-            className="flex-1 rounded border border-steel bg-card px-2 py-1 text-xs text-foreground outline-none placeholder:text-light-grey focus:border-neon-green"
-          />
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="w-full max-w-sm rounded-2xl border border-steel bg-card shadow-2xl">
+        {/* Modal header */}
+        <div className="flex items-center justify-between border-b border-steel px-5 py-4">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-8 items-center justify-center rounded-full bg-neon-blue/15">
+              <Droplets className="size-4 text-neon-blue" />
+            </div>
+            <h2 className="font-display text-base font-black uppercase tracking-tight text-foreground">
+              Manage Water Tracker
+            </h2>
+          </div>
           <button
             type="button"
-            onClick={addCredits}
-            disabled={pending}
-            className="rounded bg-neon-green/20 px-2.5 py-1 text-[10px] font-bold text-neon-green disabled:opacity-50"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-light-grey transition-colors hover:bg-steel/40 hover:text-foreground"
+            aria-label="Close"
           >
-            {pending ? '…' : 'Add'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCreditForm(false)}
-            className="rounded px-2 py-1 text-[10px] text-light-grey hover:text-foreground"
-          >
-            Cancel
+            <X className="size-4" />
           </button>
         </div>
-      )}
 
-      {/* History */}
-      {expanded && log.length > 0 && (
-        <div className="border-t border-steel/40 px-3 py-2">
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-light-grey">History</p>
-          <div className="space-y-1 max-h-40 overflow-y-auto">
-            {log.map((entry) => (
-              <div key={entry.id} className="flex items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className={`font-bold ${entry.delta > 0 ? 'text-neon-green' : 'text-red-400'}`}>
-                    {entry.delta > 0 ? `+${entry.delta}` : entry.delta}
-                  </span>
-                  {entry.note && <span className="text-light-grey">{entry.note}</span>}
-                </div>
-                <span className="shrink-0 text-[10px] text-mid-grey">
-                  {new Date(entry.createdAt).toLocaleDateString('en-ZA', {
-                    day: '2-digit',
-                    month: 'short',
-                    timeZone: 'Africa/Johannesburg',
-                  })}{' '}
-                  {new Date(entry.createdAt).toLocaleTimeString('en-ZA', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'Africa/Johannesburg',
-                  })}
-                </span>
+        {/* Modal body */}
+        <div className="px-5 py-4">
+          {/* Add new member */}
+          <p className="mb-2.5 text-xs font-bold text-foreground">Add New Member</p>
+          <div className="mb-5 flex gap-2">
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAdd() }}
+              placeholder="Member name"
+              autoFocus
+              className="flex-1 rounded-xl border border-steel bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-mid-grey focus:border-neon-blue"
+            />
+            {/* Qty spinner */}
+            <div className="flex items-center rounded-xl border border-steel bg-background">
+              <span className="px-2.5 text-sm text-foreground tabular-nums w-10 text-center">{newQty}</span>
+              <div className="flex flex-col border-l border-steel">
+                <button
+                  type="button"
+                  onClick={() => setNewQty((v) => v + 1)}
+                  className="flex h-5 w-7 items-center justify-center border-b border-steel text-light-grey hover:text-foreground"
+                  aria-label="Increase qty"
+                >
+                  <ChevronUp className="size-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewQty((v) => Math.max(0, v - 1))}
+                  className="flex h-5 w-7 items-center justify-center text-light-grey hover:text-foreground"
+                  aria-label="Decrease qty"
+                >
+                  <ChevronDown className="size-3" />
+                </button>
               </div>
-            ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={addPending || !newName.trim()}
+              className="flex size-11 items-center justify-center rounded-xl bg-neon-blue text-white transition-opacity hover:opacity-80 disabled:opacity-40"
+              aria-label="Add member"
+            >
+              <Plus className="size-5" />
+            </button>
+          </div>
+
+          {/* Members list */}
+          <p className="mb-2.5 text-xs font-bold text-foreground">Members</p>
+          <div className="max-h-72 space-y-2 overflow-y-auto">
+            {credits.length === 0 ? (
+              <p className="text-xs text-light-grey">No members yet.</p>
+            ) : (
+              credits.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center gap-3 rounded-xl border border-steel/60 bg-background px-3.5 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">{c.memberName}</p>
+                    <p className="text-[11px] text-light-grey">{c.balance} {c.balance === 1 ? 'bottle' : 'bottles'}</p>
+                  </div>
+                  {/* Inline balance spinner */}
+                  <div className="flex items-center rounded-xl border border-steel bg-card">
+                    <span className="w-10 px-2 text-center text-sm font-bold tabular-nums text-foreground">{c.balance}</span>
+                    <div className="flex flex-col border-l border-steel">
+                      <button
+                        type="button"
+                        onClick={() => handleSetBalance(c, c.balance + 1)}
+                        disabled={setPending}
+                        className="flex h-5 w-7 items-center justify-center border-b border-steel text-light-grey hover:text-foreground disabled:opacity-40"
+                        aria-label="Increase"
+                      >
+                        <ChevronUp className="size-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetBalance(c, c.balance - 1)}
+                        disabled={setPending}
+                        className="flex h-5 w-7 items-center justify-center text-light-grey hover:text-foreground disabled:opacity-40"
+                        aria-label="Decrease"
+                      >
+                        <ChevronDown className="size-3" />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Delete */}
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(c)}
+                    disabled={setPending}
+                    className="rounded-lg p-1.5 text-light-grey transition-colors hover:text-red-400 disabled:opacity-40"
+                    aria-label={`Remove ${c.memberName}`}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
-      )}
-      {expanded && log.length === 0 && (
-        <div className="border-t border-steel/40 px-3 py-2 text-xs text-light-grey">No history yet.</div>
-      )}
+      </div>
     </div>
   )
 }

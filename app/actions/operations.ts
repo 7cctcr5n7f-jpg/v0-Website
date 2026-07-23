@@ -167,6 +167,21 @@ export async function deleteWaterMember(formData: FormData) {
   revalidateOps()
 }
 
+// Set an absolute balance (used from the Manage modal spinner)
+export async function setWaterBalance(formData: FormData) {
+  await requireOps()
+  const id = Number(formData.get('id') ?? 0)
+  const newBalance = Number(formData.get('balance') ?? 0)
+  if (!id) return
+  const existing = await db.select().from(waterCredits).where(eq(waterCredits.id, id)).limit(1)
+  if (existing.length === 0) return
+  const delta = newBalance - existing[0].balance
+  if (delta === 0) return
+  await db.update(waterCredits).set({ balance: newBalance, updatedAt: new Date() }).where(eq(waterCredits.id, id))
+  await db.insert(waterAuditLog).values({ creditId: id, delta, note: 'manual adjust' })
+  revalidateOps()
+}
+
 export async function getWaterAuditLog(creditId: number) {
   await requireOps()
   return db
