@@ -19,6 +19,7 @@ import type {
   TrialBooking,
   TrialBookingNote,
   MembershipSignup,
+  SessionPurchase,
   StockItem,
   StockConfirmation,
 } from '@/lib/db/schema'
@@ -31,6 +32,7 @@ interface Props {
   bookings: TrialBooking[]
   notes: TrialBookingNote[]
   signups: MembershipSignup[]
+  sessionPurchases: SessionPurchase[]
   waterCredits: WaterCredit[]
   waterAuditLog: WaterAuditLog[]
   stockItems: StockItem[]
@@ -45,6 +47,7 @@ export function OperationsDashboard({
   bookings,
   notes,
   signups,
+  sessionPurchases,
   waterCredits,
   waterAuditLog,
   stockItems,
@@ -107,7 +110,7 @@ export function OperationsDashboard({
             <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
               Trials
             </h2>
-            <TrialsTab bookings={bookings} notes={notes} signups={signups} />
+            <TrialsTab bookings={bookings} notes={notes} signups={signups} sessionPurchases={sessionPurchases} />
           </section>
 
           {/* New Members */}
@@ -115,7 +118,7 @@ export function OperationsDashboard({
             <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
               New Members
             </h2>
-            <MembersTab signups={signups} />
+            <MembersTab signups={signups} sessionPurchases={sessionPurchases} />
           </section>
 
           {/* Water Credits */}
@@ -139,6 +142,7 @@ export function OperationsDashboard({
             shiftSettings={shiftSettings}
             bookings={bookings}
             signups={signups}
+            sessionPurchases={sessionPurchases}
           />
         </section>
 

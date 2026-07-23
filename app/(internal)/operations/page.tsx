@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { asc, desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
+  sessionPurchases,
   shiftAssignments,
   shiftSettings,
   staff,
@@ -36,6 +37,7 @@ export default async function OperationsPage() {
     allBookings,
     allNotes,
     allSignups,
+    allSessionPurchases,
     allWaterCredits,
     allAuditLog,
     allStockItems,
@@ -47,6 +49,7 @@ export default async function OperationsPage() {
     db.select().from(trialBookings).orderBy(desc(trialBookings.createdAt)),
     db.select().from(trialBookingNotes).orderBy(asc(trialBookingNotes.createdAt)),
     getMembershipSignups(),
+    db.select().from(sessionPurchases).orderBy(desc(sessionPurchases.paidAt), desc(sessionPurchases.createdAt)),
     db.select().from(waterCredits).orderBy(asc(waterCredits.memberName)),
     db.select().from(waterAuditLog).orderBy(desc(waterAuditLog.createdAt)),
     db.select().from(stockItems).orderBy(asc(stockItems.sortOrder), asc(stockItems.id)),
@@ -62,6 +65,7 @@ export default async function OperationsPage() {
       bookings={allBookings}
       notes={allNotes}
       signups={allSignups}
+      sessionPurchases={allSessionPurchases}
       waterCredits={allWaterCredits}
       waterAuditLog={allAuditLog}
       stockItems={allStockItems}

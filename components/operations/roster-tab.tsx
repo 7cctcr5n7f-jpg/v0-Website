@@ -12,8 +12,8 @@ import {
 } from 'lucide-react'
 import { saveShiftAssignment } from '@/app/actions/operations'
 import { StaffIcon } from './staff-icon'
-import { ymdInJohannesburg } from '@/lib/trial-conversion'
-import type { Staff, ShiftAssignment, ShiftSetting, TrialBooking, MembershipSignup } from '@/lib/db/schema'
+import { sessionPurchaseOccurredAt, uniqueQualifyingSessionPurchases, ymdInJohannesburg } from '@/lib/trial-conversion'
+import type { Staff, ShiftAssignment, ShiftSetting, TrialBooking, MembershipSignup, SessionPurchase } from '@/lib/db/schema'
 
 interface Props {
   actionAuthToken: string
@@ -22,6 +22,7 @@ interface Props {
   shiftSettings: ShiftSetting[]
   bookings: TrialBooking[]
   signups: MembershipSignup[]
+  sessionPurchases: SessionPurchase[]
 }
 
 // Time-of-day (HH:mm, JHB) for a signup's createdAt timestamp
@@ -117,7 +118,7 @@ function handleOpsActionError(error: unknown) {
   window.alert('Could not save shift. Please try again.')
 }
 
-export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, bookings, signups }: Props) {
+export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, bookings, signups, sessionPurchases }: Props) {
   const [anchor, setAnchor] = useState(() => new Date())
   // Gate date-derived indicators until mounted to avoid SSR/client hydration mismatch
   const [mounted, setMounted] = useState(false)
@@ -135,6 +136,10 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
     }
     return m
   }, [assignments])
+  const qualifyingSessionPurchases = useMemo(
+    () => uniqueQualifyingSessionPurchases(sessionPurchases),
+    [sessionPurchases],
+  )
 
   // Non-Saturday shifts for the weekly grid
   const gridShifts = shiftSettings.filter((s) => s.shiftType !== 'saturday')
@@ -179,6 +184,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
               // Attribute same-day trials / new members to their shift (client-only)
               const trialsByShift: Record<string, TrialBooking[]> = {}
               const membersByShift: Record<string, MembershipSignup[]> = {}
+              const newSessionMembersByShift: Record<string, SessionPurchase[]> = {}
               if (mounted) {
                 for (const b of bookings) {
                   if (b.appointmentDate !== dateStr) continue
@@ -189,6 +195,12 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                   if (ymdInJohannesburg(new Date(s.createdAt)) !== dateStr) continue
                   const st = shiftForTime(jhbTime(s.createdAt), dayShifts, isSat)
                   if (st) (membersByShift[st] ??= []).push(s)
+                }
+                for (const purchase of qualifyingSessionPurchases) {
+                  const occurredAt = sessionPurchaseOccurredAt(purchase)
+                  if (ymdInJohannesburg(occurredAt) !== dateStr) continue
+                  const st = shiftForTime(jhbTime(occurredAt), dayShifts, isSat)
+                  if (st) (newSessionMembersByShift[st] ??= []).push(purchase)
                 }
               }
               const amShift = dayShifts.find((s) => s.shiftType === 'morning' || s.shiftType === 'saturday') ?? null
@@ -229,6 +241,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                       staff={staff}
                       trials={trialsByShift[amType] ?? []}
                       newMembers={membersByShift[amType] ?? []}
+                      newSessionMembers={newSessionMembersByShift[amType] ?? []}
                     />
                     <ShiftBlock
                       actionAuthToken={actionAuthToken}
@@ -240,6 +253,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                       staff={staff}
                       trials={trialsByShift[pmType] ?? []}
                       newMembers={membersByShift[pmType] ?? []}
+                      newSessionMembers={newSessionMembersByShift[pmType] ?? []}
                     />
                   </div>
                 </div>
@@ -264,6 +278,7 @@ function ShiftBlock({
   staff,
   trials,
   newMembers,
+  newSessionMembers,
 }: {
   actionAuthToken: string
   date: string
@@ -274,6 +289,7 @@ function ShiftBlock({
   staff: Staff[]
   trials: TrialBooking[]
   newMembers: MembershipSignup[]
+  newSessionMembers: SessionPurchase[]
 }) {
   const [adding, setAdding] = useState(false)
   const [selectedId, setSelectedId] = useState('')
@@ -350,8 +366,8 @@ function ShiftBlock({
               })}
             </div>
 
-            {(trials.length > 0 || newMembers.length > 0) && (
-              <ShiftIndicators trials={trials} newMembers={newMembers} />
+            {(trials.length > 0 || newMembers.length > 0 || newSessionMembers.length > 0) && (
+              <ShiftIndicators trials={trials} newMembers={newMembers} newSessionMembers={newSessionMembers} />
             )}
 
             {/* Add form */}
@@ -510,11 +526,13 @@ function AssignmentChip({
 function ShiftIndicators({
   trials,
   newMembers,
+  newSessionMembers,
 }: {
   trials: TrialBooking[]
   newMembers: MembershipSignup[]
+  newSessionMembers: SessionPurchase[]
 }) {
-  const [open, setOpen] = useState<null | 'trials' | 'members'>(null)
+  const [open, setOpen] = useState<null | 'trials' | 'members' | 'sessions'>(null)
 
   return (
     <div className="mb-0.5 flex flex-col gap-1">
@@ -563,6 +581,31 @@ function ShiftIndicators({
           {newMembers.map((m) => (
             <p key={m.id} className="truncate text-[10px] leading-relaxed text-neon-green">
               {m.firstName} {m.surname}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {newSessionMembers.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => (o === 'sessions' ? null : 'sessions'))}
+          className="flex w-full items-center justify-between rounded-md border border-fuchsia-300/60 bg-fuchsia-400/15 px-2 py-1 text-left shadow-[inset_0_0_0_1px_rgba(232,121,249,0.2)] transition-colors hover:bg-fuchsia-400/20"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <UserPlus2 className="size-3 shrink-0 text-fuchsia-200" />
+            <span className="text-[10px] font-black uppercase tracking-wide text-fuchsia-100">
+              {newSessionMembers.length} New Session member{newSessionMembers.length > 1 ? 's' : ''}
+            </span>
+          </span>
+          <span className="text-[9px] font-bold text-fuchsia-200/80">{open === 'sessions' ? 'Hide' : 'Show'}</span>
+        </button>
+      )}
+      {open === 'sessions' && (
+        <div className="rounded-md border border-fuchsia-400/35 bg-fuchsia-400/10 px-2 py-1.5">
+          {newSessionMembers.map((member) => (
+            <p key={member.id} className="truncate text-[10px] leading-relaxed text-fuchsia-100">
+              {member.firstName} {member.surname}
             </p>
           ))}
         </div>
