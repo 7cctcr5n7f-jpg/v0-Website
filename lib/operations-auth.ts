@@ -13,6 +13,19 @@ function expectedToken(passcode: string): string {
   return createHmac('sha256', passcode).update('tenrounds-ops-v1').digest('hex')
 }
 
+export function getOperationsActionToken(): string {
+  return expectedToken(getPasscode())
+}
+
+export function verifyOperationsActionToken(token: string): boolean {
+  if (!token) return false
+  const expected = expectedToken(getPasscode())
+  const a = Buffer.from(token)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return timingSafeEqual(a, b)
+}
+
 export function verifyOpsPasscode(input: string): boolean {
   const passcode = getPasscode()
   const a = Buffer.from(input)
@@ -34,10 +47,13 @@ export async function isOperationsAuthed(): Promise<boolean> {
 
 export async function setOperationsCookie() {
   const passcode = getPasscode()
+  const isProd = process.env.NODE_ENV === 'production'
   ;(await cookies()).set(COOKIE_NAME, expectedToken(passcode), {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    // localhost over http drops Secure cookies, which caused ops actions to
+    // lose session and throw Unauthorized after clicking roster actions.
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 30,
   })

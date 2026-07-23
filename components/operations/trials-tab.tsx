@@ -1,25 +1,30 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, MessageSquare, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { saveTrialNote, deleteTrialNote } from '@/app/actions/operations'
 import { formatDateLong } from '@/lib/trial-slots'
-import type { TrialBooking, TrialBookingNote } from '@/lib/db/schema'
-
-function todayStr() {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
+import {
+  buildSignupEmailIndex,
+  getTrialConversion,
+  normalizeEmail,
+  ymdInJohannesburg,
+  type TrialConversion,
+} from '@/lib/trial-conversion'
+import type { TrialBooking, TrialBookingNote, MembershipSignup } from '@/lib/db/schema'
 
 interface Props {
   bookings: TrialBooking[]
   notes: TrialBookingNote[]
+  signups: MembershipSignup[]
 }
 
-export function TrialsTab({ bookings, notes }: Props) {
+export function TrialsTab({ bookings, notes, signups }: Props) {
   const [showPast, setShowPast] = useState(false)
-  const today = todayStr()
+  const today = ymdInJohannesburg()
+  const monthPrefix = today.slice(0, 7)
+
+  const index = useMemo(() => buildSignupEmailIndex(signups), [signups])
 
   const { upcoming, past } = useMemo(() => {
     const upcoming = bookings.filter((b) => b.appointmentDate >= today)
@@ -27,10 +32,20 @@ export function TrialsTab({ bookings, notes }: Props) {
     return { upcoming, past }
   }, [bookings, today])
 
+  const kpi = useMemo(() => {
+    const monthTrials = bookings.filter((b) => b.appointmentDate.slice(0, 7) === monthPrefix)
+    const converted = monthTrials.filter((b) => index.has(normalizeEmail(b.email))).length
+    const total = monthTrials.length
+    const rate = total > 0 ? Math.round((converted / total) * 100) : 0
+    return { total, converted, rate }
+  }, [bookings, index, monthPrefix])
+
   const visible = showPast ? [...upcoming, ...past] : upcoming
 
   return (
     <div>
+      <ConversionSummary total={kpi.total} converted={kpi.converted} rate={kpi.rate} />
+
       {visible.length === 0 ? (
         <p className="py-2 text-xs text-light-grey">No upcoming trials.</p>
       ) : (
@@ -38,7 +53,8 @@ export function TrialsTab({ bookings, notes }: Props) {
           {visible.map((b) => {
             const bookingNotes = notes.filter((n) => n.bookingId === b.id)
             const isPast = b.appointmentDate < today
-            return <TrialRow key={b.id} booking={b} notes={bookingNotes} isPast={isPast} />
+            const conv = getTrialConversion(b, index, today)
+            return <TrialRow key={b.id} booking={b} notes={bookingNotes} isPast={isPast} conversion={conv} />
           })}
         </div>
       )}
@@ -54,14 +70,63 @@ export function TrialsTab({ bookings, notes }: Props) {
   )
 }
 
+function ConversionSummary({ total, converted, rate }: { total: number; converted: number; rate: number }) {
+  return (
+    <div className="mb-3 rounded-xl border border-steel/60 bg-background/40 px-3.5 py-3">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">This Month</p>
+      <div className="mt-2 flex items-end gap-4">
+        <div>
+          <p className="text-xl font-black leading-none text-foreground tabular-nums">{total}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Trials</p>
+        </div>
+        <div>
+          <p className="text-xl font-black leading-none text-neon-green tabular-nums">{converted}</p>
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Converted</p>
+        </div>
+        <div className="ml-auto text-right">
+          <p className="text-xl font-black leading-none text-neon-blue tabular-nums">{rate}%</p>
+          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Conversion</p>
+        </div>
+      </div>
+      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
+        <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${rate}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function ConversionBadge({ conversion }: { conversion: TrialConversion }) {
+  if (conversion.status === 'converted') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-neon-green/15 px-1.5 py-0.5 text-[10px] font-bold text-neon-green">
+        <CheckCircle2 className="size-2.5" /> Converted
+      </span>
+    )
+  }
+  if (conversion.status === 'upcoming') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+        <Clock className="size-2.5" /> Upcoming
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
+      <XCircle className="size-2.5" /> Not converted
+    </span>
+  )
+}
+
 function TrialRow({
   booking: b,
   notes,
   isPast,
+  conversion,
 }: {
   booking: TrialBooking
   notes: TrialBookingNote[]
   isPast: boolean
+  conversion: TrialConversion
 }) {
   const [expanded, setExpanded] = useState(false)
   const [noteText, setNoteText] = useState('')
@@ -79,27 +144,41 @@ function TrialRow({
   }
 
   return (
-    <div className={`rounded-xl border bg-background ${isPast ? 'border-steel/30 opacity-60' : 'border-steel/60'}`}>
+    <div className={`rounded-xl border bg-background ${isPast ? 'border-steel/30' : 'border-steel/60'}`}>
       {/* Row header */}
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left"
+        className="flex w-full items-start gap-2 px-3 py-2 text-left"
       >
-        {expanded ? (
-          <ChevronDown className="size-3.5 shrink-0 text-light-grey" />
-        ) : (
-          <ChevronRight className="size-3.5 shrink-0 text-light-grey" />
-        )}
-        <span className="flex-1 text-xs font-semibold text-foreground">{b.fullName}</span>
-        <span className="text-[10px] text-light-grey">
-          {b.appointmentDate.slice(5).replace('-', '/')} {b.appointmentTime}
+        <span className="mt-0.5 shrink-0">
+          {expanded ? (
+            <ChevronDown className="size-3.5 text-light-grey" />
+          ) : (
+            <ChevronRight className="size-3.5 text-light-grey" />
+          )}
         </span>
-        {notes.length > 0 && (
-          <span className="flex items-center gap-0.5 rounded-full bg-neon-green/15 px-1.5 py-0.5 text-[9px] font-bold text-neon-green">
-            <MessageSquare className="size-2.5" /> {notes.length}
-          </span>
-        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className={`flex-1 truncate text-xs font-semibold ${isPast ? 'text-light-grey' : 'text-foreground'}`}>
+              {b.fullName}
+            </span>
+            <span className="shrink-0 text-[10px] text-light-grey">
+              {b.appointmentDate.slice(5).replace('-', '/')} {b.appointmentTime}
+            </span>
+            {notes.length > 0 && (
+              <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-neon-green/15 px-1.5 py-0.5 text-[9px] font-bold text-neon-green">
+                <MessageSquare className="size-2.5" /> {notes.length}
+              </span>
+            )}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <ConversionBadge conversion={conversion} />
+            {conversion.status === 'converted' && conversion.packageLabel && (
+              <span className="text-[10px] font-semibold text-light-grey">{conversion.packageLabel}</span>
+            )}
+          </div>
+        </div>
       </button>
 
       {/* Expanded content */}

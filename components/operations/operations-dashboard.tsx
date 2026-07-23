@@ -7,6 +7,8 @@ import { RosterTab } from './roster-tab'
 import { TrialsTab } from './trials-tab'
 import { MembersTab } from './members-tab'
 import { WaterTab } from './water-tab'
+import { StockTab } from './stock-tab'
+import { StaffHoursSummary } from './staff-hours-summary'
 import { SettingsTab } from './settings-tab'
 import type {
   Staff,
@@ -17,9 +19,12 @@ import type {
   TrialBooking,
   TrialBookingNote,
   MembershipSignup,
+  StockItem,
+  StockConfirmation,
 } from '@/lib/db/schema'
 
 interface Props {
+  actionAuthToken: string
   staff: Staff[]
   shiftSettings: ShiftSetting[]
   assignments: ShiftAssignment[]
@@ -28,9 +33,12 @@ interface Props {
   signups: MembershipSignup[]
   waterCredits: WaterCredit[]
   waterAuditLog: WaterAuditLog[]
+  stockItems: StockItem[]
+  lastStockConfirmation: StockConfirmation | null
 }
 
 export function OperationsDashboard({
+  actionAuthToken,
   staff,
   shiftSettings,
   assignments,
@@ -39,12 +47,14 @@ export function OperationsDashboard({
   signups,
   waterCredits,
   waterAuditLog,
+  stockItems,
+  lastStockConfirmation,
 }: Props) {
   const [showSettings, setShowSettings] = useState(false)
 
   if (showSettings) {
     return (
-      <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+      <div className="min-h-screen px-4 pb-6 pt-24 sm:px-6 sm:pt-28 lg:px-8 lg:pt-24">
         <div className="mx-auto max-w-3xl">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="font-display text-2xl font-black uppercase tracking-tight">Settings</h1>
@@ -63,7 +73,7 @@ export function OperationsDashboard({
   }
 
   return (
-    <div className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen px-4 pb-6 pt-24 sm:px-6 sm:pt-28 lg:px-8 lg:pt-24">
       {/* Minimal top bar */}
       <div className="mb-6 flex items-center justify-between">
         <p className="font-display text-xs font-bold uppercase tracking-widest text-neon-green">
@@ -97,7 +107,7 @@ export function OperationsDashboard({
             <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
               Trials
             </h2>
-            <TrialsTab bookings={bookings} notes={notes} />
+            <TrialsTab bookings={bookings} notes={notes} signups={signups} />
           </section>
 
           {/* New Members */}
@@ -122,8 +132,32 @@ export function OperationsDashboard({
           <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
             Roster
           </h2>
-          <RosterTab staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
+          <RosterTab
+            actionAuthToken={actionAuthToken}
+            staff={staff}
+            assignments={assignments}
+            shiftSettings={shiftSettings}
+            bookings={bookings}
+            signups={signups}
+          />
         </section>
+
+        {/* Stock + Staff Hours — side by side */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <section className="rounded-2xl border border-steel bg-card p-4">
+            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
+              Stock
+            </h2>
+            <StockTab items={stockItems} lastConfirmation={lastStockConfirmation} staff={staff} />
+          </section>
+
+          <section className="rounded-2xl border border-steel bg-card p-4">
+            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
+              Staff Hours
+            </h2>
+            <StaffHoursSummary staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
+          </section>
+        </div>
       </div>
     </div>
   )

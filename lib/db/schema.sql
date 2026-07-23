@@ -149,3 +149,44 @@ CREATE TABLE IF NOT EXISTS session_purchases (
   created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   paid_at                  TIMESTAMPTZ
 );
+
+-- ── Operations: stock tracker ────────────────────────────────────────────────
+-- Stock items tracked on the Operations dashboard (current level vs target/max).
+CREATE TABLE IF NOT EXISTS stock_items (
+  id          SERIAL PRIMARY KEY,
+  name        TEXT NOT NULL UNIQUE,
+  current_qty INTEGER NOT NULL DEFAULT 0,
+  max_qty     INTEGER NOT NULL DEFAULT 0,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Stock-take confirmations — most recent row = "last confirmed by {staff} on {date}".
+CREATE TABLE IF NOT EXISTS stock_confirmations (
+  id           SERIAL PRIMARY KEY,
+  staff_name   TEXT NOT NULL,
+  confirmed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Baseline stock levels (safe to re-run: keeps existing rows untouched).
+INSERT INTO stock_items (name, current_qty, max_qty, sort_order) VALUES
+  ('13 100% Whey protein vanilla', 0, 5, 0),
+  ('Gloves 12oz', 0, 10, 1),
+  ('I3 Hydrate Salty Litchi', 0, 4, 2),
+  ('Heartrate monitor', 1, 20, 3),
+  ('Toilet paper', 4, 48, 4),
+  ('Gloves 14oz', 3, 10, 5),
+  ('Batteries', 4, 10, 6),
+  ('Monitor straps', 21, 50, 7),
+  ('13 100% Clear whey protein', 3, 5, 8),
+  ('I3 Tropical Salt', 2, 3, 9),
+  ('Tenrounds gloves', 14, 20, 10),
+  ('Gloves 10oz', 8, 11, 11),
+  ('Gloves 8oz', 7, 8, 12),
+  ('Myo2', 90, 96, 13),
+  ('Water', 461, 480, 14),
+  ('13 100% Micronised Creatine', 5, 5, 15),
+  ('Wraps', 31, 30, 16),
+  ('Yoko paper roll', 11, 3, 17)
+ON CONFLICT (name) DO NOTHING;
