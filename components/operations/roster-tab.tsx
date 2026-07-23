@@ -10,7 +10,6 @@ import {
   Check,
   X,
   ChevronDown,
-  Clock,
 } from 'lucide-react'
 import { saveShiftAssignment, deleteShiftAssignment } from '@/app/actions/operations'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
@@ -139,13 +138,12 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
         </div>
 
         {/* Day cards — horizontal scroll on small screens */}
-        <div className="overflow-x-auto pb-1">
-          <div className="grid min-w-[520px] grid-cols-6 gap-2">
+        <div className="overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="grid min-w-[560px] grid-cols-6 gap-1.5">
             {weekDates.map((d, i) => {
               const dateStr = toIso(d)
               const isToday = toIso(d) === toIso(new Date())
               const isSat = i === 5
-              // Which shifts appear on this day? Mon–Fri: gridShifts. Sat: saturdayShift only.
               const dayShifts = isSat
                 ? saturdayShift ? [saturdayShift] : []
                 : gridShifts
@@ -153,22 +151,38 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
               return (
                 <div
                   key={dateStr}
-                  className={`rounded-xl border p-2 ${
+                  className={`flex flex-col overflow-hidden rounded-lg border transition-colors ${
                     isToday
-                      ? 'border-neon-blue/50 bg-neon-blue/5'
+                      ? 'border-neon-blue/40 bg-neon-blue/5'
                       : isSat
-                      ? 'border-neon-green/30 bg-neon-green/5'
-                      : 'border-steel/40 bg-card/40'
+                      ? 'border-neon-green/25 bg-neon-green/5'
+                      : 'border-steel/30 bg-card/30'
                   }`}
                 >
-                  {/* Day header */}
-                  <div className={`mb-2 text-center ${isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-mid-grey'}`}>
-                    <p className="text-[11px] font-bold uppercase tracking-wide">{WEEK_DAYS[i]}</p>
-                    <p className="text-[10px]">{d.getDate()}</p>
+                  {/* Day header — coloured strip */}
+                  <div
+                    className={`px-2 py-1.5 text-center ${
+                      isToday
+                        ? 'bg-neon-blue/20'
+                        : isSat
+                        ? 'bg-neon-green/15'
+                        : 'bg-steel/10'
+                    }`}
+                  >
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${
+                      isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-mid-grey'
+                    }`}>
+                      {WEEK_DAYS[i]}
+                    </p>
+                    <p className={`text-base font-bold leading-tight ${
+                      isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-foreground'
+                    }`}>
+                      {d.getDate()}
+                    </p>
                   </div>
 
                   {/* Shift sections */}
-                  <div className="space-y-1.5">
+                  <div className="flex flex-1 flex-col divide-y divide-steel/20 p-1.5 gap-1">
                     {dayShifts.map((shift) => {
                       const style = SHIFT_STYLES[shift.shiftType] ?? SHIFT_STYLES.morning
                       const dayAssignments = shiftMap[dateStr]?.[shift.shiftType] ?? []
@@ -233,15 +247,14 @@ function ShiftBlock({
   }
 
   return (
-    <div className={`rounded-lg border px-1.5 py-1 ${style.bg} ${style.border}`}>
-      {/* Shift label */}
-      <div className="mb-1 flex items-center gap-1">
+    <div className="flex flex-col gap-0.5 pt-1 first:pt-0">
+      {/* Shift label row */}
+      <div className="flex items-center gap-1 pb-0.5">
         <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
-        <span className="text-[9px] font-bold uppercase tracking-wider text-mid-grey">{style.label}</span>
-        <span className="ml-auto text-[9px] text-mid-grey">{shift.startTime}–{shift.endTime}</span>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-mid-grey">{style.label}</span>
       </div>
 
-      {/* Assignment pills */}
+      {/* Assignment chips */}
       {assignments.map((a) => {
         const member = staff.find((s) => s.id === a.staffId)
         return (
@@ -254,16 +267,16 @@ function ShiftBlock({
         )
       })}
 
-      {/* Add form or add button */}
+      {/* Add form */}
       {adding ? (
-        <div className="mt-1 space-y-1">
+        <div className="mt-0.5 space-y-1">
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="w-full rounded border border-steel/60 bg-background px-1.5 py-1 text-[10px] text-foreground outline-none focus:border-neon-blue"
+            className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
             autoFocus
           >
-            <option value="">Select staff…</option>
+            <option value="">Staff…</option>
             {available.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -275,34 +288,35 @@ function ShiftBlock({
             value={hours}
             onChange={(e) => setHours(e.target.value)}
             placeholder="Hours"
-            className="w-full rounded border border-steel/60 bg-background px-1.5 py-1 text-[10px] text-foreground outline-none focus:border-neon-blue"
+            className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
           />
           <div className="flex gap-1">
             <button
               type="button"
               onClick={handleAdd}
               disabled={pending || !selectedId}
-              className="flex-1 rounded-md bg-neon-green py-1.5 text-[10px] font-bold text-black disabled:opacity-50"
+              className="flex-1 rounded-md bg-neon-green py-2 text-xs font-bold text-black disabled:opacity-50 active:scale-95"
             >
               {pending ? '…' : 'Add'}
             </button>
             <button
               type="button"
               onClick={() => { setAdding(false); setSelectedId(''); setHours(shift.defaultHours) }}
-              className="rounded-md border border-steel/60 px-2 py-1.5 text-[10px] text-light-grey hover:text-foreground"
+              className="rounded-md border border-steel/60 px-3 py-2 text-xs text-mid-grey hover:text-foreground active:scale-95"
             >
               ✕
             </button>
           </div>
         </div>
       ) : available.length > 0 ? (
+        /* Large touch-friendly add button */
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="mt-1 flex w-full items-center justify-center rounded border border-dashed border-steel/40 py-1 text-[9px] text-mid-grey transition-colors hover:border-neon-green/50 hover:text-neon-green"
+          className="mt-0.5 flex min-h-[36px] w-full items-center justify-center rounded-md border border-dashed border-steel/30 text-mid-grey transition-colors hover:border-neon-green/60 hover:text-neon-green active:scale-95"
           aria-label="Add staff to shift"
         >
-          <Plus className="size-2.5" />
+          <Plus className="size-3.5" />
         </button>
       ) : null}
     </div>
@@ -372,15 +386,15 @@ function AssignmentChip({
   }
 
   return (
-    <div className={`group my-0.5 flex items-center gap-1 rounded-md bg-background/60 px-1.5 py-1 ${pending ? 'opacity-40' : ''}`}>
-      <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-foreground">{name}</span>
-      <span className="shrink-0 text-[9px] text-mid-grey">{hours || defaultHours}h</span>
-      {/* Touch-friendly action buttons — always visible on mobile, hover on desktop */}
-      <div className="flex items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+    <div className={`group flex min-h-[36px] items-center gap-1 rounded-md bg-background/50 px-2 py-1 ${pending ? 'opacity-40' : ''}`}>
+      <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-foreground leading-tight">{name}</span>
+      <span className="shrink-0 rounded bg-steel/30 px-1 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
+      {/* Always visible on mobile; subtle on desktop until hover */}
+      <div className="flex items-center gap-0.5">
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded p-1 text-mid-grey hover:text-neon-blue"
+          className="flex size-7 items-center justify-center rounded text-mid-grey transition-colors hover:bg-steel/30 hover:text-neon-blue active:scale-90"
           aria-label={`Edit ${name} hours`}
         >
           <Pencil className="size-3" />
@@ -389,7 +403,7 @@ function AssignmentChip({
           type="button"
           onClick={handleDelete}
           disabled={pending}
-          className="rounded p-1 text-mid-grey hover:text-red-400 disabled:opacity-50"
+          className="flex size-7 items-center justify-center rounded text-mid-grey transition-colors hover:bg-red-500/10 hover:text-red-400 active:scale-90 disabled:opacity-50"
           aria-label={`Remove ${name}`}
         >
           <Trash2 className="size-3" />
@@ -420,6 +434,9 @@ function StaffHoursSummary({
 }) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [expandMonth, setExpandMonth] = useState<'current' | 'prev'>('current')
+  // per-row inline edit state: key = assignmentId
+  const [editingHours, setEditingHours] = useState<Record<number, string>>({})
+  const [savingId, setSavingId] = useState<number | null>(null)
 
   const staffWithHours = useMemo(
     () =>
@@ -435,19 +452,34 @@ function StaffHoursSummary({
     [staff, currentMonth, prevMonth, calcHours, calcDays],
   )
 
+  async function handleSaveHours(a: ShiftAssignment, newHours: string) {
+    setSavingId(a.id)
+    const fd = new FormData()
+    fd.set('id', String(a.id))
+    fd.set('shiftDate', a.shiftDate)
+    fd.set('shiftType', a.shiftType)
+    fd.set('staffId', String(a.staffId))
+    fd.set('hours', newHours)
+    await saveShiftAssignment(fd)
+    setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })
+    setSavingId(null)
+  }
+
   if (staff.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-steel/50 bg-card/40 overflow-hidden">
-      {/* Compact header */}
-      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2 border-b border-steel/30 bg-steel/10 px-3 py-2">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-mid-grey">Staff</p>
-        <div className="w-28 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">{currentMonth.shortLabel}</p>
-        </div>
-        <div className="w-24 text-right">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">{prevMonth.shortLabel}</p>
-        </div>
+    <div className="overflow-hidden rounded-xl border border-steel/50 bg-card/40">
+      {/* Header row */}
+      <div className="flex items-center gap-2 border-b border-steel/30 bg-steel/10 px-3 py-1.5">
+        <p className="flex-1 text-[10px] font-bold uppercase tracking-widest text-mid-grey">Staff</p>
+        <p className="w-24 text-right text-[10px] font-semibold uppercase tracking-wider text-mid-grey">
+          {currentMonth.shortLabel}
+        </p>
+        <p className="w-20 text-right text-[10px] font-semibold uppercase tracking-wider text-mid-grey">
+          {prevMonth.shortLabel}
+        </p>
+        {/* spacer for chevron */}
+        <div className="w-4" />
       </div>
 
       {staffWithHours.map((s) => {
@@ -457,10 +489,10 @@ function StaffHoursSummary({
 
         return (
           <Fragment key={s.id}>
-            {/* Single compact row */}
+            {/* Single compact row — tap/click to expand */}
             <button
               type="button"
-              className="grid w-full grid-cols-[1fr_auto_auto] items-center gap-2 border-b border-steel/20 px-3 py-2 text-left last:border-0 transition-colors hover:bg-steel/10"
+              className="flex w-full items-center gap-2 border-b border-steel/20 px-3 py-2 text-left last:border-0 transition-colors hover:bg-steel/10 active:bg-steel/20"
               onClick={() => {
                 if (expandedId === s.id) {
                   setExpandedId(null)
@@ -470,22 +502,20 @@ function StaffHoursSummary({
                 }
               }}
             >
-              {/* Name + chevron */}
-              <div className="flex min-w-0 items-center gap-1.5">
-                <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-steel/60 text-[9px] font-bold text-foreground">
-                  {s.name.charAt(0)}
+              {/* Avatar + name */}
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-steel/50 text-[10px] font-bold text-foreground">
+                  {s.name.charAt(0).toUpperCase()}
                 </div>
                 <span className="truncate text-xs font-semibold text-foreground">{s.name}</span>
-                <ChevronDown
-                  className={`size-3 shrink-0 text-mid-grey transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                />
               </div>
 
-              {/* Current month: Xh · Yd */}
-              <div className="w-28 text-right">
+              {/* Current month: Xh · Yd on one line */}
+              <div className="w-24 shrink-0 text-right">
                 {s.curH > 0 ? (
-                  <span className="text-xs font-bold tabular-nums text-neon-green">
-                    {s.curH}h&nbsp;<span className="font-normal text-mid-grey text-[10px]">· {s.curD}d</span>
+                  <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neon-green">
+                    {s.curH}h
+                    <span className="ml-1 text-[10px] font-normal text-mid-grey">· {s.curD}d</span>
                   </span>
                 ) : (
                   <span className="text-xs text-mid-grey">—</span>
@@ -493,27 +523,32 @@ function StaffHoursSummary({
               </div>
 
               {/* Prev month */}
-              <div className="w-24 text-right">
+              <div className="w-20 shrink-0 text-right">
                 {s.prevH > 0 ? (
-                  <span className="text-xs tabular-nums text-light-grey/70">
-                    {s.prevH}h&nbsp;<span className="text-[10px] text-mid-grey">· {s.prevD}d</span>
+                  <span className="whitespace-nowrap text-xs tabular-nums text-light-grey/60">
+                    {s.prevH}h
+                    <span className="ml-1 text-[10px] text-mid-grey">· {s.prevD}d</span>
                   </span>
                 ) : (
                   <span className="text-xs text-mid-grey">—</span>
                 )}
               </div>
+
+              {/* Chevron */}
+              <ChevronDown
+                className={`size-3.5 shrink-0 text-mid-grey transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+              />
             </button>
 
-            {/* Expandable detail — inline below the row */}
+            {/* Expandable shift detail */}
             {isExpanded && (
-              <div className="border-b border-steel/20 bg-background/30 px-3 py-2 last:border-0">
-                {/* Month toggle — small pills */}
-                <div className="mb-2 flex items-center gap-2">
-                  <Clock className="size-3 text-mid-grey" />
+              <div className="border-b border-steel/20 bg-background/40 px-3 pb-2 pt-1.5 last:border-0">
+                {/* Month pills inline */}
+                <div className="mb-2 flex items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setExpandMonth('current')}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                    onClick={(e) => { e.stopPropagation(); setExpandMonth('current') }}
+                    className={`rounded-full px-3 py-0.5 text-[11px] font-semibold transition-colors ${
                       expandMonth === 'current'
                         ? 'bg-neon-green/20 text-neon-green'
                         : 'text-mid-grey hover:text-foreground'
@@ -523,8 +558,8 @@ function StaffHoursSummary({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setExpandMonth('prev')}
-                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                    onClick={(e) => { e.stopPropagation(); setExpandMonth('prev') }}
+                    className={`rounded-full px-3 py-0.5 text-[11px] font-semibold transition-colors ${
                       expandMonth === 'prev'
                         ? 'bg-steel/50 text-foreground'
                         : 'text-mid-grey hover:text-foreground'
@@ -537,31 +572,92 @@ function StaffHoursSummary({
                 {detailAssignments.length === 0 ? (
                   <p className="text-[11px] text-mid-grey">No shifts recorded.</p>
                 ) : (
-                  <div className="space-y-0.5">
+                  <div className="divide-y divide-steel/10">
                     {detailAssignments.map((a) => {
                       const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
                       const style = SHIFT_STYLES[a.shiftType] ?? SHIFT_STYLES.morning
                       const date = new Date(a.shiftDate + 'T00:00:00')
                       const hrs = a.hours || shift?.defaultHours || '?'
+                      const isEditing = a.id in editingHours
+                      const isSaving = savingId === a.id
+
                       return (
-                        <div key={a.id} className="flex items-center gap-2 py-0.5">
-                          <span className="w-28 shrink-0 text-[11px] text-light-grey">
+                        <div key={a.id} className="flex items-center gap-2 py-1">
+                          {/* Date */}
+                          <span className="w-24 shrink-0 text-[11px] text-light-grey">
                             {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
                           </span>
-                          <div className="flex items-center gap-1">
-                            <span className={`size-1.5 rounded-full ${style.dot}`} />
+                          {/* Shift type dot + label */}
+                          <div className="flex min-w-0 flex-1 items-center gap-1">
+                            <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
                             <span className="text-[11px] text-mid-grey">{shift?.label ?? a.shiftType}</span>
                           </div>
-                          <span className="ml-auto text-[11px] font-bold text-foreground">{hrs}h</span>
+                          {/* Hours — inline edit */}
+                          {isEditing ? (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="number"
+                                step="0.5"
+                                min="0"
+                                value={editingHours[a.id]}
+                                onChange={(e) =>
+                                  setEditingHours((prev) => ({ ...prev, [a.id]: e.target.value }))
+                                }
+                                className="w-12 rounded border border-neon-blue/50 bg-background px-1.5 py-0.5 text-center text-[11px] text-foreground outline-none"
+                                autoFocus
+                                aria-label="Edit hours"
+                              />
+                              <span className="text-[10px] text-mid-grey">h</span>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveHours(a, editingHours[a.id])}
+                                disabled={isSaving}
+                                className="rounded p-1 text-neon-green disabled:opacity-40"
+                                aria-label="Save"
+                              >
+                                <Check className="size-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })
+                                }
+                                className="rounded p-1 text-mid-grey hover:text-foreground"
+                                aria-label="Cancel"
+                              >
+                                <X className="size-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              <span className="min-w-[2rem] text-right text-[11px] font-bold text-foreground">{hrs}h</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditingHours((prev) => ({ ...prev, [a.id]: hrs }))
+                                }
+                                className="rounded p-1 text-mid-grey opacity-0 transition-opacity hover:text-neon-blue group-hover:opacity-100 sm:opacity-100"
+                                aria-label="Edit hours"
+                              >
+                                <Pencil className="size-3" />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
-                    <div className="flex justify-end border-t border-steel/30 pt-1.5 mt-1">
-                      <span className="text-[11px] font-bold text-neon-green">
-                        Total: {detailAssignments.reduce((sum, a) => {
+                    {/* Total */}
+                    <div className="flex items-center justify-between pt-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">Total</span>
+                      <span className="text-xs font-bold text-neon-green">
+                        {detailAssignments.reduce((sum, a) => {
                           const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
                           return sum + (parseFloat(a.hours) || parseFloat(shift?.defaultHours ?? '0') || 0)
                         }, 0)}h
+                        &nbsp;
+                        <span className="text-[10px] font-normal text-mid-grey">
+                          · {new Set(detailAssignments.map((a) => a.shiftDate)).size}d
+                        </span>
                       </span>
                     </div>
                   </div>
