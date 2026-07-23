@@ -88,17 +88,9 @@ export function OperationsDashboard({
         </div>
       </div>
 
-      {/* Main grid: Roster full-width top, then 3-col bottom */}
+      {/* Main grid: 3-panel row first, Roster full-width below */}
       <div className="space-y-5">
-        {/* Roster — full width */}
-        <section className="rounded-2xl border border-steel bg-card p-4">
-          <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-            Roster
-          </h2>
-          <RosterTab staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
-        </section>
-
-        {/* Bottom 3-panel row */}
+        {/* Top 3-panel row */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
           {/* Trials */}
           <section className="rounded-2xl border border-steel bg-card p-4">
@@ -124,6 +116,14 @@ export function OperationsDashboard({
             <WaterTab credits={waterCredits} auditLog={waterAuditLog} />
           </section>
         </div>
+
+        {/* Roster — full width below */}
+        <section className="rounded-2xl border border-steel bg-card p-4">
+          <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
+            Roster
+          </h2>
+          <RosterTab staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
+        </section>
       </div>
     </div>
   )

@@ -5,13 +5,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Trash2,
   Pencil,
   Check,
   X,
   ChevronDown,
 } from 'lucide-react'
-import { saveShiftAssignment, deleteShiftAssignment } from '@/app/actions/operations'
+import { saveShiftAssignment } from '@/app/actions/operations'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
 
 interface Props {
@@ -52,9 +51,9 @@ function getMonthRange(monthOffset: number) {
 
 // colour for shift type dot/accent
 const SHIFT_STYLES: Record<string, { dot: string; bg: string; border: string; label: string }> = {
-  morning:   { dot: 'bg-amber-400',  bg: 'bg-amber-400/10',  border: 'border-amber-400/30',  label: 'AM' },
-  afternoon: { dot: 'bg-neon-blue',  bg: 'bg-neon-blue/10',  border: 'border-neon-blue/30',  label: 'PM' },
-  saturday:  { dot: 'bg-neon-green', bg: 'bg-neon-green/10', border: 'border-neon-green/30', label: 'SAT' },
+  morning:   { dot: 'bg-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/30', label: 'AM' },
+  afternoon: { dot: 'bg-neon-blue', bg: 'bg-neon-blue/10', border: 'border-neon-blue/30', label: 'PM' },
+  saturday:  { dot: 'bg-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/30', label: 'AM' },
 }
 
 export function RosterTab({ staff, assignments, shiftSettings }: Props) {
@@ -154,29 +153,15 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
                   className={`flex flex-col overflow-hidden rounded-lg border transition-colors ${
                     isToday
                       ? 'border-neon-blue/40 bg-neon-blue/5'
-                      : isSat
-                      ? 'border-neon-green/25 bg-neon-green/5'
                       : 'border-steel/30 bg-card/30'
                   }`}
                 >
-                  {/* Day header — coloured strip */}
-                  <div
-                    className={`px-2 py-1.5 text-center ${
-                      isToday
-                        ? 'bg-neon-blue/20'
-                        : isSat
-                        ? 'bg-neon-green/15'
-                        : 'bg-steel/10'
-                    }`}
-                  >
-                    <p className={`text-[10px] font-bold uppercase tracking-widest ${
-                      isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-mid-grey'
-                    }`}>
+                  {/* Day header */}
+                  <div className={`px-2 py-1.5 text-center ${isToday ? 'bg-neon-blue/20' : 'bg-steel/10'}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isToday ? 'text-neon-blue' : 'text-mid-grey'}`}>
                       {WEEK_DAYS[i]}
                     </p>
-                    <p className={`text-base font-bold leading-tight ${
-                      isToday ? 'text-neon-blue' : isSat ? 'text-neon-green' : 'text-foreground'
-                    }`}>
+                    <p className={`text-base font-bold leading-tight ${isToday ? 'text-neon-blue' : 'text-foreground'}`}>
                       {d.getDate()}
                     </p>
                   </div>
@@ -338,15 +323,6 @@ function AssignmentChip({
   const [hours, setHours] = useState(assignment.hours || defaultHours)
   const [pending, setPending] = useState(false)
 
-  async function handleDelete() {
-    if (!confirm(`Remove ${name}?`)) return
-    setPending(true)
-    const fd = new FormData()
-    fd.set('id', String(assignment.id))
-    await deleteShiftAssignment(fd)
-    setPending(false)
-  }
-
   async function handleSave() {
     setPending(true)
     const fd = new FormData()
@@ -385,35 +361,22 @@ function AssignmentChip({
     )
   }
 
+  // Click the chip to open edit mode
   return (
-    <div className={`group flex min-h-[36px] items-center gap-1 rounded-md bg-background/50 px-2 py-1 ${pending ? 'opacity-40' : ''}`}>
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      disabled={pending}
+      className={`flex min-h-[34px] w-full items-center gap-1.5 rounded-md bg-background/50 px-2 py-1 text-left transition-colors hover:bg-steel/20 active:scale-[0.98] ${pending ? 'opacity-40' : ''}`}
+      aria-label={`Edit ${name}`}
+    >
       <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-foreground leading-tight">{name}</span>
-      <span className="shrink-0 rounded bg-steel/30 px-1 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
-      {/* Always visible on mobile; subtle on desktop until hover */}
-      <div className="flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          className="flex size-7 items-center justify-center rounded text-mid-grey transition-colors hover:bg-steel/30 hover:text-neon-blue active:scale-90"
-          aria-label={`Edit ${name} hours`}
-        >
-          <Pencil className="size-3" />
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={pending}
-          className="flex size-7 items-center justify-center rounded text-mid-grey transition-colors hover:bg-red-500/10 hover:text-red-400 active:scale-90 disabled:opacity-50"
-          aria-label={`Remove ${name}`}
-        >
-          <Trash2 className="size-3" />
-        </button>
-      </div>
-    </div>
+      <span className="shrink-0 rounded bg-steel/30 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
+    </button>
   )
 }
 
-// ── Staff Hours Summary ──────────────────────────────────────────────────────
+// ── Staff Hours Summary ───────────────────────────────────────���──────────────
 
 function StaffHoursSummary({
   staff,
@@ -433,7 +396,7 @@ function StaffHoursSummary({
   shiftSettings: ShiftSetting[]
 }) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [expandMonth, setExpandMonth] = useState<'current' | 'prev'>('current')
+  const [viewMonth, setViewMonth] = useState<'current' | 'prev'>('current')
   // per-row inline edit state: key = assignmentId
   const [editingHours, setEditingHours] = useState<Record<number, string>>({})
   const [savingId, setSavingId] = useState<number | null>(null)
@@ -484,7 +447,7 @@ function StaffHoursSummary({
 
       {staffWithHours.map((s) => {
         const isExpanded = expandedId === s.id
-        const month = expandMonth === 'current' ? currentMonth : prevMonth
+        const month = viewMonth === 'current' ? currentMonth : prevMonth
         const detailAssignments = isExpanded ? getShiftDetails(s.id, month.start, month.end) : []
 
         return (
@@ -498,7 +461,7 @@ function StaffHoursSummary({
                   setExpandedId(null)
                 } else {
                   setExpandedId(s.id)
-                  setExpandMonth('current')
+                  setViewMonth('current')
                 }
               }}
             >
@@ -542,30 +505,26 @@ function StaffHoursSummary({
 
             {/* Expandable shift detail */}
             {isExpanded && (
-              <div className="border-b border-steel/20 bg-background/40 px-3 pb-2 pt-1.5 last:border-0">
-                {/* Month pills inline */}
-                <div className="mb-2 flex items-center gap-1.5">
+              <div className="border-b border-steel/20 bg-background/40 px-3 pb-2 pt-1 last:border-0">
+                {/* Compact month toggle — right-aligned, doesn't expand layout */}
+                <div className="mb-1.5 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setExpandMonth('current') }}
-                    className={`rounded-full px-3 py-0.5 text-[11px] font-semibold transition-colors ${
-                      expandMonth === 'current'
-                        ? 'bg-neon-green/20 text-neon-green'
-                        : 'text-mid-grey hover:text-foreground'
+                    onClick={() => setViewMonth('current')}
+                    className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+                      viewMonth === 'current' ? 'bg-neon-green/20 text-neon-green' : 'text-mid-grey hover:text-foreground'
                     }`}
                   >
-                    {currentMonth.label}
+                    {currentMonth.shortLabel}
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setExpandMonth('prev') }}
-                    className={`rounded-full px-3 py-0.5 text-[11px] font-semibold transition-colors ${
-                      expandMonth === 'prev'
-                        ? 'bg-steel/50 text-foreground'
-                        : 'text-mid-grey hover:text-foreground'
+                    onClick={() => setViewMonth('prev')}
+                    className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+                      viewMonth === 'prev' ? 'bg-steel/40 text-foreground' : 'text-mid-grey hover:text-foreground'
                     }`}
                   >
-                    {prevMonth.label}
+                    {prevMonth.shortLabel}
                   </button>
                 </div>
 
@@ -582,28 +541,26 @@ function StaffHoursSummary({
                       const isSaving = savingId === a.id
 
                       return (
-                        <div key={a.id} className="flex items-center gap-2 py-1">
-                          {/* Date */}
-                          <span className="w-24 shrink-0 text-[11px] text-light-grey">
+                        <div key={a.id} className="flex items-center gap-2 py-0.5" onClick={(e) => e.stopPropagation()}>
+                          {/* Date — fixed narrow column */}
+                          <span className="w-20 shrink-0 text-[11px] text-light-grey">
                             {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
                           </span>
-                          {/* Shift type dot + label */}
-                          <div className="flex min-w-0 flex-1 items-center gap-1">
+                          {/* Shift dot + label — fixed narrow column */}
+                          <div className="flex w-12 shrink-0 items-center gap-1">
                             <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
-                            <span className="text-[11px] text-mid-grey">{shift?.label ?? a.shiftType}</span>
+                            <span className="text-[10px] text-mid-grey">{shift?.label ?? a.shiftType}</span>
                           </div>
-                          {/* Hours — inline edit */}
+                          {/* Hours + edit — right-aligned, right next to shift label */}
                           {isEditing ? (
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <div className="ml-auto flex items-center gap-1">
                               <input
                                 type="number"
                                 step="0.5"
                                 min="0"
                                 value={editingHours[a.id]}
-                                onChange={(e) =>
-                                  setEditingHours((prev) => ({ ...prev, [a.id]: e.target.value }))
-                                }
-                                className="w-12 rounded border border-neon-blue/50 bg-background px-1.5 py-0.5 text-center text-[11px] text-foreground outline-none"
+                                onChange={(e) => setEditingHours((prev) => ({ ...prev, [a.id]: e.target.value }))}
+                                className="w-12 rounded border border-neon-blue/50 bg-background px-1 py-0.5 text-center text-[11px] text-foreground outline-none"
                                 autoFocus
                                 aria-label="Edit hours"
                               />
@@ -619,9 +576,7 @@ function StaffHoursSummary({
                               </button>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })
-                                }
+                                onClick={() => setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })}
                                 className="rounded p-1 text-mid-grey hover:text-foreground"
                                 aria-label="Cancel"
                               >
@@ -629,14 +584,12 @@ function StaffHoursSummary({
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                              <span className="min-w-[2rem] text-right text-[11px] font-bold text-foreground">{hrs}h</span>
+                            <div className="ml-auto flex items-center gap-1">
+                              <span className="w-8 text-right text-[11px] font-bold tabular-nums text-foreground">{hrs}h</span>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setEditingHours((prev) => ({ ...prev, [a.id]: hrs }))
-                                }
-                                className="rounded p-1 text-mid-grey opacity-0 transition-opacity hover:text-neon-blue group-hover:opacity-100 sm:opacity-100"
+                                onClick={() => setEditingHours((prev) => ({ ...prev, [a.id]: hrs }))}
+                                className="rounded p-1 text-mid-grey hover:text-neon-blue"
                                 aria-label="Edit hours"
                               >
                                 <Pencil className="size-3" />
@@ -646,16 +599,15 @@ function StaffHoursSummary({
                         </div>
                       )
                     })}
-                    {/* Total */}
-                    <div className="flex items-center justify-between pt-1.5">
+                    {/* Total row */}
+                    <div className="flex items-center justify-between pt-1" onClick={(e) => e.stopPropagation()}>
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">Total</span>
                       <span className="text-xs font-bold text-neon-green">
                         {detailAssignments.reduce((sum, a) => {
-                          const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
-                          return sum + (parseFloat(a.hours) || parseFloat(shift?.defaultHours ?? '0') || 0)
+                          const s = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
+                          return sum + (parseFloat(a.hours) || parseFloat(s?.defaultHours ?? '0') || 0)
                         }, 0)}h
-                        &nbsp;
-                        <span className="text-[10px] font-normal text-mid-grey">
+                        <span className="ml-1 text-[10px] font-normal text-mid-grey">
                           · {new Set(detailAssignments.map((a) => a.shiftDate)).size}d
                         </span>
                       </span>
