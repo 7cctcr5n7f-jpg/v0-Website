@@ -203,6 +203,67 @@ export const whatsappReminderLog = pgTable('whatsapp_reminder_log', {
   sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// ─── Operations / Staff ──────────────────────────────────────────────────────
+
+// Staff members (trainers) — simple name + phone
+export const staff = pgTable('staff', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Shift configuration (default paid hours per shift type)
+export const shiftSettings = pgTable('shift_settings', {
+  id: serial('id').primaryKey(),
+  shiftType: text('shift_type').notNull().unique(), // 'morning' | 'afternoon' | 'saturday'
+  label: text('label').notNull().default(''),
+  startTime: text('start_time').notNull().default(''),
+  endTime: text('end_time').notNull().default(''),
+  defaultHours: text('default_hours').notNull().default(''), // stored as text to support decimals e.g. "4.5"
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Weekly shift roster assignments
+// Each row = one trainer assigned to a particular shift on a particular date
+export const shiftAssignments = pgTable('shift_assignments', {
+  id: serial('id').primaryKey(),
+  // ISO date string YYYY-MM-DD
+  shiftDate: text('shift_date').notNull(),
+  // 'morning' | 'afternoon'
+  shiftType: text('shift_type').notNull(),
+  staffId: integer('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  // Overridden hours for this specific assignment (defaults to shift default)
+  hours: text('hours').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Notes on trial bookings (trainer notes added via Operations Dashboard)
+export const trialBookingNotes = pgTable('trial_booking_notes', {
+  id: serial('id').primaryKey(),
+  bookingId: integer('booking_id').notNull().references(() => trialBookings.id, { onDelete: 'cascade' }),
+  note: text('note').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Water credit ledger — current balance per member (identified by name, no user account)
+export const waterCredits = pgTable('water_credits', {
+  id: serial('id').primaryKey(),
+  memberName: text('member_name').notNull(),
+  balance: integer('balance').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Full audit log for water credit transactions
+export const waterAuditLog = pgTable('water_audit_log', {
+  id: serial('id').primaryKey(),
+  creditId: integer('credit_id').notNull().references(() => waterCredits.id, { onDelete: 'cascade' }),
+  delta: integer('delta').notNull(), // positive = credit added, negative = credit used
+  note: text('note').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type Special = typeof specials.$inferSelect
 export type ChowWinner = typeof chowWinners.$inferSelect
 export type SettingRow = typeof settings.$inferSelect
@@ -214,3 +275,11 @@ export type SessionPurchase = typeof sessionPurchases.$inferSelect
 export type GalleryCategory = typeof galleryCategories.$inferSelect
 export type GalleryPhoto = typeof galleryPhotos.$inferSelect
 export type WhatsappSetting = typeof whatsappSettings.$inferSelect
+
+// Operations types
+export type Staff = typeof staff.$inferSelect
+export type ShiftSetting = typeof shiftSettings.$inferSelect
+export type ShiftAssignment = typeof shiftAssignments.$inferSelect
+export type TrialBookingNote = typeof trialBookingNotes.$inferSelect
+export type WaterCredit = typeof waterCredits.$inferSelect
+export type WaterAuditLog = typeof waterAuditLog.$inferSelect
