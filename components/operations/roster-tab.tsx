@@ -475,7 +475,7 @@ function AssignmentChip({
 
   if (editing) {
     return (
-      <div className="my-0.5 flex items-center gap-1 rounded-md border border-steel/35 bg-background/65 px-1.5 py-1">
+      <div className="my-0.5 flex items-center gap-1 rounded-md border border-steel/65 bg-steel/50 px-1.5 py-1">
         <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
         <span className={`flex min-w-0 flex-1 items-center gap-1 text-[10px] font-medium ${tone.name}`}>
           <StaffIcon icon={icon} className="shrink-0" />
@@ -487,7 +487,7 @@ function AssignmentChip({
           min="0"
           value={hours}
           onChange={(e) => setHours(e.target.value)}
-          className="w-9 rounded bg-steel/30 px-1 py-0.5 text-center text-[10px] text-foreground outline-none"
+          className="w-9 rounded bg-steel/85 px-1 py-0.5 text-center text-[10px] text-foreground outline-none"
           autoFocus
           aria-label="Hours"
         />
@@ -508,7 +508,7 @@ function AssignmentChip({
       type="button"
       onClick={() => setEditing(true)}
       disabled={pending}
-      className={`flex min-h-[34px] w-full items-center gap-1.5 rounded-md border border-steel/30 bg-background/70 px-2 py-1 text-left transition-colors hover:border-steel/50 hover:bg-steel/10 active:scale-[0.98] ${pending ? 'opacity-40' : ''}`}
+      className={`flex min-h-[34px] w-full items-center gap-1.5 rounded-md border border-steel/65 bg-steel/50 px-2 py-1 text-left transition-colors hover:border-steel/85 hover:bg-steel/60 active:scale-[0.98] ${pending ? 'opacity-40' : ''}`}
       aria-label={`Edit ${name}`}
     >
       <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
@@ -516,7 +516,7 @@ function AssignmentChip({
         <StaffIcon icon={icon} className="shrink-0" />
         <span className="leading-tight">{name}</span>
       </span>
-      <span className="shrink-0 rounded bg-steel/30 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
+      <span className="shrink-0 rounded bg-steel/90 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
     </button>
   )
 }
