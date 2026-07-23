@@ -4,18 +4,29 @@ import { useMemo } from 'react'
 import { Flame, Clock } from 'lucide-react'
 import type { MembershipSignup } from '@/lib/db/schema'
 
-const STATUS_CONFIG: Record<string, { dot: string; label: string }> = {
-  New:       { dot: 'bg-neon-blue',  label: 'New'       },
-  Processed: { dot: 'bg-amber-400',  label: 'Processed' },
-  Active:    { dot: 'bg-neon-green', label: 'Active'    },
-  Cancelled: { dot: 'bg-red-500',    label: 'Cancelled' },
-}
-
 function isPeak(membershipType: string) {
   const lower = membershipType.toLowerCase()
   // "Anytime Access" or "Peak" = peak; "Off-Peak" = off-peak
   if (lower.includes('off-peak') || lower.includes('off peak')) return false
   return true
+}
+
+function ymdInJhb(d: Date | string) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(d))
+}
+
+function timeInJhb(d: Date | string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Johannesburg',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(d))
 }
 
 export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
@@ -39,84 +50,76 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
     )
   }
 
+  const grouped = useMemo(() => {
+    const map = new Map<string, MembershipSignup[]>()
+    for (const s of recent) {
+      const key = ymdInJhb(s.createdAt)
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(s)
+    }
+    return [...map.entries()].map(([ymd, items]) => {
+      const label = new Date(`${ymd}T00:00:00`).toLocaleDateString('en-ZA', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'short',
+      })
+      return { ymd, label, items }
+    })
+  }, [recent])
+
   return (
-    <div className="space-y-2">
-      <p className="text-[10px] uppercase tracking-widest text-mid-grey">
-        {recent.length} sign-up{recent.length !== 1 ? 's' : ''} &middot; last 2 weeks
-      </p>
+    <div className="space-y-2.5">
+      <div className="flex items-center justify-between rounded-xl border border-steel/50 bg-card/40 px-3 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">Last 2 weeks</p>
+        <p className="text-sm font-black text-foreground">
+          {recent.length} sign-up{recent.length > 1 ? 's' : ''}
+        </p>
+      </div>
 
-      {recent.map((s) => {
-        const peak = isPeak(s.membershipType)
-        const statusCfg = STATUS_CONFIG[s.status] ?? { dot: 'bg-steel', label: s.status }
-        const joinDate = new Date(s.createdAt).toLocaleDateString('en-ZA', {
-          day: '2-digit',
-          month: 'short',
-          timeZone: 'Africa/Johannesburg',
-        })
-
-        return (
-          <div
-            key={s.id}
-            className="relative overflow-hidden rounded-2xl border border-steel/60 bg-card px-4 py-3"
-          >
-            {/* Accent stripe */}
-            <div
-              className={`absolute inset-y-0 left-0 w-1 rounded-l-2xl ${
-                peak ? 'bg-neon-blue' : 'bg-neon-green'
-              }`}
-            />
-
-            <div className="flex items-start justify-between gap-2 pl-2">
-              {/* Left: name + membership info */}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-foreground">
-                  {s.firstName} {s.surname}
-                </p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  {/* Access type */}
-                  <span className="text-xs font-semibold text-foreground">{s.accessType}</span>
-
-                  {/* Peak / Off-Peak badge */}
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                      peak
-                        ? 'bg-neon-blue/15 text-neon-blue'
-                        : 'bg-neon-green/15 text-neon-green'
-                    }`}
-                  >
-                    {peak ? <Flame className="size-2.5" /> : <Clock className="size-2.5" />}
-                    {peak ? 'Peak' : 'Off-Peak'}
-                  </span>
-                </div>
-
-                {/* Contract length + monthly fee */}
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-[11px] text-light-grey">
-                    {s.contractLength} {s.contractLength === 1 ? 'month' : 'months'}
-                  </span>
-                  {s.monthlyFee > 0 && (
-                    <>
-                      <span className="text-[11px] text-steel">&middot;</span>
-                      <span className="text-[11px] text-light-grey">
-                        R{s.monthlyFee.toLocaleString()}/mo
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Right: status + date */}
-              <div className="flex shrink-0 flex-col items-end gap-1.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={`size-2 rounded-full ${statusCfg.dot}`} />
-                  <span className="text-[11px] font-semibold text-foreground">{statusCfg.label}</span>
-                </div>
-                <span className="text-[10px] text-mid-grey">{joinDate}</span>
-              </div>
-            </div>
+      {grouped.map((group) => (
+        <div key={group.ymd} className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">{group.label}</p>
+            <p className="text-[10px] text-light-grey">{group.items.length} member{group.items.length > 1 ? 's' : ''}</p>
           </div>
-        )
-      })}
+
+          {group.items.map((s) => {
+            const peak = isPeak(s.membershipType)
+            const packageLabel = `${s.contractLength} Month ${s.accessType}`.trim()
+            const initials = `${s.firstName?.[0] ?? ''}${s.surname?.[0] ?? ''}`.toUpperCase() || '?'
+            const price = s.monthlyFee > 0 ? `R${s.monthlyFee.toLocaleString()}/mo` : 'No monthly fee'
+
+            return (
+              <div key={s.id} className={`relative overflow-hidden rounded-2xl border px-3 py-2.5 ${
+                peak ? 'border-neon-blue/35 bg-neon-blue/5' : 'border-neon-green/35 bg-neon-green/5'
+              }`}>
+                <div className={`absolute left-0 top-0 h-full w-1 ${peak ? 'bg-neon-blue/70' : 'bg-neon-green/70'}`} />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-start gap-2.5 pl-1">
+                    <div className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border text-[11px] font-black ${peak ? 'border-neon-blue/50 bg-neon-blue/20 text-neon-blue' : 'border-neon-green/50 bg-neon-green/20 text-neon-green'}`}>
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-[17px] font-black leading-tight text-foreground">{s.firstName} {s.surname}</p>
+                      <p className="truncate text-sm font-bold leading-tight text-foreground">{packageLabel}</p>
+                      <p className="truncate text-xs text-light-grey">{s.membershipType}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 flex-col items-end gap-0.5 pt-0.5">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${peak ? 'bg-neon-blue/15 text-neon-blue' : 'bg-neon-green/15 text-neon-green'}`}>
+                      {peak ? <Flame className="size-2.5" /> : <Clock className="size-2.5" />}
+                      {peak ? 'Peak' : 'Off-Peak'}
+                    </span>
+                    <span className="text-[11px] font-semibold text-light-grey">{price}</span>
+                    <span className="text-[10px] text-mid-grey">{timeInJhb(s.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ))}
     </div>
   )
 }

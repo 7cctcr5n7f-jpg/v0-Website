@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, Trash2, Save, UserRound } from 'lucide-react'
 import { saveStaffMember, deleteStaffMember, saveShiftSettings } from '@/app/actions/operations'
+import { StaffIcon, STAFF_ICON_CHOICES } from './staff-icon'
 import type { Staff, ShiftSetting } from '@/lib/db/schema'
 
 interface Props {
@@ -19,10 +20,40 @@ export function SettingsTab({ staff, shiftSettings }: Props) {
   )
 }
 
+function IconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-light-grey">Icon</label>
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className={`flex size-9 items-center justify-center rounded-lg border text-xs transition-colors ${value === '' ? 'border-neon-green bg-neon-green/10 text-neon-green' : 'border-steel text-light-grey hover:border-neon-blue'}`}
+          aria-label="No icon"
+        >
+          —
+        </button>
+        {STAFF_ICON_CHOICES.map((ic) => (
+          <button
+            key={ic}
+            type="button"
+            onClick={() => onChange(ic)}
+            className={`flex size-9 items-center justify-center rounded-lg border text-base transition-colors ${value === ic ? 'border-neon-green bg-neon-green/10' : 'border-steel hover:border-neon-blue'}`}
+            aria-label={`Icon ${ic}`}
+          >
+            <StaffIcon icon={ic} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function StaffSection({ staff }: { staff: Staff[] }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [icon, setIcon] = useState('')
   const [pending, setPending] = useState(false)
 
   async function handleAdd() {
@@ -32,9 +63,11 @@ function StaffSection({ staff }: { staff: Staff[] }) {
     fd.set('id', '0')
     fd.set('name', name.trim())
     fd.set('phone', phone.trim())
+    fd.set('icon', icon)
     await saveStaffMember(fd)
     setName('')
     setPhone('')
+    setIcon('')
     setAdding(false)
     setPending(false)
   }
@@ -91,6 +124,9 @@ function StaffSection({ staff }: { staff: Staff[] }) {
                 placeholder="+27 00 000 0000"
               />
             </div>
+            <div className="sm:col-span-2">
+              <IconPicker value={icon} onChange={setIcon} />
+            </div>
           </div>
           <div className="mt-3 flex gap-2">
             <button
@@ -103,7 +139,7 @@ function StaffSection({ staff }: { staff: Staff[] }) {
             </button>
             <button
               type="button"
-              onClick={() => { setAdding(false); setName(''); setPhone('') }}
+              onClick={() => { setAdding(false); setName(''); setPhone(''); setIcon('') }}
               className="rounded-lg border border-steel px-4 py-2 text-sm text-light-grey transition-colors hover:text-foreground"
             >
               Cancel
@@ -119,6 +155,7 @@ function StaffRow({ member }: { member: Staff }) {
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(member.name)
   const [phone, setPhone] = useState(member.phone)
+  const [icon, setIcon] = useState(member.icon)
   const [pending, setPending] = useState(false)
 
   async function handleSave() {
@@ -127,6 +164,7 @@ function StaffRow({ member }: { member: Staff }) {
     fd.set('id', String(member.id))
     fd.set('name', name.trim())
     fd.set('phone', phone.trim())
+    fd.set('icon', icon)
     await saveStaffMember(fd)
     setEditing(false)
     setPending(false)
@@ -155,6 +193,9 @@ function StaffRow({ member }: { member: Staff }) {
             onChange={(e) => setPhone(e.target.value)}
             className="rounded-lg border border-steel bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-neon-green"
           />
+          <div className="sm:col-span-2">
+            <IconPicker value={icon} onChange={setIcon} />
+          </div>
         </div>
         <div className="mt-2 flex gap-2">
           <button
@@ -167,7 +208,7 @@ function StaffRow({ member }: { member: Staff }) {
           </button>
           <button
             type="button"
-            onClick={() => { setEditing(false); setName(member.name); setPhone(member.phone) }}
+            onClick={() => { setEditing(false); setName(member.name); setPhone(member.phone); setIcon(member.icon) }}
             className="rounded-lg border border-steel px-3 py-1.5 text-xs text-light-grey hover:text-foreground"
           >
             Cancel
@@ -180,8 +221,8 @@ function StaffRow({ member }: { member: Staff }) {
   return (
     <div className="flex items-center justify-between rounded-xl border border-steel bg-card px-4 py-3">
       <div className="flex items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-full border border-steel bg-background">
-          <UserRound className="size-4 text-neon-blue" />
+        <div className="flex size-8 items-center justify-center rounded-full border border-steel bg-background text-base">
+          {member.icon ? <StaffIcon icon={member.icon} /> : <UserRound className="size-4 text-neon-blue" />}
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">{member.name}</p>

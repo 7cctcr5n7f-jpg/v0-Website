@@ -1,22 +1,56 @@
 'use client'
 
-import { useState, useMemo, Fragment } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Pencil,
   Check,
   X,
-  ChevronDown,
+  CalendarClock,
+  UserPlus2,
 } from 'lucide-react'
 import { saveShiftAssignment } from '@/app/actions/operations'
-import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
+import { StaffIcon } from './staff-icon'
+import { ymdInJohannesburg } from '@/lib/trial-conversion'
+import type { Staff, ShiftAssignment, ShiftSetting, TrialBooking, MembershipSignup } from '@/lib/db/schema'
 
 interface Props {
+  actionAuthToken: string
   staff: Staff[]
   assignments: ShiftAssignment[]
   shiftSettings: ShiftSetting[]
+  bookings: TrialBooking[]
+  signups: MembershipSignup[]
+}
+
+// Time-of-day (HH:mm, JHB) for a signup's createdAt timestamp
+function jhbTime(d: Date | string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Johannesburg',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(d))
+}
+
+function inWindow(hm: string, shift: ShiftSetting): boolean {
+  if (!hm || !shift.startTime || !shift.endTime) return false
+  return hm >= shift.startTime && hm < shift.endTime
+}
+
+// Which shift a same-day event at time `hm` belongs to. Falls back to the shift
+// whose trainer would be on duty when the time lands between configured windows.
+function shiftForTime(hm: string, dayShifts: ShiftSetting[], isSat: boolean): string | null {
+  const hit = dayShifts.find((sh) => inWindow(hm, sh))
+  if (hit) return hit.shiftType
+  if (isSat) return dayShifts[0]?.shiftType ?? null
+  const wantsAfternoon = hm >= '13:00'
+  return (
+    dayShifts.find((sh) => sh.shiftType === (wantsAfternoon ? 'afternoon' : 'morning'))?.shiftType ??
+    dayShifts[0]?.shiftType ??
+    null
+  )
 }
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -39,25 +73,55 @@ function getWeekDates(anchor: Date): Date[] {
   })
 }
 
-function getMonthRange(monthOffset: number) {
-  const now = new Date()
-  const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
-  const start = toIso(d)
-  const end = toIso(new Date(d.getFullYear(), d.getMonth() + 1, 0))
-  const label = d.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
-  const shortLabel = d.toLocaleDateString('en-ZA', { month: 'short' })
-  return { start, end, label, shortLabel }
+const SHIFT_STYLES: Record<string, { dot: string; accent: string; label: string }> = {
+  morning: {
+    dot: 'bg-amber-400',
+    accent: 'text-amber-300',
+    label: 'AM',
+  },
+  afternoon: {
+    dot: 'bg-neon-blue',
+    accent: 'text-neon-blue',
+    label: 'PM',
+  },
+  saturday: {
+    dot: 'bg-amber-400',
+    accent: 'text-amber-300',
+    label: 'AM',
+  },
 }
 
-// colour for shift type dot/accent
-const SHIFT_STYLES: Record<string, { dot: string; bg: string; border: string; label: string }> = {
-  morning:   { dot: 'bg-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/30', label: 'AM' },
-  afternoon: { dot: 'bg-neon-blue', bg: 'bg-neon-blue/10', border: 'border-neon-blue/30', label: 'PM' },
-  saturday:  { dot: 'bg-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/30', label: 'AM' },
+const STAFF_TONES = [
+  { name: 'text-fuchsia-200', dot: 'bg-fuchsia-300' },
+  { name: 'text-cyan-200', dot: 'bg-cyan-300' },
+  { name: 'text-emerald-200', dot: 'bg-emerald-300' },
+  { name: 'text-violet-200', dot: 'bg-violet-300' },
+  { name: 'text-orange-200', dot: 'bg-orange-300' },
+  { name: 'text-rose-200', dot: 'bg-rose-300' },
+] as const
+
+function toneForStaff(staffId: number, name: string) {
+  const seed = Number.isFinite(staffId) && staffId > 0
+    ? staffId
+    : [...name].reduce((n, ch) => n + ch.charCodeAt(0), 0)
+  return STAFF_TONES[Math.abs(seed) % STAFF_TONES.length]
 }
 
-export function RosterTab({ staff, assignments, shiftSettings }: Props) {
+function handleOpsActionError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  if (message.toLowerCase().includes('unauthorized')) {
+    window.location.href = '/operations'
+    return
+  }
+  console.error(error)
+  window.alert('Could not save shift. Please try again.')
+}
+
+export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, bookings, signups }: Props) {
   const [anchor, setAnchor] = useState(() => new Date())
+  // Gate date-derived indicators until mounted to avoid SSR/client hydration mismatch
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor])
   const weekLabel = `${weekDates[0].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} – ${weekDates[5].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}`
@@ -72,47 +136,12 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
     return m
   }, [assignments])
 
-  const currentMonth = getMonthRange(0)
-  const prevMonth = getMonthRange(-1)
-
-  function calcHours(staffId: number, start: string, end: string) {
-    return assignments
-      .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
-      .reduce((sum, a) => sum + (parseFloat(a.hours) || 0), 0)
-  }
-
-  function calcDays(staffId: number, start: string, end: string) {
-    const dates = new Set(
-      assignments
-        .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
-        .map((a) => a.shiftDate),
-    )
-    return dates.size
-  }
-
-  function getShiftDetails(staffId: number, start: string, end: string) {
-    return assignments
-      .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
-      .sort((a, b) => a.shiftDate.localeCompare(b.shiftDate))
-  }
-
   // Non-Saturday shifts for the weekly grid
   const gridShifts = shiftSettings.filter((s) => s.shiftType !== 'saturday')
   const saturdayShift = shiftSettings.find((s) => s.shiftType === 'saturday')
 
   return (
     <div className="space-y-4">
-      {/* ── Staff Hours Summary ─────────────────────────────────── */}
-      <StaffHoursSummary
-        staff={staff}
-        currentMonth={currentMonth}
-        prevMonth={prevMonth}
-        calcHours={calcHours}
-        calcDays={calcDays}
-        getShiftDetails={getShiftDetails}
-        shiftSettings={shiftSettings}
-      />
-
       {/* ── Weekly Schedule ─────────────────────────────────────── */}
       <div>
         {/* Week navigator */}
@@ -147,10 +176,32 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
                 ? saturdayShift ? [saturdayShift] : []
                 : gridShifts
 
+              // Attribute same-day trials / new members to their shift (client-only)
+              const trialsByShift: Record<string, TrialBooking[]> = {}
+              const membersByShift: Record<string, MembershipSignup[]> = {}
+              if (mounted) {
+                for (const b of bookings) {
+                  if (b.appointmentDate !== dateStr) continue
+                  const st = shiftForTime(b.appointmentTime, dayShifts, isSat)
+                  if (st) (trialsByShift[st] ??= []).push(b)
+                }
+                for (const s of signups) {
+                  if (ymdInJohannesburg(new Date(s.createdAt)) !== dateStr) continue
+                  const st = shiftForTime(jhbTime(s.createdAt), dayShifts, isSat)
+                  if (st) (membersByShift[st] ??= []).push(s)
+                }
+              }
+              const amShift = dayShifts.find((s) => s.shiftType === 'morning' || s.shiftType === 'saturday') ?? null
+              const pmShift = dayShifts.find((s) => s.shiftType === 'afternoon') ?? null
+              const amType = amShift?.shiftType ?? (isSat ? 'saturday' : 'morning')
+              const pmType = 'afternoon'
+              const amAssignments = shiftMap[dateStr]?.[amType] ?? []
+              const pmAssignments = shiftMap[dateStr]?.[pmType] ?? []
+
               return (
                 <div
                   key={dateStr}
-                  className={`flex flex-col overflow-hidden rounded-lg border transition-colors ${
+                  className={`flex h-[540px] flex-col overflow-hidden rounded-lg border transition-colors ${
                     isToday
                       ? 'border-neon-blue/40 bg-neon-blue/5'
                       : 'border-steel/30 bg-card/30'
@@ -166,22 +217,30 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
                     </p>
                   </div>
 
-                  {/* Shift sections */}
-                  <div className="flex flex-1 flex-col divide-y divide-steel/20 p-1.5 gap-1">
-                    {dayShifts.map((shift) => {
-                      const style = SHIFT_STYLES[shift.shiftType] ?? SHIFT_STYLES.morning
-                      const dayAssignments = shiftMap[dateStr]?.[shift.shiftType] ?? []
-                      return (
-                        <ShiftBlock
-                          key={shift.shiftType}
-                          date={dateStr}
-                          shift={shift}
-                          style={style}
-                          assignments={dayAssignments}
-                          staff={staff}
-                        />
-                      )
-                    })}
+                  {/* Fixed AM/PM lanes so PM always sits in the same row */}
+                  <div className="grid flex-1 grid-rows-2 gap-1.5 p-1.5">
+                    <ShiftBlock
+                      actionAuthToken={actionAuthToken}
+                      date={dateStr}
+                      shiftType={amType}
+                      shift={amShift}
+                      style={SHIFT_STYLES[amType] ?? SHIFT_STYLES.morning}
+                      assignments={amAssignments}
+                      staff={staff}
+                      trials={trialsByShift[amType] ?? []}
+                      newMembers={membersByShift[amType] ?? []}
+                    />
+                    <ShiftBlock
+                      actionAuthToken={actionAuthToken}
+                      date={dateStr}
+                      shiftType={pmType}
+                      shift={pmShift}
+                      style={SHIFT_STYLES[pmType]}
+                      assignments={pmAssignments}
+                      staff={staff}
+                      trials={trialsByShift[pmType] ?? []}
+                      newMembers={membersByShift[pmType] ?? []}
+                    />
                   </div>
                 </div>
               )
@@ -196,114 +255,164 @@ export function RosterTab({ staff, assignments, shiftSettings }: Props) {
 // ── Shift Block (inside a day card) ─────────────────────────────────────────
 
 function ShiftBlock({
+  actionAuthToken,
   date,
+  shiftType,
   shift,
   style,
   assignments,
   staff,
+  trials,
+  newMembers,
 }: {
+  actionAuthToken: string
   date: string
-  shift: ShiftSetting
-  style: { dot: string; bg: string; border: string; label: string }
+  shiftType: string
+  shift: ShiftSetting | null
+  style: { dot: string; accent: string; label: string }
   assignments: ShiftAssignment[]
   staff: Staff[]
+  trials: TrialBooking[]
+  newMembers: MembershipSignup[]
 }) {
   const [adding, setAdding] = useState(false)
   const [selectedId, setSelectedId] = useState('')
-  const [hours, setHours] = useState(shift.defaultHours)
+  const [hours, setHours] = useState(shift?.defaultHours ?? '0')
+  const [applyWholeWeek, setApplyWholeWeek] = useState(false)
   const [pending, setPending] = useState(false)
+  const disabled = !shift
 
   const assignedIds = new Set(assignments.map((a) => a.staffId))
-  const available = staff.filter((s) => !assignedIds.has(s.id))
+  const available = applyWholeWeek ? staff : staff.filter((s) => !assignedIds.has(s.id))
+  const staffNameById = new Map(staff.map((s) => [s.id, s.name]))
+  const orderedAssignments = [...assignments].sort((a, b) => {
+    const an = staffNameById.get(a.staffId) ?? ''
+    const bn = staffNameById.get(b.staffId) ?? ''
+    return an.localeCompare(bn)
+  })
 
-  async function handleAdd() {
-    if (!selectedId) return
+  async function handleQuickAdd(nextStaffId: string) {
+    if (!shift) return
+    if (!nextStaffId) return
     setPending(true)
     const fd = new FormData()
+    fd.set('authToken', actionAuthToken)
     fd.set('shiftDate', date)
     fd.set('shiftType', shift.shiftType)
-    fd.set('staffId', selectedId)
+    fd.set('staffId', nextStaffId)
     fd.set('hours', hours)
-    await saveShiftAssignment(fd)
-    setAdding(false)
-    setSelectedId('')
-    setHours(shift.defaultHours)
-    setPending(false)
+    if (applyWholeWeek) fd.set('applyWholeWeek', '1')
+    try {
+      await saveShiftAssignment(fd)
+      setAdding(false)
+      setSelectedId('')
+      setHours(shift.defaultHours)
+      setApplyWholeWeek(false)
+    } catch (error) {
+      handleOpsActionError(error)
+    } finally {
+      setPending(false)
+    }
   }
 
+  const peopleLabel = `${assignments.length} ${assignments.length === 1 ? 'trainer' : 'trainers'}`
+
   return (
-    <div className="flex flex-col gap-0.5 pt-1 first:pt-0">
-      {/* Shift label row */}
-      <div className="flex items-center gap-1 pb-0.5">
-        <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
-        <span className="text-[9px] font-bold uppercase tracking-widest text-mid-grey">{style.label}</span>
+    <div className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border ${disabled ? 'border-steel/20 bg-background/20' : 'border-steel/35 bg-background/30'}`}>
+      <div className={`flex items-center justify-between border-b px-2 py-1 ${disabled ? 'border-steel/20 bg-steel/5' : 'border-steel/25 bg-background/55'}`}>
+        <div className="flex items-center gap-1.5">
+          <span className={`size-1.5 rounded-full ${style.dot}`} />
+          <p className={`text-[10px] font-black uppercase tracking-widest ${disabled ? 'text-foreground' : style.accent}`}>{style.label}</p>
+          <span className="text-[9px] text-mid-grey">{shift ? `${shift.startTime}–${shift.endTime}` : '—'}</span>
+        </div>
+        <p className="text-[9px] font-semibold uppercase tracking-wide text-mid-grey">{peopleLabel}</p>
       </div>
 
-      {/* Assignment chips */}
-      {assignments.map((a) => {
-        const member = staff.find((s) => s.id === a.staffId)
-        return (
-          <AssignmentChip
-            key={a.id}
-            assignment={a}
-            name={member?.name ?? 'Unknown'}
-            defaultHours={shift.defaultHours}
-          />
-        )
-      })}
+      <div className="flex min-h-0 flex-1 flex-col gap-1 p-1.5">
+        {disabled ? (
+          <p className="mt-2 text-center text-[10px] uppercase tracking-wide text-mid-grey">No shift</p>
+        ) : (
+          <>
+            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5">
+              {orderedAssignments.map((a) => {
+                const member = staff.find((s) => s.id === a.staffId)
+                return (
+                  <AssignmentChip
+                    actionAuthToken={actionAuthToken}
+                    key={a.id}
+                    assignment={a}
+                    name={member?.name ?? 'Unknown'}
+                    icon={member?.icon ?? ''}
+                    tone={toneForStaff(member?.id ?? 0, member?.name ?? 'Unknown')}
+                    defaultHours={shift.defaultHours}
+                  />
+                )
+              })}
+            </div>
 
-      {/* Add form */}
-      {adding ? (
-        <div className="mt-0.5 space-y-1">
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
-            autoFocus
-          >
-            <option value="">Staff…</option>
-            {available.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
-          <input
-            type="number"
-            step="0.5"
-            min="0"
-            value={hours}
-            onChange={(e) => setHours(e.target.value)}
-            placeholder="Hours"
-            className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
-          />
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={handleAdd}
-              disabled={pending || !selectedId}
-              className="flex-1 rounded-md bg-neon-green py-2 text-xs font-bold text-black disabled:opacity-50 active:scale-95"
-            >
-              {pending ? '…' : 'Add'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAdding(false); setSelectedId(''); setHours(shift.defaultHours) }}
-              className="rounded-md border border-steel/60 px-3 py-2 text-xs text-mid-grey hover:text-foreground active:scale-95"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      ) : available.length > 0 ? (
-        /* Large touch-friendly add button */
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="mt-0.5 flex min-h-[36px] w-full items-center justify-center rounded-md border border-dashed border-steel/30 text-mid-grey transition-colors hover:border-neon-green/60 hover:text-neon-green active:scale-95"
-          aria-label="Add staff to shift"
-        >
-          <Plus className="size-3.5" />
-        </button>
-      ) : null}
+            {(trials.length > 0 || newMembers.length > 0) && (
+              <ShiftIndicators trials={trials} newMembers={newMembers} />
+            )}
+
+            {/* Add form */}
+            {adding ? (
+              <div className="space-y-1">
+                <label className="flex items-center gap-2 rounded-md border border-steel/40 bg-background/50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-light-grey">
+                  <input
+                    type="checkbox"
+                    checked={applyWholeWeek}
+                    onChange={(e) => setApplyWholeWeek(e.target.checked)}
+                    className="size-3 accent-neon-green"
+                  />
+                  Apply to whole week (Mon–Fri)
+                </label>
+                <select
+                  value={selectedId}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setSelectedId(next)
+                    void handleQuickAdd(next)
+                  }}
+                  className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
+                  autoFocus
+                  disabled={pending}
+                >
+                  <option value="">{applyWholeWeek ? 'Select trainer for whole week…' : 'Select trainer…'}</option>
+                  {available.map((s) => (
+                    <option key={s.id} value={s.id}>{s.icon ? `${s.icon} ` : ''}{s.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={hours}
+                  onChange={(e) => setHours(e.target.value)}
+                  placeholder="Hours"
+                  className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setAdding(false); setSelectedId(''); setHours(shift.defaultHours); setApplyWholeWeek(false) }}
+                  className="w-full rounded-md border border-steel/60 px-3 py-1.5 text-xs text-mid-grey hover:text-foreground active:scale-95"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : staff.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="mt-0.5 flex min-h-[32px] w-full items-center justify-center rounded-md border border-dashed border-steel/30 text-mid-grey transition-colors hover:border-neon-green/60 hover:text-neon-green active:scale-95"
+                aria-label={`Add trainer to ${shiftType}`}
+              >
+                <Plus className="size-3.5" />
+              </button>
+            ) : null}
+
+          </>
+        )}
+      </div>
     </div>
   )
 }
@@ -311,12 +420,18 @@ function ShiftBlock({
 // ── Assignment Chip ──────────────────────────────────────────────────────────
 
 function AssignmentChip({
+  actionAuthToken,
   assignment,
   name,
+  icon,
+  tone,
   defaultHours,
 }: {
+  actionAuthToken: string
   assignment: ShiftAssignment
   name: string
+  icon: string
+  tone: { name: string; dot: string }
   defaultHours: string
 }) {
   const [editing, setEditing] = useState(false)
@@ -326,20 +441,30 @@ function AssignmentChip({
   async function handleSave() {
     setPending(true)
     const fd = new FormData()
+    fd.set('authToken', actionAuthToken)
     fd.set('id', String(assignment.id))
     fd.set('shiftDate', assignment.shiftDate)
     fd.set('shiftType', assignment.shiftType)
     fd.set('staffId', String(assignment.staffId))
     fd.set('hours', hours)
-    await saveShiftAssignment(fd)
-    setEditing(false)
-    setPending(false)
+    try {
+      await saveShiftAssignment(fd)
+      setEditing(false)
+    } catch (error) {
+      handleOpsActionError(error)
+    } finally {
+      setPending(false)
+    }
   }
 
   if (editing) {
     return (
-      <div className="my-0.5 flex items-center gap-1 rounded-md border border-neon-blue/50 bg-card px-1.5 py-1">
-        <span className="min-w-0 flex-1 truncate text-[10px] font-medium text-foreground">{name}</span>
+      <div className="my-0.5 flex items-center gap-1 rounded-md border border-steel/35 bg-background/65 px-1.5 py-1">
+        <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
+        <span className={`flex min-w-0 flex-1 items-center gap-1 text-[10px] font-medium ${tone.name}`}>
+          <StaffIcon icon={icon} className="shrink-0" />
+          <span className="leading-tight">{name}</span>
+        </span>
         <input
           type="number"
           step="0.5"
@@ -367,258 +492,81 @@ function AssignmentChip({
       type="button"
       onClick={() => setEditing(true)}
       disabled={pending}
-      className={`flex min-h-[34px] w-full items-center gap-1.5 rounded-md bg-background/50 px-2 py-1 text-left transition-colors hover:bg-steel/20 active:scale-[0.98] ${pending ? 'opacity-40' : ''}`}
+      className={`flex min-h-[34px] w-full items-center gap-1.5 rounded-md border border-steel/30 bg-background/70 px-2 py-1 text-left transition-colors hover:border-steel/50 hover:bg-steel/10 active:scale-[0.98] ${pending ? 'opacity-40' : ''}`}
       aria-label={`Edit ${name}`}
     >
-      <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-foreground leading-tight">{name}</span>
+      <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
+      <span className={`flex min-w-0 flex-1 items-center gap-1 text-[11px] font-semibold leading-tight ${tone.name}`}>
+        <StaffIcon icon={icon} className="shrink-0" />
+        <span className="leading-tight">{name}</span>
+      </span>
       <span className="shrink-0 rounded bg-steel/30 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
     </button>
   )
 }
 
-// ── Staff Hours Summary ───────────────────────────────────────���──────────────
+// ── Shift Indicators (trials / new members during a shift) ───────────────────
 
-function StaffHoursSummary({
-  staff,
-  currentMonth,
-  prevMonth,
-  calcHours,
-  calcDays,
-  getShiftDetails,
-  shiftSettings,
+function ShiftIndicators({
+  trials,
+  newMembers,
 }: {
-  staff: Staff[]
-  currentMonth: ReturnType<typeof getMonthRange>
-  prevMonth: ReturnType<typeof getMonthRange>
-  calcHours: (id: number, start: string, end: string) => number
-  calcDays: (id: number, start: string, end: string) => number
-  getShiftDetails: (id: number, start: string, end: string) => ShiftAssignment[]
-  shiftSettings: ShiftSetting[]
+  trials: TrialBooking[]
+  newMembers: MembershipSignup[]
 }) {
-  const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [viewMonth, setViewMonth] = useState<'current' | 'prev'>('current')
-  // per-row inline edit state: key = assignmentId
-  const [editingHours, setEditingHours] = useState<Record<number, string>>({})
-  const [savingId, setSavingId] = useState<number | null>(null)
-
-  const staffWithHours = useMemo(
-    () =>
-      staff
-        .map((s) => ({
-          ...s,
-          curH: calcHours(s.id, currentMonth.start, currentMonth.end),
-          curD: calcDays(s.id, currentMonth.start, currentMonth.end),
-          prevH: calcHours(s.id, prevMonth.start, prevMonth.end),
-          prevD: calcDays(s.id, prevMonth.start, prevMonth.end),
-        }))
-        .sort((a, b) => b.curH - a.curH),
-    [staff, currentMonth, prevMonth, calcHours, calcDays],
-  )
-
-  async function handleSaveHours(a: ShiftAssignment, newHours: string) {
-    setSavingId(a.id)
-    const fd = new FormData()
-    fd.set('id', String(a.id))
-    fd.set('shiftDate', a.shiftDate)
-    fd.set('shiftType', a.shiftType)
-    fd.set('staffId', String(a.staffId))
-    fd.set('hours', newHours)
-    await saveShiftAssignment(fd)
-    setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })
-    setSavingId(null)
-  }
-
-  if (staff.length === 0) return null
+  const [open, setOpen] = useState<null | 'trials' | 'members'>(null)
 
   return (
-    <div className="overflow-hidden rounded-xl border border-steel/50 bg-card/40">
-      {/* Header row */}
-      <div className="flex items-center gap-2 border-b border-steel/30 bg-steel/10 px-3 py-1.5">
-        <p className="flex-1 text-[10px] font-bold uppercase tracking-widest text-mid-grey">Staff</p>
-        <p className="w-24 text-right text-[10px] font-semibold uppercase tracking-wider text-mid-grey">
-          {currentMonth.shortLabel}
-        </p>
-        <p className="w-20 text-right text-[10px] font-semibold uppercase tracking-wider text-mid-grey">
-          {prevMonth.shortLabel}
-        </p>
-        {/* spacer for chevron */}
-        <div className="w-4" />
-      </div>
+    <div className="mb-0.5 flex flex-col gap-1">
+      {trials.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => (o === 'trials' ? null : 'trials'))}
+          className="flex w-full items-center justify-between rounded-md border border-amber-300/60 bg-amber-400/25 px-2 py-1 text-left shadow-[inset_0_0_0_1px_rgba(251,191,36,0.25)] transition-colors hover:bg-amber-400/30"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarClock className="size-3 shrink-0 text-amber-200" />
+            <span className="text-[10px] font-black uppercase tracking-wide text-amber-100">
+              {trials.length} Trial{trials.length > 1 ? 's' : ''}
+            </span>
+          </span>
+          <span className="text-[9px] font-bold text-amber-200/80">{open === 'trials' ? 'Hide' : 'Show'}</span>
+        </button>
+      )}
+      {open === 'trials' && (
+        <div className="rounded-md border border-amber-400/35 bg-amber-400/15 px-2 py-1.5">
+          {trials.map((t) => (
+            <p key={t.id} className="truncate text-[10px] leading-relaxed text-amber-100">
+              {t.appointmentTime} · {t.fullName}
+            </p>
+          ))}
+        </div>
+      )}
 
-      {staffWithHours.map((s) => {
-        const isExpanded = expandedId === s.id
-        const month = viewMonth === 'current' ? currentMonth : prevMonth
-        const detailAssignments = isExpanded ? getShiftDetails(s.id, month.start, month.end) : []
-
-        return (
-          <Fragment key={s.id}>
-            {/* Single compact row — tap/click to expand */}
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 border-b border-steel/20 px-3 py-2 text-left last:border-0 transition-colors hover:bg-steel/10 active:bg-steel/20"
-              onClick={() => {
-                if (expandedId === s.id) {
-                  setExpandedId(null)
-                } else {
-                  setExpandedId(s.id)
-                  setViewMonth('current')
-                }
-              }}
-            >
-              {/* Avatar + name */}
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-steel/50 text-[10px] font-bold text-foreground">
-                  {s.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="truncate text-xs font-semibold text-foreground">{s.name}</span>
-              </div>
-
-              {/* Current month: Xh · Yd on one line */}
-              <div className="w-24 shrink-0 text-right">
-                {s.curH > 0 ? (
-                  <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neon-green">
-                    {s.curH}h
-                    <span className="ml-1 text-[10px] font-normal text-mid-grey">· {s.curD}d</span>
-                  </span>
-                ) : (
-                  <span className="text-xs text-mid-grey">—</span>
-                )}
-              </div>
-
-              {/* Prev month */}
-              <div className="w-20 shrink-0 text-right">
-                {s.prevH > 0 ? (
-                  <span className="whitespace-nowrap text-xs tabular-nums text-light-grey/60">
-                    {s.prevH}h
-                    <span className="ml-1 text-[10px] text-mid-grey">· {s.prevD}d</span>
-                  </span>
-                ) : (
-                  <span className="text-xs text-mid-grey">—</span>
-                )}
-              </div>
-
-              {/* Chevron */}
-              <ChevronDown
-                className={`size-3.5 shrink-0 text-mid-grey transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {/* Expandable shift detail */}
-            {isExpanded && (
-              <div className="border-b border-steel/20 bg-background/40 px-3 pb-2 pt-1 last:border-0">
-                {/* Compact month toggle — right-aligned, doesn't expand layout */}
-                <div className="mb-1.5 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => setViewMonth('current')}
-                    className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                      viewMonth === 'current' ? 'bg-neon-green/20 text-neon-green' : 'text-mid-grey hover:text-foreground'
-                    }`}
-                  >
-                    {currentMonth.shortLabel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMonth('prev')}
-                    className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                      viewMonth === 'prev' ? 'bg-steel/40 text-foreground' : 'text-mid-grey hover:text-foreground'
-                    }`}
-                  >
-                    {prevMonth.shortLabel}
-                  </button>
-                </div>
-
-                {detailAssignments.length === 0 ? (
-                  <p className="text-[11px] text-mid-grey">No shifts recorded.</p>
-                ) : (
-                  <div className="divide-y divide-steel/10">
-                    {detailAssignments.map((a) => {
-                      const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
-                      const style = SHIFT_STYLES[a.shiftType] ?? SHIFT_STYLES.morning
-                      const date = new Date(a.shiftDate + 'T00:00:00')
-                      const hrs = a.hours || shift?.defaultHours || '?'
-                      const isEditing = a.id in editingHours
-                      const isSaving = savingId === a.id
-
-                      return (
-                        <div key={a.id} className="flex items-center gap-2 py-0.5" onClick={(e) => e.stopPropagation()}>
-                          {/* Date — fixed narrow column */}
-                          <span className="w-20 shrink-0 text-[11px] text-light-grey">
-                            {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
-                          </span>
-                          {/* Shift dot + label — fixed narrow column */}
-                          <div className="flex w-12 shrink-0 items-center gap-1">
-                            <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
-                            <span className="text-[10px] text-mid-grey">{shift?.label ?? a.shiftType}</span>
-                          </div>
-                          {/* Hours + edit — right-aligned, right next to shift label */}
-                          {isEditing ? (
-                            <div className="ml-auto flex items-center gap-1">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                value={editingHours[a.id]}
-                                onChange={(e) => setEditingHours((prev) => ({ ...prev, [a.id]: e.target.value }))}
-                                className="w-12 rounded border border-neon-blue/50 bg-background px-1 py-0.5 text-center text-[11px] text-foreground outline-none"
-                                autoFocus
-                                aria-label="Edit hours"
-                              />
-                              <span className="text-[10px] text-mid-grey">h</span>
-                              <button
-                                type="button"
-                                onClick={() => handleSaveHours(a, editingHours[a.id])}
-                                disabled={isSaving}
-                                className="rounded p-1 text-neon-green disabled:opacity-40"
-                                aria-label="Save"
-                              >
-                                <Check className="size-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })}
-                                className="rounded p-1 text-mid-grey hover:text-foreground"
-                                aria-label="Cancel"
-                              >
-                                <X className="size-3" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="ml-auto flex items-center gap-1">
-                              <span className="w-8 text-right text-[11px] font-bold tabular-nums text-foreground">{hrs}h</span>
-                              <button
-                                type="button"
-                                onClick={() => setEditingHours((prev) => ({ ...prev, [a.id]: hrs }))}
-                                className="rounded p-1 text-mid-grey hover:text-neon-blue"
-                                aria-label="Edit hours"
-                              >
-                                <Pencil className="size-3" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                    {/* Total row */}
-                    <div className="flex items-center justify-between pt-1" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">Total</span>
-                      <span className="text-xs font-bold text-neon-green">
-                        {detailAssignments.reduce((sum, a) => {
-                          const s = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
-                          return sum + (parseFloat(a.hours) || parseFloat(s?.defaultHours ?? '0') || 0)
-                        }, 0)}h
-                        <span className="ml-1 text-[10px] font-normal text-mid-grey">
-                          · {new Set(detailAssignments.map((a) => a.shiftDate)).size}d
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </Fragment>
-        )
-      })}
+      {newMembers.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setOpen((o) => (o === 'members' ? null : 'members'))}
+          className="flex w-full items-center justify-between rounded-md border border-neon-green/60 bg-neon-green/20 px-2 py-1 text-left shadow-[inset_0_0_0_1px_rgba(34,197,94,0.25)] transition-colors hover:bg-neon-green/25"
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <UserPlus2 className="size-3 shrink-0 text-neon-green" />
+            <span className="text-[10px] font-black uppercase tracking-wide text-neon-green">
+              {newMembers.length} New Member{newMembers.length > 1 ? 's' : ''}
+            </span>
+          </span>
+          <span className="text-[9px] font-bold text-neon-green/80">{open === 'members' ? 'Hide' : 'Show'}</span>
+        </button>
+      )}
+      {open === 'members' && (
+        <div className="rounded-md border border-neon-green/35 bg-neon-green/10 px-2 py-1.5">
+          {newMembers.map((m) => (
+            <p key={m.id} className="truncate text-[10px] leading-relaxed text-neon-green">
+              {m.firstName} {m.surname}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

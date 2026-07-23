@@ -210,6 +210,8 @@ export const staff = pgTable('staff', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
   phone: text('phone').notNull().default(''),
+  // Emoji / glyph shown before the trainer's name on the roster ('♀' renders as the pink female sign)
+  icon: text('icon').notNull().default(''),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -264,6 +266,24 @@ export const waterAuditLog = pgTable('water_audit_log', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+// Stock items tracked on the Operations dashboard (current level vs target/max level)
+export const stockItems = pgTable('stock_items', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  currentQty: integer('current_qty').notNull().default(0),
+  maxQty: integer('max_qty').notNull().default(0),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Stock-take confirmations — the most recent row is "last confirmed by {staff} on {date}"
+export const stockConfirmations = pgTable('stock_confirmations', {
+  id: serial('id').primaryKey(),
+  staffName: text('staff_name').notNull(),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type Special = typeof specials.$inferSelect
 export type ChowWinner = typeof chowWinners.$inferSelect
 export type SettingRow = typeof settings.$inferSelect
@@ -283,3 +303,5 @@ export type ShiftAssignment = typeof shiftAssignments.$inferSelect
 export type TrialBookingNote = typeof trialBookingNotes.$inferSelect
 export type WaterCredit = typeof waterCredits.$inferSelect
 export type WaterAuditLog = typeof waterAuditLog.$inferSelect
+export type StockItem = typeof stockItems.$inferSelect
+export type StockConfirmation = typeof stockConfirmations.$inferSelect
