@@ -5,26 +5,28 @@ import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCi
 import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule } from '@/app/actions/operations'
 import { formatDateLong, parseDateString, slotGroupsForDay } from '@/lib/trial-slots'
 import {
+  buildSessionPurchaseEmailIndex,
   buildSignupEmailIndex,
   getTrialConversion,
-  normalizeEmail,
   ymdInJohannesburg,
   type TrialConversion,
 } from '@/lib/trial-conversion'
-import type { TrialBooking, TrialBookingNote, MembershipSignup } from '@/lib/db/schema'
+import type { TrialBooking, TrialBookingNote, MembershipSignup, SessionPurchase } from '@/lib/db/schema'
 
 interface Props {
   bookings: TrialBooking[]
   notes: TrialBookingNote[]
   signups: MembershipSignup[]
+  sessionPurchases: SessionPurchase[]
 }
 
-export function TrialsTab({ bookings, notes, signups }: Props) {
+export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props) {
   const [showPast, setShowPast] = useState(false)
   const today = ymdInJohannesburg()
   const monthPrefix = today.slice(0, 7)
 
-  const index = useMemo(() => buildSignupEmailIndex(signups), [signups])
+  const signupIndex = useMemo(() => buildSignupEmailIndex(signups), [signups])
+  const sessionPurchaseIndex = useMemo(() => buildSessionPurchaseEmailIndex(sessionPurchases), [sessionPurchases])
 
   const { upcoming, past } = useMemo(() => {
     const upcoming = bookings.filter((b) => b.appointmentDate >= today)
@@ -33,12 +35,14 @@ export function TrialsTab({ bookings, notes, signups }: Props) {
   }, [bookings, today])
 
   const kpi = useMemo(() => {
-    const monthTrials = bookings.filter((b) => b.appointmentDate.slice(0, 7) === monthPrefix)
-    const converted = monthTrials.filter((b) => index.has(normalizeEmail(b.email))).length
-    const total = monthTrials.length
+    const completedTrials = bookings.filter(
+      (b) => b.appointmentDate.slice(0, 7) === monthPrefix && b.appointmentDate < today,
+    )
+    const converted = completedTrials.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status === 'converted').length
+    const total = completedTrials.length
     const rate = total > 0 ? Math.round((converted / total) * 100) : 0
     return { total, converted, rate }
-  }, [bookings, index, monthPrefix])
+  }, [bookings, monthPrefix, sessionPurchaseIndex, signupIndex, today])
 
   const visible = showPast ? [...upcoming, ...past] : upcoming
 
@@ -53,7 +57,7 @@ export function TrialsTab({ bookings, notes, signups }: Props) {
           {visible.map((b) => {
             const bookingNotes = notes.filter((n) => n.bookingId === b.id)
             const isPast = b.appointmentDate < today
-            const conv = getTrialConversion(b, index, today)
+            const conv = getTrialConversion(b, signupIndex, sessionPurchaseIndex, today)
             return <TrialRow key={b.id} booking={b} notes={bookingNotes} isPast={isPast} conversion={conv} />
           })}
         </div>

@@ -1,4 +1,4 @@
-import type { MembershipSignup, TrialBooking } from '@/lib/db/schema'
+import type { MembershipSignup, SessionPurchase, TrialBooking } from '@/lib/db/schema'
 
 // YYYY-MM-DD for the gym's timezone (South Africa) — stable across server/client renders.
 export function ymdInJohannesburg(d: Date = new Date()): string {
@@ -22,6 +22,19 @@ export function membershipPackageLabel(s: MembershipSignup): string {
   return label || s.accessType || s.membershipType || 'Member'
 }
 
+export function sessionPurchaseOccurredAt(purchase: SessionPurchase): Date {
+  return new Date(purchase.paidAt ?? purchase.createdAt)
+}
+
+export function isPaidSessionPurchase(purchase: SessionPurchase): boolean {
+  return purchase.paymentStatus === 'Paid'
+}
+
+export function isQualifyingSessionPurchase(purchase: SessionPurchase): boolean {
+  if (purchase.paymentStatus === 'Failed' || purchase.paymentStatus === 'Cancelled') return false
+  return purchase.packQuantity >= 30 || purchase.totalSessions >= 30
+}
+
 // Map normalised email -> most recent membership signup for that email.
 export function buildSignupEmailIndex(signups: MembershipSignup[]): Map<string, MembershipSignup> {
   const map = new Map<string, MembershipSignup>()
@@ -36,11 +49,35 @@ export function buildSignupEmailIndex(signups: MembershipSignup[]): Map<string, 
   return map
 }
 
+// Map normalised email -> most recent paid session purchase for that email.
+export function buildSessionPurchaseEmailIndex(purchases: SessionPurchase[]): Map<string, SessionPurchase> {
+  const map = new Map<string, SessionPurchase>()
+  for (const purchase of purchases) {
+    if (!isQualifyingSessionPurchase(purchase)) continue
+    const key = normalizeEmail(purchase.email)
+    if (!key) continue
+    const existing = map.get(key)
+    if (!existing || sessionPurchaseOccurredAt(purchase) > sessionPurchaseOccurredAt(existing)) {
+      map.set(key, purchase)
+    }
+  }
+  return map
+}
+
+export function uniqueQualifyingSessionPurchases(purchases: SessionPurchase[]): SessionPurchase[] {
+  return [...buildSessionPurchaseEmailIndex(purchases).values()].sort(
+    (a, b) => sessionPurchaseOccurredAt(b).getTime() - sessionPurchaseOccurredAt(a).getTime(),
+  )
+}
+
 export type TrialConversionStatus = 'converted' | 'upcoming' | 'not_converted'
+export type TrialConversionSource = 'membership' | 'sessions' | null
 
 export interface TrialConversion {
   status: TrialConversionStatus
   signup: MembershipSignup | null
+  sessionPurchase: SessionPurchase | null
+  source: TrialConversionSource
   packageLabel: string | null
 }
 
@@ -48,15 +85,33 @@ export interface TrialConversion {
 // "upcoming" while its date is today or later, and "not converted" once it has passed.
 export function getTrialConversion(
   booking: TrialBooking,
-  index: Map<string, MembershipSignup>,
+  signupIndex: Map<string, MembershipSignup>,
+  sessionPurchaseIndex: Map<string, SessionPurchase>,
   todayYmd: string,
 ): TrialConversion {
-  const signup = index.get(normalizeEmail(booking.email)) ?? null
+  const key = normalizeEmail(booking.email)
+  const signup = signupIndex.get(key) ?? null
   if (signup) {
-    return { status: 'converted', signup, packageLabel: membershipPackageLabel(signup) }
+    return {
+      status: 'converted',
+      signup,
+      sessionPurchase: null,
+      source: 'membership',
+      packageLabel: membershipPackageLabel(signup),
+    }
+  }
+  const sessionPurchase = sessionPurchaseIndex.get(key) ?? null
+  if (sessionPurchase) {
+    return {
+      status: 'converted',
+      signup: null,
+      sessionPurchase,
+      source: 'sessions',
+      packageLabel: 'Sessions',
+    }
   }
   if (booking.appointmentDate >= todayYmd) {
-    return { status: 'upcoming', signup: null, packageLabel: null }
+    return { status: 'upcoming', signup: null, sessionPurchase: null, source: null, packageLabel: null }
   }
-  return { status: 'not_converted', signup: null, packageLabel: null }
+  return { status: 'not_converted', signup: null, sessionPurchase: null, source: null, packageLabel: null }
 }
