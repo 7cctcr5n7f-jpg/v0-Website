@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Flame, Clock } from 'lucide-react'
 import type { MembershipSignup } from '@/lib/db/schema'
 
@@ -30,23 +30,32 @@ function timeInJhb(d: Date | string) {
 }
 
 export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
+  const [showPast, setShowPast] = useState(false)
   const twoWeeksAgo = useMemo(() => {
     const d = new Date()
     d.setDate(d.getDate() - 14)
     return d
   }, [])
 
+  const allSorted = useMemo(
+    () => [...signups].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [signups],
+  )
+
   const recent = useMemo(
     () =>
-      signups
+      allSorted
         .filter((s) => new Date(s.createdAt) >= twoWeeksAgo)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [signups, twoWeeksAgo],
+    [allSorted, twoWeeksAgo],
   )
+
+  const visible = showPast ? allSorted : recent
+  const pastCount = Math.max(allSorted.length - recent.length, 0)
 
   const grouped = useMemo(() => {
     const map = new Map<string, MembershipSignup[]>()
-    for (const s of recent) {
+    for (const s of visible) {
       const key = ymdInJhb(s.createdAt)
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(s)
@@ -59,20 +68,22 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
       })
       return { ymd, label, items }
     })
-  }, [recent])
+  }, [visible])
 
-  if (recent.length === 0) {
+  if (allSorted.length === 0) {
     return (
-      <p className="py-2 text-xs text-light-grey">No new members in the past 2 weeks.</p>
+      <p className="py-2 text-xs text-light-grey">No member sign-ups yet.</p>
     )
   }
 
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between rounded-xl border border-steel/50 bg-card/40 px-3 py-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">Last 2 weeks</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">
+          {showPast ? 'All sign-ups' : 'Last 2 weeks'}
+        </p>
         <p className="text-sm font-black text-foreground">
-          {recent.length} sign-up{recent.length > 1 ? 's' : ''}
+          {visible.length} sign-up{visible.length > 1 ? 's' : ''}
         </p>
       </div>
 
@@ -96,13 +107,13 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
                 <div className={`absolute left-0 top-0 h-full w-1 ${peak ? 'bg-neon-blue/70' : 'bg-neon-green/70'}`} />
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex min-w-0 items-start gap-2.5 pl-1">
-                    <div className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full border text-[11px] font-black ${peak ? 'border-neon-blue/50 bg-neon-blue/20 text-neon-blue' : 'border-neon-green/50 bg-neon-green/20 text-neon-green'}`}>
+                    <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${peak ? 'border-neon-blue/50 bg-neon-blue/20 text-neon-blue' : 'border-neon-green/50 bg-neon-green/20 text-neon-green'}`}>
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-[17px] font-black leading-tight text-foreground">{s.firstName} {s.surname}</p>
-                      <p className="truncate text-sm leading-tight text-foreground">{packageLabel}</p>
-                      <p className="truncate text-xs text-light-grey">{s.membershipType}</p>
+                      <p className="truncate text-[15px] font-black leading-tight text-foreground">{s.firstName} {s.surname}</p>
+                      <p className="truncate text-[13px] leading-tight text-foreground">{packageLabel}</p>
+                      <p className="truncate text-[11px] text-light-grey">{s.membershipType}</p>
                     </div>
                   </div>
 
@@ -120,6 +131,16 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
           })}
         </div>
       ))}
+
+      {pastCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowPast((value) => !value)}
+          className="w-full pt-1 text-[10px] font-semibold uppercase tracking-wide text-light-grey hover:text-foreground"
+        >
+          {showPast ? 'Hide past' : `Show past (${pastCount})`}
+        </button>
+      )}
     </div>
   )
 }
