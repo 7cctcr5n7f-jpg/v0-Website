@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
 import { Geist, Geist_Mono, Archivo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Navbar } from '@/components/navbar'
@@ -70,35 +69,22 @@ export const viewport = {
   themeColor: '#0b0b0b',
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const h = await headers()
-  // Next.js sets next-url on every server-component render pass
-  const nextUrl = h.get('next-url') ?? ''
-  const isInternal = nextUrl.startsWith('/operations') || nextUrl.startsWith('/admin')
-
   return (
     <html lang="en" className="bg-background">
       <body
         className={`${geist.variable} ${geistMono.variable} ${archivo.variable} font-sans antialiased`}
       >
-        {!isInternal && (
-          <>
-            <JsonLd data={[localBusinessSchema(), websiteSchema()]} />
-            <SpecialsGlobal />
-            <Navbar />
-          </>
-        )}
+        <JsonLd data={[localBusinessSchema(), websiteSchema()]} />
+        <SpecialsGlobal />
+        <Navbar />
         {children}
-        {!isInternal && (
-          <>
-            <SiteFooter />
-            <WhatsAppFloat />
-          </>
-        )}
+        <SiteFooter />
+        <WhatsAppFloat />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
