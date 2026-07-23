@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   User,
   CreditCard,
-  Gift,
 } from 'lucide-react'
 import { deleteSessionPurchase, updateSessionPurchaseStatus } from '@/app/actions/admin'
 import { formatRand } from '@/lib/memberships'

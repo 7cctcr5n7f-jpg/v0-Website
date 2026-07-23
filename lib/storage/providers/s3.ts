@@ -21,7 +21,6 @@ import { type StorageProvider, type UploadInput, toBuffer } from '../types'
 // never tries to resolve "@aws-sdk/client-s3" at build time. The package is an
 // OPTIONAL peer — only required when STORAGE_PROVIDER is set to an S3 backend.
 // Using `new Function` hides the specifier from static analysis entirely.
-// eslint-disable-next-line @typescript-eslint/no-implied-eval
 const importDynamic = new Function('specifier', 'return import(specifier)') as (s: string) => Promise<unknown>
 
 async function loadS3() {

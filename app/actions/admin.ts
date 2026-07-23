@@ -390,7 +390,7 @@ export async function saveWhatsappSettingState(_prev: SaveState, formData: FormD
 }
 
 // Send a test WhatsApp message to each configured alert number and return the actual API response.
-export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boolean; message: string }> {
+export async function sendWhatsappTest(): Promise<{ ok: boolean; message: string }> {
   await requireAdmin()
   const { getWhatsappSettings, interpolate, sendWhatsAppTextVerbose } = await import('@/lib/whatsapp')
   const waSettings = await getWhatsappSettings()
@@ -404,7 +404,7 @@ export async function sendWhatsappTest(_formData: FormData): Promise<{ ok: boole
   if (!groupId) return { ok: false, message: 'Alert Phone Numbers are not set. Add at least one number in the Group Alert section.' }
 
   // Step 1: Verify the Phone Number ID is valid by calling the Meta API
-  let registeredNumber = ''
+  let registeredNumber: string
   try {
     const verifyRes = await fetch(`https://graph.facebook.com/v19.0/${pid}?fields=display_phone_number,verified_name,quality_rating`, {
       headers: { Authorization: `Bearer ${token}` },

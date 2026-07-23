@@ -1,15 +1,5 @@
 import { business, fullAddress } from '@/lib/business'
 
-const dayMap: Record<string, string> = {
-  Monday: 'Mo',
-  Tuesday: 'Tu',
-  Wednesday: 'We',
-  Thursday: 'Th',
-  Friday: 'Fr',
-  Saturday: 'Sa',
-  Sunday: 'Su',
-}
-
 export function localBusinessSchema() {
   return {
     '@context': 'https://schema.org',

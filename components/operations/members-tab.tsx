@@ -44,12 +44,6 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
     [signups, twoWeeksAgo],
   )
 
-  if (recent.length === 0) {
-    return (
-      <p className="py-2 text-xs text-light-grey">No new members in the past 2 weeks.</p>
-    )
-  }
-
   const grouped = useMemo(() => {
     const map = new Map<string, MembershipSignup[]>()
     for (const s of recent) {
@@ -66,6 +60,12 @@ export function MembersTab({ signups }: { signups: MembershipSignup[] }) {
       return { ymd, label, items }
     })
   }, [recent])
+
+  if (recent.length === 0) {
+    return (
+      <p className="py-2 text-xs text-light-grey">No new members in the past 2 weeks.</p>
+    )
+  }
 
   return (
     <div className="space-y-2.5">

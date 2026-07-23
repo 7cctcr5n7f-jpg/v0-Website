@@ -8,7 +8,7 @@ import { DriveTimes } from '@/components/landing/drive-times'
 import { TrialFinalCta } from '@/components/landing/trial-final-cta'
 import { LocationSection } from '@/components/location-section'
 import { TestimonialsSection } from '@/components/testimonials-section'
-import { business, whatsappHref, fullAddress } from '@/lib/business'
+import { whatsappHref } from '@/lib/business'
 import { db } from '@/lib/db'
 import { blockedDays as blockedDaysTable } from '@/lib/db/schema'
 

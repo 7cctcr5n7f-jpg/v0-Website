@@ -8,7 +8,6 @@ import {
   PenTool,
   Loader2,
   ArrowRight,
-  Check,
   ChevronDown,
   ShieldCheck,
   Gift,

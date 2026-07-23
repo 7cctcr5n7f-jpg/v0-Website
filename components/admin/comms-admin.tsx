@@ -19,12 +19,6 @@ function SectionIcon({ icon: Icon, label }: { icon: typeof MessageSquare; label:
   )
 }
 
-function HiddenSettings(entries: [string, string][]) {
-  return entries.map(([k, v]) => (
-    <input key={k} type="hidden" name={`wa_${k}`} value={v} />
-  ))
-}
-
 export function CommsAdmin({ settings }: { settings: WaSettings }) {
   const [testState, setTestState] = useState<{ ok: boolean; message: string } | null>(null)
   const [isPending, startTransition] = useTransition()
