@@ -6,8 +6,6 @@ import {
   Trash2,
   FileText,
   Download,
-  Mail,
-  Phone,
   ChevronDown,
   CreditCard,
   ShieldCheck,

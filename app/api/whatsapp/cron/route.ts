@@ -12,7 +12,7 @@ import { db } from '@/lib/db'
 import { trialBookings, whatsappReminderLog } from '@/lib/db/schema'
 import { getWhatsappSettings, sendWhatsAppText, interpolate } from '@/lib/whatsapp'
 import { formatDateLong } from '@/lib/trial-slots'
-import { and, eq, gte, inArray, lt } from 'drizzle-orm'
+import { and, gte, inArray, lt } from 'drizzle-orm'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -26,10 +26,11 @@ function hhmm(s: string): number {
 // Converts an "HH:MM AM/PM" slot string (e.g. "06:00 AM") to minutes from midnight.
 function slotToMinutes(slot: string): number {
   const [time, ampm] = slot.split(' ')
-  let [h, m] = time.split(':').map(Number)
+  const [rawHour, minutes] = time.split(':').map(Number)
+  let h = rawHour
   if (ampm === 'PM' && h !== 12) h += 12
   if (ampm === 'AM' && h === 12) h = 0
-  return h * 60 + m
+  return h * 60 + minutes
 }
 
 export async function GET(req: Request) {

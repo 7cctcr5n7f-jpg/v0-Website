@@ -4,14 +4,17 @@ import { revalidatePath } from 'next/cache'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import {
+  blockedDays,
   shiftAssignments,
   shiftSettings,
   staff,
   stockConfirmations,
   stockItems,
+  trialBookings,
   trialBookingNotes,
   waterAuditLog,
   waterCredits,
+  whatsappReminderLog,
 } from '@/lib/db/schema'
 import {
   clearOperationsCookie,
@@ -20,6 +23,10 @@ import {
   setOperationsCookie,
   verifyOpsPasscode,
 } from '@/lib/operations-auth'
+import { sendEmail } from '@/lib/email'
+import { business } from '@/lib/business'
+import { getWhatsappSettings, sendWhatsAppText } from '@/lib/whatsapp'
+import { formatDateLong, parseDateString, slotToMinutes, todayDateString, validSlotsForDay } from '@/lib/trial-slots'
 
 async function requireOps() {
   if (!(await isOperationsAuthed())) throw new Error('Unauthorized')
@@ -156,6 +163,123 @@ export async function deleteTrialNote(formData: FormData) {
   const id = Number(formData.get('id') ?? 0)
   if (id > 0) await db.delete(trialBookingNotes).where(eq(trialBookingNotes.id, id))
   revalidateOps()
+}
+
+export async function updateTrialBookingSchedule(formData: FormData) {
+  await requireOps()
+  const bookingId = Number(formData.get('bookingId') ?? 0)
+  const appointmentDate = String(formData.get('appointmentDate') ?? '').trim()
+  const appointmentTime = String(formData.get('appointmentTime') ?? '').trim()
+  if (!bookingId || !appointmentDate || !appointmentTime) {
+    return { ok: false, error: 'Please choose a new trial date and time.' }
+  }
+
+  const booking = await db.select().from(trialBookings).where(eq(trialBookings.id, bookingId)).limit(1)
+  if (booking.length === 0) {
+    return { ok: false, error: 'That trial booking could not be found.' }
+  }
+
+  const nextDate = parseDateString(appointmentDate)
+  if (!nextDate) {
+    return { ok: false, error: 'Please choose a valid date.' }
+  }
+
+  const current = booking[0]
+  const today = todayDateString()
+  const maxDate = new Date()
+  maxDate.setDate(maxDate.getDate() + 90)
+  const maxYmd = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, '0')}-${String(maxDate.getDate()).padStart(2, '0')}`
+
+  if (appointmentDate < today) {
+    return { ok: false, error: 'Trials cannot be moved to a past date.' }
+  }
+  if (appointmentDate > maxYmd) {
+    return { ok: false, error: 'Trials cannot be moved more than 90 days ahead.' }
+  }
+  if (!validSlotsForDay(nextDate.getDay()).includes(appointmentTime)) {
+    return {
+      ok: false,
+      error: `The selected time (${appointmentTime}) is not available on that day. Please choose a valid slot.`,
+    }
+  }
+
+  const blocked = await db.select({ id: blockedDays.id }).from(blockedDays).where(eq(blockedDays.day, appointmentDate)).limit(1)
+  if (blocked.length > 0) {
+    return { ok: false, error: 'That day is unavailable. Please choose another date.' }
+  }
+
+  if (appointmentDate === today) {
+    const now = new Date()
+    const nowMinutes = now.getHours() * 60 + now.getMinutes()
+    if (slotToMinutes(appointmentTime) <= nowMinutes) {
+      return { ok: false, error: 'That time has already passed today. Please choose another date.' }
+    }
+  }
+
+  if (current.appointmentDate === appointmentDate && current.appointmentTime === appointmentTime) {
+    return { ok: false, error: 'Please choose a different date or time to reschedule this trial.' }
+  }
+
+  const dateLong = formatDateLong(appointmentDate)
+  const firstName = current.fullName.trim().split(/\s+/)[0] || current.fullName
+  const previousReminderLogs = await db
+    .select()
+    .from(whatsappReminderLog)
+    .where(eq(whatsappReminderLog.bookingId, bookingId))
+
+  await db
+    .update(trialBookings)
+    .set({ appointmentDate, appointmentTime })
+    .where(eq(trialBookings.id, bookingId))
+  await db.delete(whatsappReminderLog).where(eq(whatsappReminderLog.bookingId, bookingId))
+
+  try {
+    await sendEmail({
+      to: current.email,
+      subject: 'Your TENROUNDS trial has been rescheduled',
+      replyTo: business.email,
+      text: `Hi ${firstName},
+
+Your TENROUNDS trial has been rescheduled to ${dateLong} at ${appointmentTime}.
+
+If you need to make another change, just reply to this email and we will help you.
+
+Looking forward to seeing you!
+
+Kind regards,
+TENROUNDS Team`,
+    })
+  } catch (error) {
+    console.error('[operations] failed to send trial reschedule email:', error)
+    await db
+    .update(trialBookings)
+    .set({ appointmentDate: current.appointmentDate, appointmentTime: current.appointmentTime })
+    .where(eq(trialBookings.id, bookingId))
+    if (previousReminderLogs.length > 0) {
+    await db.insert(whatsappReminderLog).values(previousReminderLogs.map((log) => ({
+      bookingId: log.bookingId,
+      reminderType: log.reminderType,
+      sentAt: log.sentAt,
+    })))
+    }
+    return { ok: false, error: 'The confirmation email could not be sent, so the reschedule was not saved.' }
+  }
+
+  revalidatePath('/operations')
+  revalidatePath('/admin')
+
+  try {
+    const waSettings = await getWhatsappSettings()
+    await sendWhatsAppText(
+    current.phone,
+    `Hi ${firstName}, your TENROUNDS trial has been rescheduled to ${dateLong} at ${appointmentTime}. We look forward to seeing you!`,
+    waSettings,
+    )
+  } catch (error) {
+    console.error('[operations] failed to send trial reschedule WhatsApp:', error)
+  }
+
+  return { ok: true }
 }
 
 // ── Water credits ────────────────────────────────────────────────────────────

@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
-import { saveTrialNote, deleteTrialNote } from '@/app/actions/operations'
-import { formatDateLong } from '@/lib/trial-slots'
+import { useEffect, useMemo, useState } from 'react'
+import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule } from '@/app/actions/operations'
+import { formatDateLong, parseDateString, slotGroupsForDay } from '@/lib/trial-slots'
 import {
   buildSignupEmailIndex,
   getTrialConversion,
@@ -117,6 +117,12 @@ function ConversionBadge({ conversion }: { conversion: TrialConversion }) {
   )
 }
 
+function addDaysYmd(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() + days)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
 function TrialRow({
   booking: b,
   notes,
@@ -131,6 +137,28 @@ function TrialRow({
   const [expanded, setExpanded] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [pending, setPending] = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState(false)
+  const [dateValue, setDateValue] = useState(b.appointmentDate)
+  const [timeValue, setTimeValue] = useState(b.appointmentTime)
+  const [schedulePending, setSchedulePending] = useState(false)
+  const [scheduleMessage, setScheduleMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  const minDate = ymdInJohannesburg()
+  const maxDate = addDaysYmd(90)
+  const slotGroups = useMemo(() => {
+    const date = parseDateString(dateValue)
+    return date ? slotGroupsForDay(date.getDay()) : []
+  }, [dateValue])
+  const availableTimes = slotGroups.flatMap((group) => group.slots)
+
+  useEffect(() => {
+    if (availableTimes.length === 0) {
+      if (timeValue !== '') setTimeValue('')
+      return
+    }
+    if (!availableTimes.includes(timeValue)) {
+      setTimeValue(availableTimes[0])
+    }
+  }, [availableTimes, timeValue])
 
   async function handleNote() {
     if (!noteText.trim()) return
@@ -141,6 +169,30 @@ function TrialRow({
     await saveTrialNote(fd)
     setNoteText('')
     setPending(false)
+  }
+
+  async function handleScheduleSave() {
+    if (!dateValue) return
+    setSchedulePending(true)
+    setScheduleMessage(null)
+    const fd = new FormData()
+    fd.set('bookingId', String(b.id))
+    fd.set('appointmentDate', dateValue)
+    fd.set('appointmentTime', timeValue)
+    try {
+      const result = await updateTrialBookingSchedule(fd)
+      if (!result.ok) {
+        setScheduleMessage({ tone: 'error', text: result.error })
+        return
+      }
+      setEditingSchedule(false)
+      setScheduleMessage({ tone: 'success', text: 'Trial schedule updated and confirmation emailed.' })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not update the trial booking.'
+      setScheduleMessage({ tone: 'error', text: message })
+    } finally {
+      setSchedulePending(false)
+    }
   }
 
   return (
@@ -183,11 +235,84 @@ function TrialRow({
 
       {/* Expanded content */}
       {expanded && (
-        <div className="border-t border-steel/40 px-3 py-2 space-y-2">
-          <div className="text-xs text-light-grey space-y-0.5">
-            <p>{formatDateLong(b.appointmentDate)} · {b.appointmentTime}</p>
-            <p>{b.phone}</p>
-            <p className="truncate">{b.email}</p>
+        <div className="space-y-2 border-t border-steel/40 px-3 py-2">
+          <div className="space-y-2">
+            <div className="space-y-0.5 text-xs text-light-grey">
+              <p>{formatDateLong(b.appointmentDate)} · {b.appointmentTime}</p>
+              <p>{b.phone}</p>
+              <p className="truncate">{b.email}</p>
+            </div>
+            <div className="rounded-lg border border-steel/40 bg-card/50 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-mid-grey">Trial schedule</p>
+                  <p className="text-xs font-semibold text-foreground">{formatDateLong(dateValue)}</p>
+                  <p className="text-[10px] text-light-grey">{timeValue}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDateValue(b.appointmentDate)
+                    setTimeValue(b.appointmentTime)
+                    setScheduleMessage(null)
+                    setEditingSchedule((value) => !value)
+                  }}
+                  className="inline-flex items-center gap-1 rounded-md border border-steel/60 px-2 py-1 text-[10px] font-semibold text-light-grey transition-colors hover:border-neon-blue hover:text-foreground"
+                >
+                  <CalendarDays className="size-3" />
+                  {editingSchedule ? 'Cancel' : 'Edit'}
+                </button>
+              </div>
+              {editingSchedule && (
+                <div className="mt-2 flex flex-wrap items-end gap-2">
+                  <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-[10px] font-semibold uppercase tracking-wide text-mid-grey">
+                    New date
+                    <input
+                      type="date"
+                      value={dateValue}
+                      min={minDate}
+                      max={maxDate}
+                      onChange={(e) => setDateValue(e.target.value)}
+                      className="rounded border border-steel bg-background px-2 py-1.5 text-xs font-medium normal-case tracking-normal text-foreground outline-none focus:border-neon-green"
+                    />
+                  </label>
+                  <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-[10px] font-semibold uppercase tracking-wide text-mid-grey">
+                    New time
+                    <select
+                      value={timeValue}
+                      onChange={(e) => setTimeValue(e.target.value)}
+                      className="rounded border border-steel bg-background px-2 py-1.5 text-xs font-medium normal-case tracking-normal text-foreground outline-none focus:border-neon-green"
+                    >
+                      {slotGroups.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.slots.map((slot) => (
+                            <option key={slot} value={slot}>
+                              {slot}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleScheduleSave}
+                    disabled={schedulePending || !dateValue || !timeValue || availableTimes.length === 0}
+                    className="rounded border border-neon-green px-2.5 py-1.5 text-[10px] font-semibold text-neon-green disabled:opacity-50"
+                  >
+                    {schedulePending ? 'Sending…' : 'Confirm and Email'}
+                  </button>
+                </div>
+              )}
+              {editingSchedule && availableTimes.length === 0 && (
+                <p className="mt-2 text-[10px] text-red-400">No trial slots are available on that day.</p>
+              )}
+              {scheduleMessage && (
+                <p className={`mt-2 text-[10px] ${scheduleMessage.tone === 'success' ? 'text-neon-green' : 'text-red-400'}`}>
+                  {scheduleMessage.text}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Notes */}

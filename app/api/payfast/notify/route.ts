@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 // PayFast Instant Transaction Notification (server-to-server). PayFast expects
 // a 200 OK quickly; all verification happens before we mutate the record.
 export async function POST(req: Request) {
-  let rawBody = ''
+  let rawBody: string
   try {
     rawBody = await req.text()
   } catch {

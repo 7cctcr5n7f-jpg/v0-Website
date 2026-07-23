@@ -21,7 +21,7 @@ import { SignupsTable } from '@/components/admin/signups-table'
 import { SessionPurchasesTable } from '@/components/admin/session-purchases-table'
 import { GalleryAdmin } from '@/components/admin/gallery-admin'
 import { CommsAdmin } from '@/components/admin/comms-admin'
-import type { BlockedDay, ChowWinner, GalleryCategory, GalleryPhoto, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
+import type { BlockedDay, ChowWinner, GalleryCategory, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
 import type { GalleryPhotoWithCategory } from '@/lib/content-queries'
 import type { WaSettings } from '@/lib/whatsapp'
 

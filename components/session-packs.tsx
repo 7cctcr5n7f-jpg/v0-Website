@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { MapPin, Check, Flame, Gift, ArrowRight } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
 import { SpecialMoreInfo } from '@/components/specials/special-more-info'
-import { sessionPacks, sessionPrice, formatRand } from '@/lib/memberships'
+import { sessionPacks, formatRand } from '@/lib/memberships'
 import { cn } from '@/lib/utils'
 import type { Special } from '@/lib/db/schema'
 
