@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, ChevronLeft, ChevronRight, UserRound } from 'lucide-react'
+import { Plus, Trash2, ChevronLeft, ChevronRight, UserRound, Pencil, Check, X } from 'lucide-react'
 import { saveShiftAssignment, deleteShiftAssignment } from '@/app/actions/operations'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
 
@@ -261,6 +261,8 @@ function ShiftCell({
 }
 
 function AssignmentPill({ assignment, name }: { assignment: ShiftAssignment; name: string }) {
+  const [editing, setEditing] = useState(false)
+  const [hours, setHours] = useState(assignment.hours)
   const [pending, setPending] = useState(false)
 
   async function handleDelete() {
@@ -272,6 +274,56 @@ function AssignmentPill({ assignment, name }: { assignment: ShiftAssignment; nam
     setPending(false)
   }
 
+  async function handleSaveHours() {
+    setPending(true)
+    const fd = new FormData()
+    fd.set('id', String(assignment.id))
+    fd.set('shiftDate', assignment.shiftDate)
+    fd.set('shiftType', assignment.shiftType)
+    fd.set('staffId', String(assignment.staffId))
+    fd.set('hours', hours)
+    await saveShiftAssignment(fd)
+    setEditing(false)
+    setPending(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1 rounded-full border border-neon-blue bg-card px-2.5 py-1 text-xs">
+        <UserRound className="size-3 text-neon-blue" />
+        <span className="font-medium text-foreground">{name}</span>
+        <input
+          type="number"
+          step="0.5"
+          min="0"
+          value={hours}
+          onChange={(e) => setHours(e.target.value)}
+          className="w-12 rounded border border-steel bg-background px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-neon-blue"
+          aria-label="Edit hours"
+          autoFocus
+        />
+        <span className="text-light-grey">h</span>
+        <button
+          type="button"
+          onClick={handleSaveHours}
+          disabled={pending}
+          className="text-neon-green transition-colors hover:text-neon-green/70 disabled:opacity-50"
+          aria-label="Save hours"
+        >
+          <Check className="size-3" />
+        </button>
+        <button
+          type="button"
+          onClick={() => { setEditing(false); setHours(assignment.hours) }}
+          className="text-light-grey transition-colors hover:text-foreground"
+          aria-label="Cancel"
+        >
+          <X className="size-3" />
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex items-center gap-1.5 rounded-full border border-steel bg-card px-2.5 py-1 text-xs">
       <UserRound className="size-3 text-neon-blue" />
@@ -281,9 +333,17 @@ function AssignmentPill({ assignment, name }: { assignment: ShiftAssignment; nam
       )}
       <button
         type="button"
+        onClick={() => setEditing(true)}
+        className="ml-0.5 text-light-grey transition-colors hover:text-neon-blue"
+        aria-label={`Edit hours for ${name}`}
+      >
+        <Pencil className="size-3" />
+      </button>
+      <button
+        type="button"
         onClick={handleDelete}
         disabled={pending}
-        className="ml-0.5 text-light-grey transition-colors hover:text-red-400 disabled:opacity-50"
+        className="text-light-grey transition-colors hover:text-red-400 disabled:opacity-50"
         aria-label={`Remove ${name}`}
       >
         <Trash2 className="size-3" />

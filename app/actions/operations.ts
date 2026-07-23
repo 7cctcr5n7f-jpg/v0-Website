@@ -167,6 +167,15 @@ export async function deleteWaterMember(formData: FormData) {
   revalidateOps()
 }
 
+export async function getWaterAuditLog(creditId: number) {
+  await requireOps()
+  return db
+    .select()
+    .from(waterAuditLog)
+    .where(eq(waterAuditLog.creditId, creditId))
+    .orderBy(desc(waterAuditLog.createdAt))
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 export async function opsLogin(_prev: unknown, formData: FormData) {

@@ -7,6 +7,7 @@ import {
   staff,
   trialBookingNotes,
   trialBookings,
+  waterAuditLog,
   waterCredits,
 } from '@/lib/db/schema'
 import { isOperationsAuthed } from '@/lib/operations-auth'
@@ -26,7 +27,7 @@ export default async function OperationsPage() {
     return <OperationsLogin />
   }
 
-  const [allStaff, allShiftSettings, allAssignments, allBookings, allNotes, allSignups, allWaterCredits] =
+  const [allStaff, allShiftSettings, allAssignments, allBookings, allNotes, allSignups, allWaterCredits, allAuditLog] =
     await Promise.all([
       db.select().from(staff).orderBy(asc(staff.name)),
       db.select().from(shiftSettings).orderBy(asc(shiftSettings.id)),
@@ -35,6 +36,7 @@ export default async function OperationsPage() {
       db.select().from(trialBookingNotes).orderBy(asc(trialBookingNotes.createdAt)),
       getMembershipSignups(),
       db.select().from(waterCredits).orderBy(asc(waterCredits.memberName)),
+      db.select().from(waterAuditLog).orderBy(desc(waterAuditLog.createdAt)),
     ])
 
   return (
@@ -46,6 +48,7 @@ export default async function OperationsPage() {
       notes={allNotes}
       signups={allSignups}
       waterCredits={allWaterCredits}
+      waterAuditLog={allAuditLog}
     />
   )
 }
