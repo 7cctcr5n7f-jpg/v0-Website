@@ -10,7 +10,7 @@ import {
   CalendarClock,
   UserPlus2,
 } from 'lucide-react'
-import { saveShiftAssignment } from '@/app/actions/operations'
+import { deleteShiftAssignment, saveShiftAssignment } from '@/app/actions/operations'
 import { StaffIcon } from './staff-icon'
 import { sessionPurchaseOccurredAt, uniqueQualifyingSessionPurchases, ymdInJohannesburg } from '@/lib/trial-conversion'
 import type { Staff, ShiftAssignment, ShiftSetting, TrialBooking, MembershipSignup, SessionPurchase } from '@/lib/db/schema'
@@ -473,6 +473,20 @@ function AssignmentChip({
     }
   }
 
+  async function handleRemove() {
+    setPending(true)
+    const fd = new FormData()
+    fd.set('authToken', actionAuthToken)
+    fd.set('id', String(assignment.id))
+    try {
+      await deleteShiftAssignment(fd)
+    } catch (error) {
+      handleOpsActionError(error)
+    } finally {
+      setPending(false)
+    }
+  }
+
   if (editing) {
     return (
       <div className="my-0.5 flex items-center gap-1 rounded-md border border-steel/65 bg-steel/50 px-1.5 py-1">
@@ -504,20 +518,33 @@ function AssignmentChip({
 
   // Click the chip to open edit mode
   return (
-    <button
-      type="button"
-      onClick={() => setEditing(true)}
-      disabled={pending}
-      className={`flex min-h-[34px] w-full items-center gap-1.5 rounded-md border border-steel/65 bg-steel/50 px-2 py-1 text-left transition-colors hover:border-steel/85 hover:bg-steel/60 active:scale-[0.98] ${pending ? 'opacity-40' : ''}`}
-      aria-label={`Edit ${name}`}
-    >
-      <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
-      <span className={`flex min-w-0 flex-1 items-center gap-1 text-[11px] font-semibold leading-tight ${tone.name}`}>
-        <StaffIcon icon={icon} className="shrink-0" />
-        <span className="leading-tight">{name}</span>
-      </span>
-      <span className="shrink-0 rounded bg-steel/90 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">{hours || defaultHours}h</span>
-    </button>
+    <div className={`flex min-h-[34px] w-full items-center gap-1 rounded-md border border-steel/65 bg-steel/50 px-1 py-1 ${pending ? 'opacity-40' : ''}`}>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        disabled={pending}
+        className="flex min-h-[28px] min-w-0 flex-1 items-center gap-1.5 rounded px-1 text-left transition-colors hover:bg-steel/25 active:scale-[0.98]"
+        aria-label={`Edit ${name}`}
+      >
+        <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
+        <span className={`flex min-w-0 flex-1 items-center gap-1 text-[11px] font-semibold leading-tight ${tone.name}`}>
+          <StaffIcon icon={icon} className="shrink-0" />
+          <span className="leading-tight">{name}</span>
+        </span>
+        <span className="shrink-0 rounded bg-steel/90 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">
+          {hours || defaultHours}h
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={handleRemove}
+        disabled={pending}
+        className="mr-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded bg-steel/80 text-mid-grey transition-colors hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50"
+        aria-label={`Remove ${name} from shift`}
+      >
+        <X className="size-3" />
+      </button>
+    </div>
   )
 }
 
