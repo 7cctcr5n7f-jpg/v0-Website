@@ -124,7 +124,10 @@ export async function saveShiftAssignment(formData: FormData) {
 }
 
 export async function deleteShiftAssignment(formData: FormData) {
-  await requireOps()
+  const authToken = String(formData.get('authToken') ?? '')
+  if (!(await isOperationsAuthed()) && !verifyOperationsActionToken(authToken)) {
+    throw new Error('Unauthorized')
+  }
   const id = Number(formData.get('id') ?? 0)
   if (id > 0) await db.delete(shiftAssignments).where(eq(shiftAssignments.id, id))
   revalidateOps()
