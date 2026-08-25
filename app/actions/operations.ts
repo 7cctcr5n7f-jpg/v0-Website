@@ -168,6 +168,15 @@ export async function deleteTrialNote(formData: FormData) {
   revalidateOps()
 }
 
+export async function markTrialConverted(formData: FormData) {
+  await requireOps()
+  const bookingId = Number(formData.get('bookingId') ?? 0)
+  const value = formData.get('value') !== 'false'
+  if (!bookingId) return
+  await db.update(trialBookings).set({ manuallyConverted: value }).where(eq(trialBookings.id, bookingId))
+  revalidateOps()
+}
+
 export async function updateTrialBookingSchedule(formData: FormData) {
   await requireOps()
   const bookingId = Number(formData.get('bookingId') ?? 0)

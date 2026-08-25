@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
-import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule } from '@/app/actions/operations'
+import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule, markTrialConverted } from '@/app/actions/operations'
 import { formatDateLong, parseDateString, slotGroupsForDay } from '@/lib/trial-slots'
 import {
   buildSessionPurchaseEmailIndex,
@@ -186,7 +186,7 @@ function TrialRow({
     try {
       const result = await updateTrialBookingSchedule(fd)
       if (!result.ok) {
-        setScheduleMessage({ tone: 'error', text: result.error })
+        setScheduleMessage({ tone: 'error', text: result.error ?? 'Could not update the trial booking.' })
         return
       }
       setEditingSchedule(false)
@@ -318,6 +318,25 @@ function TrialRow({
               )}
             </div>
           </div>
+
+          {/* Manual conversion override */}
+          {isPast && (
+            <form action={markTrialConverted}>
+              <input type="hidden" name="bookingId" value={b.id} />
+              <input type="hidden" name="value" value={b.manuallyConverted ? 'false' : 'true'} />
+              <button
+                type="submit"
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[10px] font-semibold transition-colors ${
+                  b.manuallyConverted
+                    ? 'border-steel/60 text-light-grey hover:border-red-400 hover:text-red-400'
+                    : 'border-neon-green/50 text-neon-green hover:border-neon-green'
+                }`}
+              >
+                <CheckCircle2 className="size-3" />
+                {b.manuallyConverted ? 'Undo manual conversion' : 'Mark as converted'}
+              </button>
+            </form>
+          )}
 
           {/* Notes */}
           {notes.length > 0 && (

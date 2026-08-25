@@ -78,6 +78,7 @@ export const trialBookings = pgTable('trial_bookings', {
   appointmentDate: text('appointment_date').notNull(),
   appointmentTime: text('appointment_time').notNull(),
   agreementsAccepted: boolean('agreements_accepted').notNull().default(false),
+  manuallyConverted: boolean('manually_converted').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

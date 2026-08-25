@@ -89,6 +89,9 @@ export function getTrialConversion(
   sessionPurchaseIndex: Map<string, SessionPurchase>,
   todayYmd: string,
 ): TrialConversion {
+  if (booking.manuallyConverted) {
+    return { status: 'converted', signup: null, sessionPurchase: null, source: 'membership', packageLabel: 'Manual' }
+  }
   const key = normalizeEmail(booking.email)
   const signup = signupIndex.get(key) ?? null
   if (signup) {
