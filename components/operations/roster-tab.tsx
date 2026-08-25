@@ -170,9 +170,9 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
           </button>
         </div>
 
-        {/* Day cards — horizontal scroll on small screens */}
+        {/* Day cards */}
         <div className="overflow-x-auto pb-1 -mx-1 px-1">
-          <div className="grid min-w-[560px] grid-cols-6 gap-1.5">
+          <div className="grid min-w-[480px] grid-cols-6 gap-1.5">
             {weekDates.map((d, i) => {
               const dateStr = toIso(d)
               const isToday = toIso(d) === toIso(new Date())
@@ -213,7 +213,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
               return (
                 <div
                   key={dateStr}
-                  className={`flex h-[540px] flex-col overflow-hidden rounded-lg border transition-colors ${
+                  className={`flex h-[460px] flex-col overflow-hidden rounded-lg border transition-colors ${
                     isToday
                       ? 'border-neon-blue/40 bg-neon-blue/5'
                       : 'border-steel/30 bg-card/30'
