@@ -213,7 +213,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
               return (
                 <div
                   key={dateStr}
-                  className={`flex h-[460px] flex-col overflow-hidden rounded-lg border transition-colors ${
+                  className={`flex h-[520px] flex-col overflow-hidden rounded-lg border transition-colors ${
                     isToday
                       ? 'border-neon-blue/40 bg-neon-blue/5'
                       : 'border-steel/30 bg-card/30'
@@ -518,31 +518,33 @@ function AssignmentChip({
 
   // Click the chip to open edit mode
   return (
-    <div className={`flex min-h-[34px] w-full items-center gap-1 rounded-md border border-steel/65 bg-steel/50 px-1 py-1 ${pending ? 'opacity-40' : ''}`}>
+    <div className={`w-full rounded-md border border-steel/65 bg-steel/50 ${pending ? 'opacity-40' : ''}`}>
+      {/* Top row: dot + icon + hours + remove */}
+      <div className="flex items-center gap-1 px-1.5 pt-1.5">
+        <span className={`size-2 shrink-0 rounded-full ${tone.dot}`} />
+        <StaffIcon icon={icon} className="shrink-0 text-sm" />
+        <span className="ml-auto shrink-0 rounded bg-steel/90 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">
+          {hours || defaultHours}h
+        </span>
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={pending}
+          className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-steel/80 text-mid-grey transition-colors hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50"
+          aria-label={`Remove ${name} from shift`}
+        >
+          <X className="size-3" />
+        </button>
+      </div>
+      {/* Bottom row: full name — tappable to edit */}
       <button
         type="button"
         onClick={() => setEditing(true)}
         disabled={pending}
-        className="flex min-h-[28px] min-w-0 flex-1 items-center gap-1.5 rounded px-1 text-left transition-colors hover:bg-steel/25 active:scale-[0.98]"
+        className={`block w-full truncate px-1.5 pb-1.5 pt-0.5 text-left text-[12px] font-bold leading-tight transition-colors hover:opacity-80 active:scale-[0.98] ${tone.name}`}
         aria-label={`Edit ${name}`}
       >
-        <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
-        <span className={`flex min-w-0 flex-1 items-center gap-1 text-[11px] font-semibold leading-tight ${tone.name}`}>
-          <StaffIcon icon={icon} className="shrink-0" />
-          <span className="leading-tight">{name}</span>
-        </span>
-        <span className="shrink-0 rounded bg-steel/90 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">
-          {hours || defaultHours}h
-        </span>
-      </button>
-      <button
-        type="button"
-        onClick={handleRemove}
-        disabled={pending}
-        className="mr-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded bg-steel/80 text-mid-grey transition-colors hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50"
-        aria-label={`Remove ${name} from shift`}
-      >
-        <X className="size-3" />
+        {name}
       </button>
     </div>
   )
