@@ -541,7 +541,7 @@ function AssignmentChip({
         type="button"
         onClick={() => setEditing(true)}
         disabled={pending}
-        className={`block w-full truncate px-1.5 pb-1.5 pt-0.5 text-left text-[12px] font-bold leading-tight transition-colors hover:opacity-80 active:scale-[0.98] ${tone.name}`}
+        className={`block w-full truncate px-1.5 pb-1.5 pt-0.5 text-left text-[10px] font-bold leading-tight transition-colors hover:opacity-80 active:scale-[0.98] ${tone.name}`}
         aria-label={`Edit ${name}`}
       >
         {name}
