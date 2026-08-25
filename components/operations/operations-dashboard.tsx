@@ -39,6 +39,8 @@ interface Props {
   lastStockConfirmation: StockConfirmation | null
 }
 
+type LeftTab = 'trials' | 'members' | 'water'
+
 export function OperationsDashboard({
   actionAuthToken,
   staff,
@@ -54,10 +56,11 @@ export function OperationsDashboard({
   lastStockConfirmation,
 }: Props) {
   const [showSettings, setShowSettings] = useState(false)
+  const [leftTab, setLeftTab] = useState<LeftTab>('trials')
 
   if (showSettings) {
     return (
-      <div className="min-h-screen px-4 pb-6 pt-24 sm:px-6 sm:pt-28 lg:px-8 lg:pt-24">
+      <div className="min-h-screen px-4 pb-6 pt-4">
         <div className="mx-auto max-w-3xl">
           <div className="mb-6 flex items-center justify-between">
             <h1 className="font-display text-2xl font-black uppercase tracking-tight">Settings</h1>
@@ -76,9 +79,9 @@ export function OperationsDashboard({
   }
 
   return (
-    <div className="min-h-screen px-4 pb-6 pt-24 sm:px-6 sm:pt-28 lg:px-8 lg:pt-24">
-      {/* Minimal top bar */}
-      <div className="mb-6 flex items-center justify-between">
+    <div className="flex h-screen flex-col overflow-hidden px-3 pb-3 pt-3">
+      {/* Top bar */}
+      <div className="mb-3 flex shrink-0 items-center justify-between">
         <p className="font-display text-xs font-bold uppercase tracking-widest text-neon-green">
           Ten Rounds — Operations
         </p>
@@ -101,66 +104,79 @@ export function OperationsDashboard({
         </div>
       </div>
 
-      {/* Main grid: 3-panel row first, Roster full-width below */}
-      <div className="space-y-5">
-        {/* Top 3-panel row */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {/* Trials */}
-          <section className="rounded-2xl border border-steel bg-card p-4">
-            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-              Trials
-            </h2>
-            <TrialsTab bookings={bookings} notes={notes} signups={signups} sessionPurchases={sessionPurchases} />
-          </section>
+      {/* ── Main area: fills remaining height ── */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* iPad landscape (lg+): left sidebar + roster side by side */}
+        <div className="flex h-full gap-3 lg:flex-row flex-col">
 
-          {/* New Members */}
-          <section className="rounded-2xl border border-steel bg-card p-4">
-            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-              New Members
-            </h2>
-            <MembersTab signups={signups} sessionPurchases={sessionPurchases} />
-          </section>
+          {/* ── Left sidebar: tabbed Trials / Members / Water ── */}
+          <div className="flex shrink-0 flex-col lg:w-[360px] lg:h-full">
+            {/* Tab bar */}
+            <div className="mb-2 flex shrink-0 rounded-xl border border-steel/60 bg-card p-1">
+              {(['trials', 'members', 'water'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setLeftTab(tab)}
+                  className={`flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                    leftTab === tab
+                      ? 'bg-neon-green/20 text-neon-green'
+                      : 'text-mid-grey hover:text-foreground'
+                  }`}
+                >
+                  {tab === 'trials' ? 'Trials' : tab === 'members' ? 'Members' : 'Water'}
+                </button>
+              ))}
+            </div>
 
-          {/* Water Credits */}
-          <section className="rounded-2xl border border-steel bg-card p-4">
-            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-              Water Credits
-            </h2>
-            <WaterTab credits={waterCredits} auditLog={waterAuditLog} />
-          </section>
-        </div>
+            {/* Tab content — scrollable */}
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-steel bg-card p-4">
+              {leftTab === 'trials' && (
+                <TrialsTab bookings={bookings} notes={notes} signups={signups} sessionPurchases={sessionPurchases} />
+              )}
+              {leftTab === 'members' && (
+                <MembersTab signups={signups} sessionPurchases={sessionPurchases} />
+              )}
+              {leftTab === 'water' && (
+                <WaterTab credits={waterCredits} auditLog={waterAuditLog} />
+              )}
+            </div>
+          </div>
 
-        {/* Roster — full width below */}
-        <section className="rounded-2xl border border-steel bg-card p-4">
-          <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-            Roster
-          </h2>
-          <RosterTab
-            actionAuthToken={actionAuthToken}
-            staff={staff}
-            assignments={assignments}
-            shiftSettings={shiftSettings}
-            bookings={bookings}
-            signups={signups}
-            sessionPurchases={sessionPurchases}
-          />
-        </section>
+          {/* ── Right: Roster + Stock/Hours below ── */}
+          <div className="flex min-w-0 flex-1 flex-col gap-3 lg:overflow-y-auto">
+            {/* Roster */}
+            <section className="shrink-0 rounded-2xl border border-steel bg-card p-4">
+              <h2 className="mb-3 font-display text-sm font-black uppercase tracking-widest text-neon-green">
+                Roster
+              </h2>
+              <RosterTab
+                actionAuthToken={actionAuthToken}
+                staff={staff}
+                assignments={assignments}
+                shiftSettings={shiftSettings}
+                bookings={bookings}
+                signups={signups}
+                sessionPurchases={sessionPurchases}
+              />
+            </section>
 
-        {/* Stock + Staff Hours — side by side */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <section className="rounded-2xl border border-steel bg-card p-4">
-            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-              Stock
-            </h2>
-            <StockTab items={stockItems} lastConfirmation={lastStockConfirmation} staff={staff} />
-          </section>
-
-          <section className="rounded-2xl border border-steel bg-card p-4">
-            <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
-              Staff Hours
-            </h2>
-            <StaffHoursSummary staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
-          </section>
+            {/* Stock + Staff Hours — side by side */}
+            <div className="grid shrink-0 grid-cols-1 gap-3 sm:grid-cols-2">
+              <section className="rounded-2xl border border-steel bg-card p-4">
+                <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
+                  Stock
+                </h2>
+                <StockTab items={stockItems} lastConfirmation={lastStockConfirmation} staff={staff} />
+              </section>
+              <section className="rounded-2xl border border-steel bg-card p-4">
+                <h2 className="mb-4 font-display text-sm font-black uppercase tracking-widest text-neon-green">
+                  Staff Hours
+                </h2>
+                <StaffHoursSummary staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
+              </section>
+            </div>
+          </div>
         </div>
       </div>
     </div>

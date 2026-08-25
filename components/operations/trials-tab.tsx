@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
-import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule } from '@/app/actions/operations'
+import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle, Download } from 'lucide-react'
+import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule, markTrialConverted } from '@/app/actions/operations'
 import { formatDateLong, parseDateString, slotGroupsForDay } from '@/lib/trial-slots'
 import {
   buildSessionPurchaseEmailIndex,
@@ -25,6 +25,14 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
   const today = ymdInJohannesburg()
   const monthPrefix = today.slice(0, 7)
 
+  // Previous month prefix (YYYY-MM)
+  const prevMonthPrefix = useMemo(() => {
+    const [y, m] = monthPrefix.split('-').map(Number)
+    const pm = m === 1 ? 12 : m - 1
+    const py = m === 1 ? y - 1 : y
+    return `${py}-${String(pm).padStart(2, '0')}`
+  }, [monthPrefix])
+
   const signupIndex = useMemo(() => buildSignupEmailIndex(signups), [signups])
   const sessionPurchaseIndex = useMemo(() => buildSessionPurchaseEmailIndex(sessionPurchases), [sessionPurchases])
 
@@ -41,14 +49,47 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
     const converted = completedTrials.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status === 'converted').length
     const total = completedTrials.length
     const rate = total > 0 ? Math.round((converted / total) * 100) : 0
-    return { total, converted, rate }
-  }, [bookings, monthPrefix, sessionPurchaseIndex, signupIndex, today])
+
+    const prevCompleted = bookings.filter((b) => b.appointmentDate.slice(0, 7) === prevMonthPrefix)
+    const prevConverted = prevCompleted.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status === 'converted').length
+    const prevTotal = prevCompleted.length
+    const prevRate = prevTotal > 0 ? Math.round((prevConverted / prevTotal) * 100) : 0
+
+    return { total, converted, rate, prevTotal, prevConverted, prevRate }
+  }, [bookings, monthPrefix, prevMonthPrefix, sessionPurchaseIndex, signupIndex, today])
 
   const visible = showPast ? [...upcoming, ...past] : upcoming
 
+  async function handleExport() {
+    const { utils, writeFile } = await import('xlsx')
+    const nonConverted = past.filter(
+      (b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status !== 'converted',
+    )
+    const rows = nonConverted.map((b) => {
+      const bookingNotes = notes.filter((n) => n.bookingId === b.id).map((n) => n.note).join(' | ')
+      return {
+        'Full Name': b.fullName,
+        'Email': b.email,
+        'Phone': b.phone,
+        'Appointment Date': b.appointmentDate,
+        'Appointment Time': b.appointmentTime,
+        'Notes': bookingNotes,
+      }
+    })
+    const ws = utils.json_to_sheet(rows)
+    const wb = utils.book_new()
+    utils.book_append_sheet(wb, ws, 'Not Converted')
+    const date = new Date().toISOString().slice(0, 10)
+    writeFile(wb, `non-converted-trials-${date}.xlsx`)
+  }
+
   return (
     <div>
-      <ConversionSummary total={kpi.total} converted={kpi.converted} rate={kpi.rate} />
+      <ConversionSummary
+        total={kpi.total} converted={kpi.converted} rate={kpi.rate}
+        prevTotal={kpi.prevTotal} prevConverted={kpi.prevConverted} prevRate={kpi.prevRate}
+        prevMonthPrefix={prevMonthPrefix}
+      />
 
       {visible.length === 0 ? (
         <p className="py-2 text-xs text-light-grey">No upcoming trials.</p>
@@ -70,30 +111,74 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
       >
         {showPast ? 'Hide past' : `Show past (${past.length})`}
       </button>
+
+      {/* Export non-converted */}
+      <div className="mt-3 border-t border-steel/30 pt-3">
+        <button
+          type="button"
+          onClick={handleExport}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-steel/60 px-3 py-2 text-[11px] font-semibold text-light-grey transition-colors hover:border-neon-green hover:text-neon-green"
+        >
+          <Download className="size-3.5" />
+          Export non-converted ({past.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status !== 'converted').length})
+        </button>
+      </div>
     </div>
   )
 }
 
-function ConversionSummary({ total, converted, rate }: { total: number; converted: number; rate: number }) {
+function ConversionSummary({
+  total, converted, rate,
+  prevTotal, prevConverted, prevRate, prevMonthPrefix,
+}: {
+  total: number; converted: number; rate: number
+  prevTotal: number; prevConverted: number; prevRate: number; prevMonthPrefix: string
+}) {
+  const prevMonthName = new Date(`${prevMonthPrefix}-15`).toLocaleString('en-ZA', { month: 'long', year: 'numeric' })
   return (
-    <div className="mb-3 rounded-xl border border-steel/60 bg-background/40 px-3.5 py-3">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">This Month</p>
-      <div className="mt-2 flex items-end gap-4">
-        <div>
-          <p className="text-xl font-black leading-none text-foreground tabular-nums">{total}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Trials</p>
+    <div className="mb-3 space-y-2">
+      {/* Previous month — compact */}
+      <div className="rounded-xl border border-steel/40 bg-background/20 px-3.5 py-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">{prevMonthName}</p>
+        <div className="mt-1.5 flex items-end gap-4">
+          <div>
+            <p className="text-base font-black leading-none text-foreground/70 tabular-nums">{prevTotal}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Trials</p>
+          </div>
+          <div>
+            <p className="text-base font-black leading-none text-neon-green/70 tabular-nums">{prevConverted}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Converted</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-base font-black leading-none text-neon-blue/70 tabular-nums">{prevRate}%</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Conversion</p>
+          </div>
         </div>
-        <div>
-          <p className="text-xl font-black leading-none text-neon-green tabular-nums">{converted}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Converted</p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-xl font-black leading-none text-neon-blue tabular-nums">{rate}%</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Conversion</p>
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-steel/30">
+          <div className="h-full rounded-full bg-neon-green/50 transition-all" style={{ width: `${prevRate}%` }} />
         </div>
       </div>
-      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
-        <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${rate}%` }} />
+
+      {/* This month — prominent */}
+      <div className="rounded-xl border border-steel/60 bg-background/40 px-3.5 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">This Month</p>
+        <div className="mt-2 flex items-end gap-4">
+          <div>
+            <p className="text-xl font-black leading-none text-foreground tabular-nums">{total}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Trials</p>
+          </div>
+          <div>
+            <p className="text-xl font-black leading-none text-neon-green tabular-nums">{converted}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Converted</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-xl font-black leading-none text-neon-blue tabular-nums">{rate}%</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Conversion</p>
+          </div>
+        </div>
+        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
+          <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${rate}%` }} />
+        </div>
       </div>
     </div>
   )
@@ -186,7 +271,7 @@ function TrialRow({
     try {
       const result = await updateTrialBookingSchedule(fd)
       if (!result.ok) {
-        setScheduleMessage({ tone: 'error', text: result.error })
+        setScheduleMessage({ tone: 'error', text: result.error ?? 'Could not update the trial booking.' })
         return
       }
       setEditingSchedule(false)
@@ -318,6 +403,25 @@ function TrialRow({
               )}
             </div>
           </div>
+
+          {/* Manual conversion override */}
+          {isPast && (
+            <form action={markTrialConverted}>
+              <input type="hidden" name="bookingId" value={b.id} />
+              <input type="hidden" name="value" value={b.manuallyConverted ? 'false' : 'true'} />
+              <button
+                type="submit"
+                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[10px] font-semibold transition-colors ${
+                  b.manuallyConverted
+                    ? 'border-steel/60 text-light-grey hover:border-red-400 hover:text-red-400'
+                    : 'border-neon-green/50 text-neon-green hover:border-neon-green'
+                }`}
+              >
+                <CheckCircle2 className="size-3" />
+                {b.manuallyConverted ? 'Undo manual conversion' : 'Mark as converted'}
+              </button>
+            </form>
+          )}
 
           {/* Notes */}
           {notes.length > 0 && (
