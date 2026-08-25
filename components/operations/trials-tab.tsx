@@ -25,6 +25,14 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
   const today = ymdInJohannesburg()
   const monthPrefix = today.slice(0, 7)
 
+  // Previous month prefix (YYYY-MM)
+  const prevMonthPrefix = useMemo(() => {
+    const [y, m] = monthPrefix.split('-').map(Number)
+    const pm = m === 1 ? 12 : m - 1
+    const py = m === 1 ? y - 1 : y
+    return `${py}-${String(pm).padStart(2, '0')}`
+  }, [monthPrefix])
+
   const signupIndex = useMemo(() => buildSignupEmailIndex(signups), [signups])
   const sessionPurchaseIndex = useMemo(() => buildSessionPurchaseEmailIndex(sessionPurchases), [sessionPurchases])
 
@@ -41,14 +49,24 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
     const converted = completedTrials.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status === 'converted').length
     const total = completedTrials.length
     const rate = total > 0 ? Math.round((converted / total) * 100) : 0
-    return { total, converted, rate }
-  }, [bookings, monthPrefix, sessionPurchaseIndex, signupIndex, today])
+
+    const prevCompleted = bookings.filter((b) => b.appointmentDate.slice(0, 7) === prevMonthPrefix)
+    const prevConverted = prevCompleted.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status === 'converted').length
+    const prevTotal = prevCompleted.length
+    const prevRate = prevTotal > 0 ? Math.round((prevConverted / prevTotal) * 100) : 0
+
+    return { total, converted, rate, prevTotal, prevConverted, prevRate }
+  }, [bookings, monthPrefix, prevMonthPrefix, sessionPurchaseIndex, signupIndex, today])
 
   const visible = showPast ? [...upcoming, ...past] : upcoming
 
   return (
     <div>
-      <ConversionSummary total={kpi.total} converted={kpi.converted} rate={kpi.rate} />
+      <ConversionSummary
+        total={kpi.total} converted={kpi.converted} rate={kpi.rate}
+        prevTotal={kpi.prevTotal} prevConverted={kpi.prevConverted} prevRate={kpi.prevRate}
+        prevMonthPrefix={prevMonthPrefix}
+      />
 
       {visible.length === 0 ? (
         <p className="py-2 text-xs text-light-grey">No upcoming trials.</p>
@@ -74,26 +92,58 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
   )
 }
 
-function ConversionSummary({ total, converted, rate }: { total: number; converted: number; rate: number }) {
+function ConversionSummary({
+  total, converted, rate,
+  prevTotal, prevConverted, prevRate, prevMonthPrefix,
+}: {
+  total: number; converted: number; rate: number
+  prevTotal: number; prevConverted: number; prevRate: number; prevMonthPrefix: string
+}) {
+  const prevMonthName = new Date(`${prevMonthPrefix}-15`).toLocaleString('en-ZA', { month: 'long', year: 'numeric' })
   return (
-    <div className="mb-3 rounded-xl border border-steel/60 bg-background/40 px-3.5 py-3">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">This Month</p>
-      <div className="mt-2 flex items-end gap-4">
-        <div>
-          <p className="text-xl font-black leading-none text-foreground tabular-nums">{total}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Trials</p>
+    <div className="mb-3 space-y-2">
+      {/* Previous month — compact */}
+      <div className="rounded-xl border border-steel/40 bg-background/20 px-3.5 py-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">{prevMonthName}</p>
+        <div className="mt-1.5 flex items-end gap-4">
+          <div>
+            <p className="text-base font-black leading-none text-foreground/70 tabular-nums">{prevTotal}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Trials</p>
+          </div>
+          <div>
+            <p className="text-base font-black leading-none text-neon-green/70 tabular-nums">{prevConverted}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Converted</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-base font-black leading-none text-neon-blue/70 tabular-nums">{prevRate}%</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Conversion</p>
+          </div>
         </div>
-        <div>
-          <p className="text-xl font-black leading-none text-neon-green tabular-nums">{converted}</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Converted</p>
-        </div>
-        <div className="ml-auto text-right">
-          <p className="text-xl font-black leading-none text-neon-blue tabular-nums">{rate}%</p>
-          <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Conversion</p>
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-steel/30">
+          <div className="h-full rounded-full bg-neon-green/50 transition-all" style={{ width: `${prevRate}%` }} />
         </div>
       </div>
-      <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
-        <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${rate}%` }} />
+
+      {/* This month — prominent */}
+      <div className="rounded-xl border border-steel/60 bg-background/40 px-3.5 py-3">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">This Month</p>
+        <div className="mt-2 flex items-end gap-4">
+          <div>
+            <p className="text-xl font-black leading-none text-foreground tabular-nums">{total}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Trials</p>
+          </div>
+          <div>
+            <p className="text-xl font-black leading-none text-neon-green tabular-nums">{converted}</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Converted</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-xl font-black leading-none text-neon-blue tabular-nums">{rate}%</p>
+            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Conversion</p>
+          </div>
+        </div>
+        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
+          <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${rate}%` }} />
+        </div>
       </div>
     </div>
   )
