@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle } from 'lucide-react'
+import { CalendarDays, ChevronDown, ChevronRight, MessageSquare, Trash2, CheckCircle2, Clock, XCircle, Download } from 'lucide-react'
 import { saveTrialNote, deleteTrialNote, updateTrialBookingSchedule, markTrialConverted } from '@/app/actions/operations'
 import { formatDateLong, parseDateString, slotGroupsForDay } from '@/lib/trial-slots'
 import {
@@ -60,6 +60,29 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
 
   const visible = showPast ? [...upcoming, ...past] : upcoming
 
+  async function handleExport() {
+    const { utils, writeFile } = await import('xlsx')
+    const nonConverted = past.filter(
+      (b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status !== 'converted',
+    )
+    const rows = nonConverted.map((b) => {
+      const bookingNotes = notes.filter((n) => n.bookingId === b.id).map((n) => n.note).join(' | ')
+      return {
+        'Full Name': b.fullName,
+        'Email': b.email,
+        'Phone': b.phone,
+        'Appointment Date': b.appointmentDate,
+        'Appointment Time': b.appointmentTime,
+        'Notes': bookingNotes,
+      }
+    })
+    const ws = utils.json_to_sheet(rows)
+    const wb = utils.book_new()
+    utils.book_append_sheet(wb, ws, 'Not Converted')
+    const date = new Date().toISOString().slice(0, 10)
+    writeFile(wb, `non-converted-trials-${date}.xlsx`)
+  }
+
   return (
     <div>
       <ConversionSummary
@@ -88,6 +111,18 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
       >
         {showPast ? 'Hide past' : `Show past (${past.length})`}
       </button>
+
+      {/* Export non-converted */}
+      <div className="mt-3 border-t border-steel/30 pt-3">
+        <button
+          type="button"
+          onClick={handleExport}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-steel/60 px-3 py-2 text-[11px] font-semibold text-light-grey transition-colors hover:border-neon-green hover:text-neon-green"
+        >
+          <Download className="size-3.5" />
+          Export non-converted ({past.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status !== 'converted').length})
+        </button>
+      </div>
     </div>
   )
 }

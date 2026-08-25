@@ -1,11 +1,9 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Archivo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { Navbar } from '@/components/navbar'
-import { SiteFooter } from '@/components/site-footer'
-import { WhatsAppFloat } from '@/components/whatsapp-float'
 import { SpecialsGlobal } from '@/components/specials/specials-global'
 import { JsonLd } from '@/components/json-ld'
+import { SiteShell } from '@/components/site-shell'
 import { localBusinessSchema, websiteSchema } from '@/lib/seo'
 import { business } from '@/lib/business'
 import './globals.css'
@@ -81,10 +79,9 @@ export default function RootLayout({
       >
         <JsonLd data={[localBusinessSchema(), websiteSchema()]} />
         <SpecialsGlobal />
-        <Navbar />
-        {children}
-        <SiteFooter />
-        <WhatsAppFloat />
+        <SiteShell>
+          {children}
+        </SiteShell>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
