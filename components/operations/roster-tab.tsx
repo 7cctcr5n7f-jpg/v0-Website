@@ -422,7 +422,19 @@ function ShiftBlock({
           </p>
           <span className="text-[9px] font-medium text-zinc-500">{shift ? `${shift.startTime}–${shift.endTime}` : '—'}</span>
         </div>
-        <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-500">{peopleLabel}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-500">{peopleLabel}</p>
+          {!adding && staff.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600"
+              aria-label={`Add trainer to ${shiftType}`}
+            >
+              <Plus className="size-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 p-1.5">
@@ -430,7 +442,7 @@ function ShiftBlock({
           <p className="mt-2 text-center text-[10px] uppercase tracking-wide text-zinc-400 font-medium">No shift</p>
         ) : (
           <>
-            <div className="max-h-[88px] shrink-0 space-y-1 overflow-y-auto pr-0.5">
+            <div className="max-h-[108px] shrink-0 space-y-1 overflow-y-auto pr-0.5">
               {orderedAssignments.map((a) => {
                 const member = staff.find((s) => s.id === a.staffId)
                 return (
@@ -494,15 +506,6 @@ function ShiftBlock({
                   Cancel
                 </button>
               </div>
-            ) : staff.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="mt-0.5 flex min-h-[28px] w-full items-center justify-center rounded-md border border-dashed border-zinc-300 bg-white/80 text-zinc-500 transition-colors hover:border-emerald-500 hover:bg-emerald-50/50 hover:text-emerald-700 active:scale-95"
-                aria-label={`Add trainer to ${shiftType}`}
-              >
-                <Plus className="size-3.5" />
-              </button>
             ) : null}
 
           </>
