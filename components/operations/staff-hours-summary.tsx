@@ -3,7 +3,6 @@
 import { useMemo, useState, Fragment } from 'react'
 import { ChevronDown, Pencil, Check, X } from 'lucide-react'
 import { saveShiftAssignment } from '@/app/actions/operations'
-import { StaffIcon } from './staff-icon'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
 
 function toIso(d: Date) {
@@ -11,21 +10,25 @@ function toIso(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-function getMonthRange(monthOffset: number) {
+function getPayPeriod(offset: number) {
   const now = new Date()
-  const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
-  const start = toIso(d)
-  const end = toIso(new Date(d.getFullYear(), d.getMonth() + 1, 0))
-  const label = d.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
-  const shortLabel = d.toLocaleDateString('en-ZA', { month: 'short' })
-  return { start, end, label, shortLabel }
+  // Pay period runs from the 21st of previous month to 20th of the named month.
+  // If today is on or after the 21st, the active period is next month's (e.g. on 21 Sep -> Oct period: 21 Sep - 20 Oct).
+  const baseMonthOffset = now.getDate() >= 21 ? 1 : 0
+  const target = new Date(now.getFullYear(), now.getMonth() + baseMonthOffset + offset, 1)
+
+  const start = toIso(new Date(target.getFullYear(), target.getMonth() - 1, 21))
+  const end = toIso(new Date(target.getFullYear(), target.getMonth(), 20))
+  const label = target.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const shortLabel = target.toLocaleDateString('en-US', { month: 'short' })
+  const rangeLabel = `${new Date(start).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} – ${new Date(end).toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })}`
+  return { start, end, label, shortLabel, rangeLabel }
 }
 
-// colour for shift type dot/accent
 const SHIFT_STYLES: Record<string, { dot: string; label: string }> = {
-  morning: { dot: 'bg-amber-400', label: 'AM' },
-  afternoon: { dot: 'bg-neon-blue', label: 'PM' },
-  saturday: { dot: 'bg-amber-400', label: 'AM' },
+  morning: { dot: 'bg-amber-500', label: 'AM' },
+  afternoon: { dot: 'bg-blue-500', label: 'PM' },
+  saturday: { dot: 'bg-amber-500', label: 'AM' },
 }
 
 interface Props {
@@ -41,22 +44,13 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
   const [editingHours, setEditingHours] = useState<Record<number, string>>({})
   const [savingId, setSavingId] = useState<number | null>(null)
 
-  const currentMonth = getMonthRange(0)
-  const prevMonth = getMonthRange(-1)
+  const currentMonth = getPayPeriod(0)
+  const prevMonth = getPayPeriod(-1)
 
   function calcHours(staffId: number, start: string, end: string) {
     return assignments
       .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
       .reduce((sum, a) => sum + (parseFloat(a.hours) || 0), 0)
-  }
-
-  function calcDays(staffId: number, start: string, end: string) {
-    const dates = new Set(
-      assignments
-        .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
-        .map((a) => a.shiftDate),
-    )
-    return dates.size
   }
 
   function getShiftDetails(staffId: number, start: string, end: string) {
@@ -71,9 +65,7 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
         .map((s) => ({
           ...s,
           curH: calcHours(s.id, currentMonth.start, currentMonth.end),
-          curD: calcDays(s.id, currentMonth.start, currentMonth.end),
           prevH: calcHours(s.id, prevMonth.start, prevMonth.end),
-          prevD: calcDays(s.id, prevMonth.start, prevMonth.end),
         }))
         .sort((a, b) => b.curH - a.curH),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,22 +86,22 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
   }
 
   if (staff.length === 0) {
-    return <p className="py-3 text-center text-xs text-light-grey">No staff yet — add staff in Settings.</p>
+    return <p className="py-6 text-center text-xs font-medium text-zinc-400">No staff added yet — add staff in Settings.</p>
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-steel/50 bg-card/40">
-      {/* Header row */}
-      <div className="flex items-center gap-2 border-b border-steel/30 bg-steel/10 px-3 py-1.5">
-        <p className="flex-1 text-[10px] font-bold uppercase tracking-widest text-mid-grey">Staff</p>
-        <p className="w-24 text-right text-[10px] font-semibold uppercase tracking-wider text-mid-grey">
-          {currentMonth.shortLabel}
-        </p>
-        <p className="w-20 text-right text-[10px] font-semibold uppercase tracking-wider text-mid-grey">
-          {prevMonth.shortLabel}
-        </p>
-        {/* spacer for chevron */}
-        <div className="w-4" />
+    <div className="border-y border-zinc-200 bg-white">
+      <div className="flex items-center gap-2 border-b border-zinc-200 px-3 py-2.5">
+        <p className="flex-1 text-[11px] font-semibold text-zinc-500">Trainer</p>
+        <div className="w-24 text-right sm:w-28">
+          <p className="text-[11px] font-bold text-zinc-800">Current</p>
+          <p className="text-[9px] font-medium text-zinc-400">{currentMonth.rangeLabel}</p>
+        </div>
+        <div className="w-20 text-right sm:w-24">
+          <p className="text-[11px] font-semibold text-zinc-500">Previous</p>
+          <p className="text-[9px] font-medium text-zinc-400">{prevMonth.rangeLabel}</p>
+        </div>
+        <div className="w-5" />
       </div>
 
       {staffWithHours.map((s) => {
@@ -119,10 +111,11 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
 
         return (
           <Fragment key={s.id}>
-            {/* Single compact row — tap/click to expand */}
             <button
               type="button"
-              className="flex w-full items-center gap-2 border-b border-steel/20 px-3 py-2 text-left last:border-0 transition-colors hover:bg-steel/10 active:bg-steel/20"
+              className={`flex min-h-13 w-full items-center gap-2 border-b border-zinc-100 px-3 py-2.5 text-left transition-colors hover:bg-zinc-50/80 ${
+                isExpanded ? 'bg-zinc-50/80' : 'bg-white'
+              }`}
               onClick={() => {
                 if (expandedId === s.id) {
                   setExpandedId(null)
@@ -132,73 +125,71 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
                 }
               }}
             >
-              {/* Avatar + name */}
-              <div className="flex min-w-0 flex-1 items-center gap-2">
-                <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-steel/50 text-[10px] font-bold text-foreground">
-                  {s.icon ? <StaffIcon icon={s.icon} /> : s.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="truncate text-xs font-semibold text-foreground">{s.name}</span>
+              <div className="min-w-0 flex-1">
+                <span className="truncate text-sm font-semibold text-zinc-900">{s.name}</span>
               </div>
 
-              {/* Current month: Xh · Yd on one line */}
-              <div className="w-24 shrink-0 text-right">
+              <div className="w-24 shrink-0 text-right sm:w-28">
                 {s.curH > 0 ? (
-                  <span className="whitespace-nowrap text-xs font-bold tabular-nums text-neon-green">
+                  <span className="whitespace-nowrap text-sm font-bold tabular-nums text-zinc-900">
                     {s.curH}h
-                    <span className="ml-1 text-[10px] font-normal text-mid-grey">· {s.curD}d</span>
                   </span>
                 ) : (
-                  <span className="text-xs text-mid-grey">—</span>
+                  <span className="text-xs font-medium text-zinc-400">—</span>
                 )}
               </div>
 
-              {/* Prev month */}
-              <div className="w-20 shrink-0 text-right">
+              <div className="w-20 shrink-0 text-right sm:w-24">
                 {s.prevH > 0 ? (
-                  <span className="whitespace-nowrap text-xs tabular-nums text-light-grey/60">
+                  <span className="whitespace-nowrap text-sm font-medium tabular-nums text-zinc-600">
                     {s.prevH}h
-                    <span className="ml-1 text-[10px] text-mid-grey">· {s.prevD}d</span>
                   </span>
                 ) : (
-                  <span className="text-xs text-mid-grey">—</span>
+                  <span className="text-xs font-medium text-zinc-400">—</span>
                 )}
               </div>
 
-              {/* Chevron */}
               <ChevronDown
-                className={`size-3.5 shrink-0 text-mid-grey transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                className={`size-4 shrink-0 text-zinc-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
               />
             </button>
 
-            {/* Expandable shift detail */}
             {isExpanded && (
-              <div className="border-b border-steel/20 bg-background/40 px-3 pb-2 pt-1 last:border-0">
-                {/* Compact month toggle — right-aligned, doesn't expand layout */}
-                <div className="mb-1.5 flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                  <button
-                    type="button"
-                    onClick={() => setViewMonth('current')}
-                    className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                      viewMonth === 'current' ? 'bg-neon-green/20 text-neon-green' : 'text-mid-grey hover:text-foreground'
-                    }`}
-                  >
-                    {currentMonth.shortLabel}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMonth('prev')}
-                    className={`rounded px-2 py-0.5 text-[10px] font-semibold transition-colors ${
-                      viewMonth === 'prev' ? 'bg-steel/40 text-foreground' : 'text-mid-grey hover:text-foreground'
-                    }`}
-                  >
-                    {prevMonth.shortLabel}
-                  </button>
+              <div className="border-b border-zinc-200 bg-zinc-50/70 px-3 pb-3 pt-2.5">
+                <div className="mb-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    Shift log · {month.label}
+                  </p>
+                  <div className="flex items-center gap-1 rounded-lg bg-white p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setViewMonth('current')}
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                        viewMonth === 'current'
+                          ? 'bg-blue-600 text-white'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      {currentMonth.shortLabel}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMonth('prev')}
+                      className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                        viewMonth === 'prev'
+                          ? 'bg-zinc-800 text-white'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      {prevMonth.shortLabel}
+                    </button>
+                  </div>
                 </div>
 
                 {detailAssignments.length === 0 ? (
-                  <p className="text-[11px] text-mid-grey">No shifts recorded.</p>
+                  <p className="text-xs text-zinc-400 py-1">No shifts recorded in this pay period.</p>
                 ) : (
-                  <div className="divide-y divide-steel/10">
+                  <div className="divide-y divide-zinc-200/60 border-y border-zinc-200 bg-white">
                     {detailAssignments.map((a) => {
                       const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
                       const style = SHIFT_STYLES[a.shiftType] ?? SHIFT_STYLES.morning
@@ -208,55 +199,55 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
                       const isSaving = savingId === a.id
 
                       return (
-                        <div key={a.id} className="flex items-center gap-2 py-0.5" onClick={(e) => e.stopPropagation()}>
-                          {/* Date — fixed narrow column */}
-                          <span className="w-20 shrink-0 text-[11px] text-light-grey">
+                        <div key={a.id} className="flex items-center gap-2 px-3 py-1.5" onClick={(e) => e.stopPropagation()}>
+                          {/* Date */}
+                          <span className="w-24 shrink-0 text-xs font-semibold text-zinc-700">
                             {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
                           </span>
-                          {/* Shift dot + label — fixed narrow column */}
-                          <div className="flex w-12 shrink-0 items-center gap-1">
+                          {/* Shift dot + label */}
+                          <div className="flex w-16 shrink-0 items-center gap-1.5">
                             <span className={`size-1.5 shrink-0 rounded-full ${style.dot}`} />
-                            <span className="text-[10px] text-mid-grey">{shift?.label ?? a.shiftType}</span>
+                            <span className="text-[11px] font-bold text-zinc-600">{shift?.label ?? a.shiftType}</span>
                           </div>
-                          {/* Hours + edit — right-aligned, right next to shift label */}
+                          {/* Hours + edit */}
                           {isEditing ? (
-                            <div className="ml-auto flex items-center gap-1">
+                            <div className="ml-auto flex items-center gap-1.5">
                               <input
                                 type="number"
                                 step="0.5"
                                 min="0"
                                 value={editingHours[a.id]}
                                 onChange={(e) => setEditingHours((prev) => ({ ...prev, [a.id]: e.target.value }))}
-                                className="w-12 rounded border border-neon-blue/50 bg-background px-1 py-0.5 text-center text-[11px] text-foreground outline-none"
+                                className="w-14 rounded-md border border-emerald-500 bg-white px-1.5 py-0.5 text-center text-xs font-bold text-zinc-900 outline-none"
                                 autoFocus
                                 aria-label="Edit hours"
                               />
-                              <span className="text-[10px] text-mid-grey">h</span>
+                              <span className="text-[10px] text-zinc-400 font-bold">h</span>
                               <button
                                 type="button"
                                 onClick={() => handleSaveHours(a, editingHours[a.id])}
                                 disabled={isSaving}
-                                className="rounded p-1 text-neon-green disabled:opacity-40"
+                                className="rounded p-1 text-emerald-600 hover:bg-emerald-50 disabled:opacity-40"
                                 aria-label="Save"
                               >
-                                <Check className="size-3" />
+                                <Check className="size-3.5" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setEditingHours((prev) => { const n = { ...prev }; delete n[a.id]; return n })}
-                                className="rounded p-1 text-mid-grey hover:text-foreground"
+                                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
                                 aria-label="Cancel"
                               >
-                                <X className="size-3" />
+                                <X className="size-3.5" />
                               </button>
                             </div>
                           ) : (
-                            <div className="ml-auto flex items-center gap-1">
-                              <span className="w-8 text-right text-[11px] font-bold tabular-nums text-foreground">{hrs}h</span>
+                            <div className="ml-auto flex items-center gap-2">
+                              <span className="w-10 text-right text-xs font-black tabular-nums text-zinc-900">{hrs}h</span>
                               <button
                                 type="button"
                                 onClick={() => setEditingHours((prev) => ({ ...prev, [a.id]: hrs }))}
-                                className="rounded p-1 text-mid-grey hover:text-neon-blue"
+                                className="rounded p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition-colors"
                                 aria-label="Edit hours"
                               >
                                 <Pencil className="size-3" />
@@ -266,16 +257,15 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
                         </div>
                       )
                     })}
-                    {/* Total row */}
-                    <div className="flex items-center justify-between pt-1" onClick={(e) => e.stopPropagation()}>
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-mid-grey">Total</span>
-                      <span className="text-xs font-bold text-neon-green">
+                    <div className="flex items-center justify-between bg-zinc-50/80 px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Period Total</span>
+                      <span className="text-xs font-black text-emerald-800">
                         {detailAssignments.reduce((sum, a) => {
                           const s = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
                           return sum + (parseFloat(a.hours) || parseFloat(s?.defaultHours ?? '0') || 0)
                         }, 0)}h
-                        <span className="ml-1 text-[10px] font-normal text-mid-grey">
-                          · {new Set(detailAssignments.map((a) => a.shiftDate)).size}d
+                        <span className="ml-1.5 text-[10px] font-medium text-zinc-500">
+                          ({new Set(detailAssignments.map((a) => a.shiftDate)).size} days worked)
                         </span>
                       </span>
                     </div>

@@ -89,6 +89,10 @@ export function getTrialConversion(
   sessionPurchaseIndex: Map<string, SessionPurchase>,
   todayYmd: string,
 ): TrialConversion {
+  // A membership must never convert a trial that has not happened yet.
+  if (booking.appointmentDate > todayYmd) {
+    return { status: 'upcoming', signup: null, sessionPurchase: null, source: null, packageLabel: null }
+  }
   if (booking.manuallyConverted) {
     return { status: 'converted', signup: null, sessionPurchase: null, source: 'membership', packageLabel: 'Manual' }
   }

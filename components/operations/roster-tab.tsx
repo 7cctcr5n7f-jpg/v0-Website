@@ -6,13 +6,20 @@ import {
   ChevronRight,
   Plus,
   Check,
+  Pencil,
+  Trash2,
   X,
-  CalendarClock,
-  UserPlus2,
 } from 'lucide-react'
 import { deleteShiftAssignment, saveShiftAssignment } from '@/app/actions/operations'
-import { StaffIcon } from './staff-icon'
-import { sessionPurchaseOccurredAt, uniqueQualifyingSessionPurchases, ymdInJohannesburg } from '@/lib/trial-conversion'
+import {
+  buildSignupEmailIndex,
+  buildSessionPurchaseEmailIndex,
+  getTrialConversion,
+  sessionPurchaseOccurredAt,
+  uniqueQualifyingSessionPurchases,
+  ymdInJohannesburg,
+  type TrialConversion,
+} from '@/lib/trial-conversion'
 import type { Staff, ShiftAssignment, ShiftSetting, TrialBooking, MembershipSignup, SessionPurchase } from '@/lib/db/schema'
 
 interface Props {
@@ -61,6 +68,14 @@ function toIso(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+function normalizedName(value: string) {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, ' ')
+}
+
+function signupName(signup: MembershipSignup) {
+  return normalizedName(`${signup.firstName} ${signup.surname}`)
+}
+
 function getWeekDates(anchor: Date): Date[] {
   const d = new Date(anchor)
   d.setHours(0, 0, 0, 0)
@@ -74,38 +89,19 @@ function getWeekDates(anchor: Date): Date[] {
   })
 }
 
-const SHIFT_STYLES: Record<string, { dot: string; accent: string; label: string }> = {
+const SHIFT_STYLES: Record<string, { accent: string; label: string }> = {
   morning: {
-    dot: 'bg-amber-400',
-    accent: 'text-amber-300',
+    accent: 'text-amber-800',
     label: 'AM',
   },
   afternoon: {
-    dot: 'bg-neon-blue',
-    accent: 'text-neon-blue',
+    accent: 'text-blue-800',
     label: 'PM',
   },
   saturday: {
-    dot: 'bg-amber-400',
-    accent: 'text-amber-300',
+    accent: 'text-amber-800',
     label: 'AM',
   },
-}
-
-const STAFF_TONES = [
-  { name: 'text-fuchsia-200', dot: 'bg-fuchsia-300' },
-  { name: 'text-cyan-200', dot: 'bg-cyan-300' },
-  { name: 'text-emerald-200', dot: 'bg-emerald-300' },
-  { name: 'text-violet-200', dot: 'bg-violet-300' },
-  { name: 'text-orange-200', dot: 'bg-orange-300' },
-  { name: 'text-rose-200', dot: 'bg-rose-300' },
-] as const
-
-function toneForStaff(staffId: number, name: string) {
-  const seed = Number.isFinite(staffId) && staffId > 0
-    ? staffId
-    : [...name].reduce((n, ch) => n + ch.charCodeAt(0), 0)
-  return STAFF_TONES[Math.abs(seed) % STAFF_TONES.length]
 }
 
 function handleOpsActionError(error: unknown) {
@@ -124,6 +120,34 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
+  const todayYmd = ymdInJohannesburg()
+  const signupIndex = useMemo(() => buildSignupEmailIndex(signups), [signups])
+  const sessionPurchaseIndex = useMemo(() => buildSessionPurchaseEmailIndex(sessionPurchases), [sessionPurchases])
+  const convertedSignupIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const booking of bookings) {
+      const conversion = getTrialConversion(booking, signupIndex, sessionPurchaseIndex, todayYmd)
+      if (conversion.status !== 'converted') continue
+
+      if (conversion.signup) {
+        ids.add(conversion.signup.id)
+      }
+
+      // A manually confirmed conversion may use a different email. In that case,
+      // associate the later membership record by the member's full name.
+      const trialName = normalizedName(booking.fullName)
+      for (const signup of signups) {
+        if (
+          signupName(signup) === trialName &&
+          ymdInJohannesburg(new Date(signup.createdAt)) >= booking.appointmentDate
+        ) {
+          ids.add(signup.id)
+        }
+      }
+    }
+    return ids
+  }, [bookings, sessionPurchaseIndex, signups, signupIndex, todayYmd])
+
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor])
   const weekLabel = `${weekDates[0].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} – ${weekDates[5].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}`
 
@@ -136,6 +160,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
     }
     return m
   }, [assignments])
+
   const qualifyingSessionPurchases = useMemo(
     () => uniqueQualifyingSessionPurchases(sessionPurchases),
     [sessionPurchases],
@@ -146,33 +171,55 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
   const saturdayShift = shiftSettings.find((s) => s.shiftType === 'saturday')
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* ── Weekly Schedule ─────────────────────────────────────── */}
       <div>
         {/* Week navigator */}
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/70 p-2">
           <button
             type="button"
             onClick={() => setAnchor((a) => { const d = new Date(a); d.setDate(d.getDate() - 7); return d })}
-            className="flex size-8 items-center justify-center rounded-lg border border-steel/60 text-mid-grey transition-colors hover:border-neon-blue hover:text-neon-blue active:scale-95"
+            className="flex size-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-colors hover:border-emerald-500 hover:text-emerald-600 active:scale-95"
             aria-label="Previous week"
           >
             <ChevronLeft className="size-4" />
           </button>
-          <p className="flex-1 text-center text-sm font-semibold text-foreground">{weekLabel}</p>
+          
+          <div className="flex items-center gap-2">
+            <p className="text-center text-sm font-bold text-zinc-900">{weekLabel}</p>
+            <button
+              type="button"
+              onClick={() => setAnchor(new Date())}
+              className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-zinc-900"
+            >
+              Today
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setAnchor((a) => { const d = new Date(a); d.setDate(d.getDate() + 7); return d })}
-            className="flex size-8 items-center justify-center rounded-lg border border-steel/60 text-mid-grey transition-colors hover:border-neon-blue hover:text-neon-blue active:scale-95"
+            className="flex size-8 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 shadow-sm transition-colors hover:border-emerald-500 hover:text-emerald-600 active:scale-95"
             aria-label="Next week"
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
 
+        <div className="mb-2 flex items-center justify-end gap-3 px-1 text-[10px] font-semibold text-zinc-600" aria-label="Roster legend">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-sm bg-emerald-500" aria-hidden="true" />
+            Converted member
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-sm bg-amber-400" aria-hidden="true" />
+            Trial
+          </span>
+        </div>
+
         {/* Day cards */}
         <div className="overflow-x-auto pb-1 -mx-1 px-1">
-          <div className="grid min-w-[480px] grid-cols-6 gap-1.5">
+          <div className="grid min-w-[560px] grid-cols-6 gap-2">
             {weekDates.map((d, i) => {
               const dateStr = toIso(d)
               const isToday = toIso(d) === toIso(new Date())
@@ -181,17 +228,22 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                 ? saturdayShift ? [saturdayShift] : []
                 : gridShifts
 
-              // Attribute same-day trials / new members to their shift (client-only)
-              const trialsByShift: Record<string, TrialBooking[]> = {}
+              // Converted trials stay on their trial shift; only direct sign-ups appear here.
+              const trialsByShift: Record<string, { booking: TrialBooking; conversion: TrialConversion }[]> = {}
               const membersByShift: Record<string, MembershipSignup[]> = {}
               const newSessionMembersByShift: Record<string, SessionPurchase[]> = {}
+
               if (mounted) {
                 for (const b of bookings) {
                   if (b.appointmentDate !== dateStr) continue
                   const st = shiftForTime(b.appointmentTime, dayShifts, isSat)
-                  if (st) (trialsByShift[st] ??= []).push(b)
+                  if (st) {
+                    const conv = getTrialConversion(b, signupIndex, sessionPurchaseIndex, todayYmd)
+                    ;(trialsByShift[st] ??= []).push({ booking: b, conversion: conv })
+                  }
                 }
                 for (const s of signups) {
+                  if (convertedSignupIds.has(s.id)) continue
                   if (ymdInJohannesburg(new Date(s.createdAt)) !== dateStr) continue
                   const st = shiftForTime(jhbTime(s.createdAt), dayShifts, isSat)
                   if (st) (membersByShift[st] ??= []).push(s)
@@ -203,6 +255,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                   if (st) (newSessionMembersByShift[st] ??= []).push(purchase)
                 }
               }
+
               const amShift = dayShifts.find((s) => s.shiftType === 'morning' || s.shiftType === 'saturday') ?? null
               const pmShift = dayShifts.find((s) => s.shiftType === 'afternoon') ?? null
               const amType = amShift?.shiftType ?? (isSat ? 'saturday' : 'morning')
@@ -213,24 +266,27 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
               return (
                 <div
                   key={dateStr}
-                  className={`flex h-[520px] flex-col overflow-hidden rounded-lg border transition-colors ${
+                  className={`flex h-[500px] flex-col overflow-hidden rounded-xl border shadow-sm transition-colors ${
                     isToday
-                      ? 'border-neon-blue/40 bg-neon-blue/5'
-                      : 'border-steel/30 bg-card/30'
+                      ? 'border-blue-200 bg-blue-50/30 shadow-none'
+                      : 'border-zinc-200 bg-white'
                   }`}
                 >
                   {/* Day header */}
-                  <div className={`px-2 py-1.5 text-center ${isToday ? 'bg-neon-blue/20' : 'bg-steel/10'}`}>
-                    <p className={`text-[10px] font-bold uppercase tracking-widest ${isToday ? 'text-neon-blue' : 'text-mid-grey'}`}>
+                  <div className={`px-2 py-2 text-center border-b ${isToday ? 'border-blue-200 bg-blue-50' : 'bg-zinc-50 border-zinc-200'}`}>
+                    <p className={`flex items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-blue-700' : 'text-zinc-500'}`}>
                       {WEEK_DAYS[i]}
+                      {isToday && (
+                        <span className="rounded bg-blue-100 px-1 py-px text-[8px] tracking-wide text-blue-700">Today</span>
+                      )}
                     </p>
-                    <p className={`text-base font-bold leading-tight ${isToday ? 'text-neon-blue' : 'text-foreground'}`}>
+                    <p className={`text-base font-black leading-tight ${isToday ? 'text-blue-900' : 'text-zinc-900'}`}>
                       {d.getDate()}
                     </p>
                   </div>
 
                   {/* Fixed AM/PM lanes so PM always sits in the same row */}
-                  <div className="grid flex-1 grid-rows-2 gap-1.5 p-1.5">
+                  <div className="grid flex-1 grid-rows-2 gap-2 p-2">
                     <ShiftBlock
                       actionAuthToken={actionAuthToken}
                       date={dateStr}
@@ -284,10 +340,10 @@ function ShiftBlock({
   date: string
   shiftType: string
   shift: ShiftSetting | null
-  style: { dot: string; accent: string; label: string }
+  style: { accent: string; label: string }
   assignments: ShiftAssignment[]
   staff: Staff[]
-  trials: TrialBooking[]
+  trials: { booking: TrialBooking; conversion: TrialConversion }[]
   newMembers: MembershipSignup[]
   newSessionMembers: SessionPurchase[]
 }) {
@@ -297,6 +353,10 @@ function ShiftBlock({
   const [applyWholeWeek, setApplyWholeWeek] = useState(false)
   const [pending, setPending] = useState(false)
   const disabled = !shift
+
+  const hasConvertedTrial = trials.some((t) => t.conversion.status === 'converted')
+  const hasUnconvertedTrial = trials.some((t) => t.conversion.status !== 'converted')
+  const trialTreatment = hasConvertedTrial ? 'converted' : hasUnconvertedTrial ? 'trial' : null
 
   const assignedIds = new Set(assignments.map((a) => a.staffId))
   const available = applyWholeWeek ? staff : staff.filter((s) => !assignedIds.has(s.id))
@@ -334,22 +394,55 @@ function ShiftBlock({
   const peopleLabel = `${assignments.length} ${assignments.length === 1 ? 'trainer' : 'trainers'}`
 
   return (
-    <div className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border ${disabled ? 'border-steel/20 bg-background/20' : 'border-steel/35 bg-background/30'}`}>
-      <div className={`flex items-center justify-between border-b px-2 py-1 ${disabled ? 'border-steel/20 bg-steel/5' : 'border-steel/25 bg-background/55'}`}>
+    <div
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border transition-all ${
+        disabled
+          ? 'border-zinc-200/50 bg-zinc-50/50'
+          : trialTreatment === 'converted'
+          ? 'border-emerald-300 bg-emerald-50/40 ring-1 ring-emerald-200/60'
+          : trialTreatment === 'trial'
+          ? 'border-amber-300 bg-amber-50/50 ring-1 ring-amber-200/60'
+          : 'border-zinc-200 bg-zinc-50/70'
+      }`}
+    >
+      <div
+        className={`flex items-center justify-between border-b px-2 py-1 ${
+          disabled
+            ? 'border-zinc-200/50 bg-zinc-100/50'
+            : trialTreatment === 'converted'
+            ? 'border-emerald-200 bg-emerald-100/50'
+            : trialTreatment === 'trial'
+            ? 'border-amber-200 bg-amber-100/50'
+            : 'border-zinc-200 bg-zinc-100/70'
+        }`}
+      >
         <div className="flex items-center gap-1.5">
-          <span className={`size-1.5 rounded-full ${style.dot}`} />
-          <p className={`text-[10px] font-black uppercase tracking-widest ${disabled ? 'text-foreground' : style.accent}`}>{style.label}</p>
-          <span className="text-[9px] text-mid-grey">{shift ? `${shift.startTime}–${shift.endTime}` : '—'}</span>
+          <p className={`text-[10px] font-black uppercase tracking-widest ${disabled ? 'text-zinc-400' : style.accent}`}>
+            {style.label}
+          </p>
+          <span className="text-[9px] font-medium text-zinc-500">{shift ? `${shift.startTime}–${shift.endTime}` : '—'}</span>
         </div>
-        <p className="text-[9px] font-semibold uppercase tracking-wide text-mid-grey">{peopleLabel}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-500">{peopleLabel}</p>
+          {!adding && staff.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="inline-flex size-6 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600"
+              aria-label={`Add trainer to ${shiftType}`}
+            >
+              <Plus className="size-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-1 p-1.5">
         {disabled ? (
-          <p className="mt-2 text-center text-[10px] uppercase tracking-wide text-mid-grey">No shift</p>
+          <p className="mt-2 text-center text-[10px] uppercase tracking-wide text-zinc-400 font-medium">No shift</p>
         ) : (
           <>
-            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5">
+            <div className="max-h-[108px] shrink-0 space-y-1 overflow-y-auto pr-0.5">
               {orderedAssignments.map((a) => {
                 const member = staff.find((s) => s.id === a.staffId)
                 return (
@@ -358,8 +451,6 @@ function ShiftBlock({
                     key={a.id}
                     assignment={a}
                     name={member?.name ?? 'Unknown'}
-                    icon={member?.icon ?? ''}
-                    tone={toneForStaff(member?.id ?? 0, member?.name ?? 'Unknown')}
                     defaultHours={shift.defaultHours}
                   />
                 )
@@ -372,15 +463,15 @@ function ShiftBlock({
 
             {/* Add form */}
             {adding ? (
-              <div className="space-y-1">
-                <label className="flex items-center gap-2 rounded-md border border-steel/40 bg-background/50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-light-grey">
+              <div className="space-y-1 rounded-md border border-zinc-200 bg-white p-1.5 shadow-sm">
+                <label className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wide text-zinc-600">
                   <input
                     type="checkbox"
                     checked={applyWholeWeek}
                     onChange={(e) => setApplyWholeWeek(e.target.checked)}
-                    className="size-3 accent-neon-green"
+                    className="size-3 accent-emerald-600"
                   />
-                  Apply to whole week (Mon–Fri)
+                  Mon–Fri
                 </label>
                 <select
                   value={selectedId}
@@ -389,11 +480,11 @@ function ShiftBlock({
                     setSelectedId(next)
                     void handleQuickAdd(next)
                   }}
-                  className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
+                  className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
                   autoFocus
                   disabled={pending}
                 >
-                  <option value="">{applyWholeWeek ? 'Select trainer for whole week…' : 'Select trainer…'}</option>
+                  <option value="">{applyWholeWeek ? 'Trainer (whole week)…' : 'Select trainer…'}</option>
                   {available.map((s) => (
                     <option key={s.id} value={s.id}>{s.icon ? `${s.icon} ` : ''}{s.name}</option>
                   ))}
@@ -405,25 +496,16 @@ function ShiftBlock({
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
                   placeholder="Hours"
-                  className="w-full rounded-md border border-steel/60 bg-background px-2 py-1.5 text-xs text-foreground outline-none focus:border-neon-blue"
+                  className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
                 />
                 <button
                   type="button"
                   onClick={() => { setAdding(false); setSelectedId(''); setHours(shift.defaultHours); setApplyWholeWeek(false) }}
-                  className="w-full rounded-md border border-steel/60 px-3 py-1.5 text-xs text-mid-grey hover:text-foreground active:scale-95"
+                  className="w-full rounded-md border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] font-bold text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 active:scale-95"
                 >
                   Cancel
                 </button>
               </div>
-            ) : staff.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setAdding(true)}
-                className="mt-0.5 flex min-h-[32px] w-full items-center justify-center rounded-md border border-dashed border-steel/30 text-mid-grey transition-colors hover:border-neon-green/60 hover:text-neon-green active:scale-95"
-                aria-label={`Add trainer to ${shiftType}`}
-              >
-                <Plus className="size-3.5" />
-              </button>
             ) : null}
 
           </>
@@ -439,15 +521,11 @@ function AssignmentChip({
   actionAuthToken,
   assignment,
   name,
-  icon,
-  tone,
   defaultHours,
 }: {
   actionAuthToken: string
   assignment: ShiftAssignment
   name: string
-  icon: string
-  tone: { name: string; dot: string }
   defaultHours: string
 }) {
   const [editing, setEditing] = useState(false)
@@ -489,62 +567,63 @@ function AssignmentChip({
 
   if (editing) {
     return (
-      <div className="my-0.5 flex items-center gap-1 rounded-md border border-steel/65 bg-steel/50 px-1.5 py-1">
-        <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
-        <span className={`flex min-w-0 flex-1 items-center gap-1 text-[10px] font-medium ${tone.name}`}>
-          <StaffIcon icon={icon} className="shrink-0" />
-          <span className="leading-tight">{name}</span>
-        </span>
+      <div className="flex min-h-[32px] items-center gap-1.5 border-b border-zinc-100 py-1">
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">{name}</span>
         <input
           type="number"
           step="0.5"
           min="0"
           value={hours}
           onChange={(e) => setHours(e.target.value)}
-          className="w-9 rounded bg-steel/85 px-1 py-0.5 text-center text-[10px] text-foreground outline-none"
+          className="w-10 rounded border border-zinc-300 bg-white px-1 py-0.5 text-center text-xs font-semibold text-zinc-900 outline-none focus:border-emerald-500"
           autoFocus
-          aria-label="Hours"
+          aria-label={`Hours for ${name}`}
         />
-        <span className="text-[9px] text-mid-grey">h</span>
-        <button type="button" onClick={handleSave} disabled={pending} className="text-neon-green disabled:opacity-50">
-          <Check className="size-3" />
+        <span className="text-[10px] text-zinc-500">h</span>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={pending}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600 disabled:opacity-50"
+          aria-label={`Save hours for ${name}`}
+        >
+          <Check className="size-3.5" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }} className="text-mid-grey hover:text-foreground">
-          <X className="size-3" />
+        <button
+          type="button"
+          onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-zinc-600"
+          aria-label={`Cancel editing ${name}`}
+        >
+          <X className="size-3.5" aria-hidden="true" />
         </button>
       </div>
     )
   }
 
-  // Click the chip to open edit mode
   return (
-    <div className={`w-full rounded-md border border-steel/65 bg-steel/50 ${pending ? 'opacity-40' : ''}`}>
-      {/* Top row: dot + icon + hours + remove */}
-      <div className="flex items-center gap-1 px-1.5 pt-1.5">
-        <span className={`size-2 shrink-0 rounded-full ${tone.dot}`} />
-        <StaffIcon icon={icon} className="shrink-0 text-sm" />
-        <span className="ml-auto shrink-0 rounded bg-steel/90 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-foreground">
-          {hours || defaultHours}h
-        </span>
-        <button
-          type="button"
-          onClick={handleRemove}
-          disabled={pending}
-          className="inline-flex size-5 shrink-0 items-center justify-center rounded bg-steel/80 text-mid-grey transition-colors hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50"
-          aria-label={`Remove ${name} from shift`}
-        >
-          <X className="size-3" />
-        </button>
-      </div>
-      {/* Bottom row: full name — tappable to edit */}
+    <div className={`flex min-h-[32px] items-center gap-1.5 border-b border-zinc-100 py-1 last:border-b-0 ${pending ? 'opacity-40' : ''}`}>
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">
+        {name}
+      </span>
+      <span className="shrink-0 tabular-nums text-xs font-semibold text-zinc-600">{hours || defaultHours}h</span>
       <button
         type="button"
         onClick={() => setEditing(true)}
         disabled={pending}
-        className={`block w-full truncate px-1.5 pb-1.5 pt-0.5 text-left text-[10px] font-bold leading-tight transition-colors hover:opacity-80 active:scale-[0.98] ${tone.name}`}
-        aria-label={`Edit ${name}`}
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-600 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600 disabled:opacity-50"
+        aria-label={`Edit ${name}'s hours`}
       >
-        {name}
+        <Pencil className="size-3.5" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        onClick={handleRemove}
+        disabled={pending}
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-rose-600 disabled:opacity-50"
+        aria-label={`Remove ${name} from shift`}
+      >
+        <Trash2 className="size-3.5" aria-hidden="true" />
       </button>
     </div>
   )
@@ -552,92 +631,96 @@ function AssignmentChip({
 
 // ── Shift Indicators (trials / new members during a shift) ───────────────────
 
+type ActivityEvent = {
+  id: number
+  name: string
+  detail: string
+}
+
+function ActivityPanel({
+  label,
+  events,
+  tone,
+}: {
+  label: string
+  events: ActivityEvent[]
+  tone: 'amber' | 'emerald' | 'purple'
+}) {
+  const visibleEvents = events.length === 2 ? events : events.slice(0, 1)
+  const remainingCount = events.length - visibleEvents.length
+  const styles = {
+    amber: 'border-amber-300 bg-amber-100 text-amber-950',
+    emerald: 'border-emerald-600 bg-emerald-600 text-white shadow-sm',
+    purple: 'border-purple-300 bg-purple-100 text-purple-950',
+  }[tone]
+  const labelColor = tone === 'emerald' ? 'text-emerald-100' : tone === 'purple' ? 'text-purple-700' : 'text-amber-800'
+  const detailColor = tone === 'emerald' ? 'text-emerald-100' : tone === 'purple' ? 'text-purple-700' : 'text-amber-800'
+
+  return (
+    <div className={`rounded-md border px-2 py-1.5 ${styles}`}>
+      <p className={`text-[8px] font-black uppercase tracking-wider ${labelColor}`}>{label}</p>
+      <div className="space-y-0.5">
+        {visibleEvents.map((event) => (
+          <div key={event.id}>
+            <p className="truncate text-[11px] font-bold leading-tight">{event.name}</p>
+            <p className={`text-[9px] font-medium leading-tight ${detailColor}`}>{event.detail}</p>
+          </div>
+        ))}
+        {remainingCount > 0 && (
+          <p className={`text-[9px] font-semibold ${detailColor}`}>+{remainingCount} more</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ShiftIndicators({
   trials,
   newMembers,
   newSessionMembers,
 }: {
-  trials: TrialBooking[]
+  trials: { booking: TrialBooking; conversion: TrialConversion }[]
   newMembers: MembershipSignup[]
   newSessionMembers: SessionPurchase[]
 }) {
-  const [open, setOpen] = useState<null | 'trials' | 'members' | 'sessions'>(null)
+  const convertedTrials = trials
+    .filter((t) => t.conversion.status === 'converted')
+    .map((t) => ({
+      id: t.booking.id,
+      name: t.booking.fullName,
+      detail: `Trial · ${t.booking.appointmentTime}`,
+    }))
+  const unconvertedTrials = trials
+    .filter((t) => t.conversion.status !== 'converted')
+    .map((t) => ({
+      id: t.booking.id,
+      name: t.booking.fullName,
+      detail: `Trial · ${t.booking.appointmentTime}`,
+    }))
+  const signupEvents = newMembers.map((member) => ({
+    id: member.id,
+    name: `${member.firstName} ${member.surname}`,
+    detail: `Signup · ${jhbTime(member.createdAt)}`,
+  }))
+  const sessionEvents = newSessionMembers.map((member) => ({
+    id: member.id,
+    name: `${member.firstName} ${member.surname}`,
+    detail: `Session · ${jhbTime(sessionPurchaseOccurredAt(member))}`,
+  }))
 
   return (
     <div className="mb-0.5 flex flex-col gap-1">
-      {trials.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'trials' ? null : 'trials'))}
-          className="flex w-full items-center justify-between rounded-md border border-amber-300/60 bg-amber-400/25 px-2 py-1 text-left shadow-[inset_0_0_0_1px_rgba(251,191,36,0.25)] transition-colors hover:bg-amber-400/30"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarClock className="size-3 shrink-0 text-amber-200" />
-            <span className="text-[10px] font-black uppercase tracking-wide text-amber-100">
-              {trials.length} Trial{trials.length > 1 ? 's' : ''}
-            </span>
-          </span>
-          <span className="text-[9px] font-bold text-amber-200/80">{open === 'trials' ? 'Hide' : 'Show'}</span>
-        </button>
+      {convertedTrials.length > 0 && (
+        <ActivityPanel label="Converted member" events={convertedTrials} tone="emerald" />
       )}
-      {open === 'trials' && (
-        <div className="rounded-md border border-amber-400/35 bg-amber-400/15 px-2 py-1.5">
-          {trials.map((t) => (
-            <p key={t.id} className="truncate text-[10px] leading-relaxed text-amber-100">
-              {t.appointmentTime} · {t.fullName}
-            </p>
-          ))}
-        </div>
+      {unconvertedTrials.length > 0 && (
+        <ActivityPanel label="Trial" events={unconvertedTrials} tone="amber" />
       )}
-
-      {newMembers.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'members' ? null : 'members'))}
-          className="flex w-full items-center justify-between rounded-md border border-neon-green/60 bg-neon-green/20 px-2 py-1 text-left shadow-[inset_0_0_0_1px_rgba(34,197,94,0.25)] transition-colors hover:bg-neon-green/25"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <UserPlus2 className="size-3 shrink-0 text-neon-green" />
-            <span className="text-[10px] font-black uppercase tracking-wide text-neon-green">
-              {newMembers.length} New Member{newMembers.length > 1 ? 's' : ''}
-            </span>
-          </span>
-          <span className="text-[9px] font-bold text-neon-green/80">{open === 'members' ? 'Hide' : 'Show'}</span>
-        </button>
+      {signupEvents.length > 0 && (
+        <ActivityPanel label="New signup" events={signupEvents} tone="emerald" />
       )}
-      {open === 'members' && (
-        <div className="rounded-md border border-neon-green/35 bg-neon-green/10 px-2 py-1.5">
-          {newMembers.map((m) => (
-            <p key={m.id} className="truncate text-[10px] leading-relaxed text-neon-green">
-              {m.firstName} {m.surname}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {newSessionMembers.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'sessions' ? null : 'sessions'))}
-          className="flex w-full items-center justify-between rounded-md border border-fuchsia-300/60 bg-fuchsia-400/15 px-2 py-1 text-left shadow-[inset_0_0_0_1px_rgba(232,121,249,0.2)] transition-colors hover:bg-fuchsia-400/20"
-        >
-          <span className="inline-flex items-center gap-1.5">
-            <UserPlus2 className="size-3 shrink-0 text-fuchsia-200" />
-            <span className="text-[10px] font-black uppercase tracking-wide text-fuchsia-100">
-              {newSessionMembers.length} New Session member{newSessionMembers.length > 1 ? 's' : ''}
-            </span>
-          </span>
-          <span className="text-[9px] font-bold text-fuchsia-200/80">{open === 'sessions' ? 'Hide' : 'Show'}</span>
-        </button>
-      )}
-      {open === 'sessions' && (
-        <div className="rounded-md border border-fuchsia-400/35 bg-fuchsia-400/10 px-2 py-1.5">
-          {newSessionMembers.map((member) => (
-            <p key={member.id} className="truncate text-[10px] leading-relaxed text-fuchsia-100">
-              {member.firstName} {member.surname}
-            </p>
-          ))}
-        </div>
+      {sessionEvents.length > 0 && (
+        <ActivityPanel label="Session member" events={sessionEvents} tone="purple" />
       )}
     </div>
   )

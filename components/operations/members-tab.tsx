@@ -102,26 +102,26 @@ export function MembersTab({
 
   if (allSorted.length === 0) {
     return (
-      <p className="py-2 text-xs text-light-grey">No member sign-ups yet.</p>
+      <p className="py-6 text-center text-xs font-medium text-zinc-400">No member sign-ups yet.</p>
     )
   }
 
   return (
-    <div className="space-y-2.5">
-      <div className="flex items-center justify-between rounded-xl border border-steel/50 bg-card/40 px-3 py-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">
-          {showPast ? 'All activity' : 'Last 2 weeks'}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/80 px-3.5 py-2">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+          {showPast ? 'All Activity' : 'Last 2 Weeks'}
         </p>
-        <p className="text-sm font-black text-foreground">
-          {visible.length} entr{visible.length === 1 ? 'y' : 'ies'}
+        <p className="text-xs font-bold text-zinc-800">
+          {visible.length} sign-up{visible.length === 1 ? '' : 's'}
         </p>
       </div>
 
       {grouped.map((group) => (
         <div key={group.ymd} className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">{group.label}</p>
-            <p className="text-[10px] text-light-grey">{group.items.length} entr{group.items.length === 1 ? 'y' : 'ies'}</p>
+          <div className="flex items-center justify-between px-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{group.label}</p>
+            <p className="text-[10px] font-medium text-zinc-400">{group.items.length} {group.items.length === 1 ? 'entry' : 'entries'}</p>
           </div>
 
           {group.items.map((s) => {
@@ -130,51 +130,60 @@ export function MembersTab({
             const isSession = s.kind === 'session'
 
             return (
-              <div key={s.id} className={`relative overflow-hidden rounded-2xl border px-3 py-2.5 ${
-                isSession
-                  ? 'border-fuchsia-400/35 bg-fuchsia-400/5'
-                  : peak
-                    ? 'border-neon-blue/35 bg-neon-blue/5'
-                    : 'border-neon-green/35 bg-neon-green/5'
-              }`}>
-                <div className={`absolute left-0 top-0 h-full w-1 ${
+              <div
+                key={s.id}
+                className={`relative overflow-hidden rounded-xl border p-3 shadow-xs transition-colors ${
                   isSession
-                    ? 'bg-fuchsia-400/70'
+                    ? 'border-fuchsia-200 bg-fuchsia-50/40'
                     : peak
-                      ? 'bg-neon-blue/70'
-                      : 'bg-neon-green/70'
-                }`} />
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-start gap-2.5 pl-1">
-                    <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-black ${
-                      isSession
-                        ? 'border-fuchsia-400/50 bg-fuchsia-400/15 text-fuchsia-200'
-                        : peak
-                          ? 'border-neon-blue/50 bg-neon-blue/20 text-neon-blue'
-                          : 'border-neon-green/50 bg-neon-green/20 text-neon-green'
-                    }`}>
+                    ? 'border-blue-200 bg-blue-50/40'
+                    : 'border-emerald-200 bg-emerald-50/40'
+                }`}
+              >
+                <div
+                  className={`absolute left-0 top-0 h-full w-1 ${
+                    isSession
+                      ? 'bg-fuchsia-500'
+                      : peak
+                      ? 'bg-blue-500'
+                      : 'bg-emerald-500'
+                  }`}
+                />
+                <div className="flex items-start justify-between gap-3 pl-1">
+                  <div className="flex min-w-0 items-start gap-2.5">
+                    <div
+                      className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg border text-xs font-black ${
+                        isSession
+                          ? 'border-fuchsia-200 bg-fuchsia-100 text-fuchsia-800'
+                          : peak
+                          ? 'border-blue-200 bg-blue-100 text-blue-800'
+                          : 'border-emerald-200 bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
                       {initials}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate text-[15px] font-black leading-tight text-foreground">{s.firstName} {s.surname}</p>
-                      <p className="truncate text-[13px] leading-tight text-foreground">{s.title}</p>
-                      <p className="truncate text-[11px] text-light-grey">{s.subtitle}</p>
+                      <p className="truncate text-sm font-bold text-zinc-900">{s.firstName} {s.surname}</p>
+                      <p className="truncate text-xs font-semibold text-zinc-700">{s.title}</p>
+                      <p className="truncate text-[11px] text-zinc-500">{s.subtitle}</p>
                     </div>
                   </div>
 
-                  <div className="flex shrink-0 flex-col items-end gap-0.5 pt-0.5">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] ${
-                      isSession
-                        ? 'bg-fuchsia-400/15 text-fuchsia-200'
-                        : peak
-                          ? 'bg-neon-blue/15 text-neon-blue'
-                          : 'bg-neon-green/15 text-neon-green'
-                    }`}>
+                  <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+                        isSession
+                          ? 'bg-fuchsia-100 text-fuchsia-800'
+                          : peak
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
                       {isSession ? <Gift className="size-2.5" /> : peak ? <Flame className="size-2.5" /> : <Clock className="size-2.5" />}
                       {isSession ? 'Sessions' : peak ? 'Peak' : 'Off-Peak'}
                     </span>
-                    <span className="text-[11px] text-light-grey">{s.detail}</span>
-                    <span className="text-[10px] text-mid-grey">{timeInJhb(s.createdAt)}</span>
+                    <span className="text-[11px] font-semibold text-zinc-600">{s.detail}</span>
+                    <span className="text-[10px] font-medium text-zinc-400">{timeInJhb(s.createdAt)}</span>
                   </div>
                 </div>
               </div>
@@ -187,9 +196,9 @@ export function MembersTab({
         <button
           type="button"
           onClick={() => setShowPast((value) => !value)}
-          className="w-full pt-1 text-[10px] font-semibold uppercase tracking-wide text-light-grey hover:text-foreground"
+          className="w-full pt-2 text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 transition-colors text-center"
         >
-          {showPast ? 'Hide past' : `Show past (${pastCount})`}
+          {showPast ? 'Hide past activity' : `Show past activity (${pastCount})`}
         </button>
       )}
     </div>
