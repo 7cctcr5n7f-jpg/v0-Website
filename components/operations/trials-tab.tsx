@@ -84,7 +84,7 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
   }
 
   return (
-    <div>
+    <div className="space-y-4">
       <ConversionSummary
         total={kpi.total} converted={kpi.converted} rate={kpi.rate}
         prevTotal={kpi.prevTotal} prevConverted={kpi.prevConverted} prevRate={kpi.prevRate}
@@ -92,9 +92,9 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
       />
 
       {visible.length === 0 ? (
-        <p className="py-2 text-xs text-light-grey">No upcoming trials.</p>
+        <p className="py-6 text-center text-xs font-medium text-zinc-400">No upcoming trials.</p>
       ) : (
-        <div className="space-y-1">
+        <div className="space-y-2">
           {visible.map((b) => {
             const bookingNotes = notes.filter((n) => n.bookingId === b.id)
             const isPast = b.appointmentDate < today
@@ -104,23 +104,23 @@ export function TrialsTab({ bookings, notes, signups, sessionPurchases }: Props)
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => setShowPast((v) => !v)}
-        className="mt-3 text-[10px] font-semibold uppercase tracking-wide text-light-grey hover:text-foreground"
-      >
-        {showPast ? 'Hide past' : `Show past (${past.length})`}
-      </button>
+      <div className="flex items-center justify-between pt-2 border-t border-zinc-200">
+        <button
+          type="button"
+          onClick={() => setShowPast((v) => !v)}
+          className="text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 transition-colors"
+        >
+          {showPast ? 'Hide past trials' : `Show past trials (${past.length})`}
+        </button>
 
-      {/* Export non-converted */}
-      <div className="mt-3 border-t border-steel/30 pt-3">
+        {/* Export non-converted */}
         <button
           type="button"
           onClick={handleExport}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-steel/60 px-3 py-2 text-[11px] font-semibold text-light-grey transition-colors hover:border-neon-green hover:text-neon-green"
+          className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 shadow-xs hover:border-emerald-500 hover:text-emerald-700 transition-colors"
         >
           <Download className="size-3.5" />
-          Export non-converted ({past.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status !== 'converted').length})
+          <span>Export non-converted ({past.filter((b) => getTrialConversion(b, signupIndex, sessionPurchaseIndex, today).status !== 'converted').length})</span>
         </button>
       </div>
     </div>
@@ -136,48 +136,40 @@ function ConversionSummary({
 }) {
   const prevMonthName = new Date(`${prevMonthPrefix}-15`).toLocaleString('en-ZA', { month: 'long', year: 'numeric' })
   return (
-    <div className="mb-3 space-y-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {/* Previous month — compact */}
-      <div className="rounded-xl border border-steel/40 bg-background/20 px-3.5 py-2.5">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">{prevMonthName}</p>
-        <div className="mt-1.5 flex items-end gap-4">
+      <div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-3.5 shadow-xs">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{prevMonthName}</p>
+        <div className="mt-2 flex items-end justify-between">
           <div>
-            <p className="text-base font-black leading-none text-foreground/70 tabular-nums">{prevTotal}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Trials</p>
+            <p className="text-xl font-black leading-none text-zinc-700 tabular-nums">{prevConverted}/{prevTotal}</p>
+            <p className="mt-1 text-[10px] font-medium text-zinc-500">Converted / Total</p>
           </div>
-          <div>
-            <p className="text-base font-black leading-none text-neon-green/70 tabular-nums">{prevConverted}</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Converted</p>
-          </div>
-          <div className="ml-auto text-right">
-            <p className="text-base font-black leading-none text-neon-blue/70 tabular-nums">{prevRate}%</p>
-            <p className="mt-0.5 text-[10px] uppercase tracking-wide text-light-grey/70">Conversion</p>
+          <div className="text-right">
+            <p className="text-xl font-black leading-none text-blue-700 tabular-nums">{prevRate}%</p>
+            <p className="mt-1 text-[10px] font-medium text-zinc-500">Conversion Rate</p>
           </div>
         </div>
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-steel/30">
-          <div className="h-full rounded-full bg-neon-green/50 transition-all" style={{ width: `${prevRate}%` }} />
+        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200">
+          <div className="h-full rounded-full bg-blue-500 transition-all" style={{ width: `${prevRate}%` }} />
         </div>
       </div>
 
       {/* This month — prominent */}
-      <div className="rounded-xl border border-steel/60 bg-background/40 px-3.5 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-mid-grey">This Month</p>
-        <div className="mt-2 flex items-end gap-4">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5 shadow-xs">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800">This Month</p>
+        <div className="mt-2 flex items-end justify-between">
           <div>
-            <p className="text-xl font-black leading-none text-foreground tabular-nums">{total}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Trials</p>
+            <p className="text-2xl font-black leading-none text-zinc-900 tabular-nums">{converted}/{total}</p>
+            <p className="mt-1 text-[10px] font-semibold text-emerald-700">Converted / Total</p>
           </div>
-          <div>
-            <p className="text-xl font-black leading-none text-neon-green tabular-nums">{converted}</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Converted</p>
-          </div>
-          <div className="ml-auto text-right">
-            <p className="text-xl font-black leading-none text-neon-blue tabular-nums">{rate}%</p>
-            <p className="mt-1 text-[10px] uppercase tracking-wide text-light-grey">Conversion</p>
+          <div className="text-right">
+            <p className="text-2xl font-black leading-none text-emerald-700 tabular-nums">{rate}%</p>
+            <p className="mt-1 text-[10px] font-semibold text-emerald-700">Conversion Rate</p>
           </div>
         </div>
-        <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
-          <div className="h-full rounded-full bg-neon-green transition-all" style={{ width: `${rate}%` }} />
+        <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+          <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${rate}%` }} />
         </div>
       </div>
     </div>
@@ -187,21 +179,21 @@ function ConversionSummary({
 function ConversionBadge({ conversion }: { conversion: TrialConversion }) {
   if (conversion.status === 'converted') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-neon-green/15 px-1.5 py-0.5 text-[10px] font-bold text-neon-green">
-        <CheckCircle2 className="size-2.5" /> Converted
+      <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+        <CheckCircle2 className="size-3" /> Converted
       </span>
     )
   }
   if (conversion.status === 'upcoming') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
-        <Clock className="size-2.5" /> Upcoming
+      <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+        <Clock className="size-3" /> Upcoming
       </span>
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
-      <XCircle className="size-2.5" /> Not converted
+    <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-0.5 text-[10px] font-bold text-rose-800">
+      <XCircle className="size-3" /> Not converted
     </span>
   )
 }
@@ -285,38 +277,38 @@ function TrialRow({
   }
 
   return (
-    <div className={`rounded-xl border bg-background ${isPast ? 'border-steel/30' : 'border-steel/60'}`}>
+    <div className={`rounded-xl border shadow-xs transition-colors ${isPast ? 'border-zinc-200 bg-zinc-50/50' : 'border-zinc-200 bg-white'}`}>
       {/* Row header */}
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
-        className="flex w-full items-start gap-2 px-3 py-2 text-left"
+        className="flex w-full items-start gap-3 p-3 text-left"
       >
-        <span className="mt-0.5 shrink-0">
+        <span className="mt-0.5 shrink-0 text-zinc-400">
           {expanded ? (
-            <ChevronDown className="size-3.5 text-light-grey" />
+            <ChevronDown className="size-4" />
           ) : (
-            <ChevronRight className="size-3.5 text-light-grey" />
+            <ChevronRight className="size-4" />
           )}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className={`flex-1 truncate text-xs font-semibold ${isPast ? 'text-light-grey' : 'text-foreground'}`}>
+            <span className={`flex-1 truncate text-sm font-bold ${isPast ? 'text-zinc-700' : 'text-zinc-900'}`}>
               {b.fullName}
             </span>
-            <span className="shrink-0 text-[10px] text-light-grey">
-              {b.appointmentDate.slice(5).replace('-', '/')} {b.appointmentTime}
+            <span className="shrink-0 text-xs font-semibold text-zinc-500">
+              {b.appointmentDate} · {b.appointmentTime}
             </span>
             {notes.length > 0 && (
-              <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-neon-green/15 px-1.5 py-0.5 text-[9px] font-bold text-neon-green">
-                <MessageSquare className="size-2.5" /> {notes.length}
+              <span className="flex shrink-0 items-center gap-1 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-700 border border-zinc-200">
+                <MessageSquare className="size-3" /> {notes.length}
               </span>
             )}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
             <ConversionBadge conversion={conversion} />
             {conversion.status === 'converted' && conversion.packageLabel && (
-              <span className="text-[10px] font-semibold text-light-grey">{conversion.packageLabel}</span>
+              <span className="text-xs font-semibold text-emerald-800">{conversion.packageLabel}</span>
             )}
           </div>
         </div>
@@ -324,19 +316,20 @@ function TrialRow({
 
       {/* Expanded content */}
       {expanded && (
-        <div className="space-y-2 border-t border-steel/40 px-3 py-2">
+        <div className="space-y-3 border-t border-zinc-100 bg-zinc-50/60 p-3.5 rounded-b-xl">
           <div className="space-y-2">
-            <div className="space-y-0.5 text-xs text-light-grey">
-              <p>{formatDateLong(b.appointmentDate)} · {b.appointmentTime}</p>
-              <p>{b.phone}</p>
-              <p className="truncate">{b.email}</p>
+            <div className="space-y-0.5 text-xs text-zinc-600">
+              <p><strong className="text-zinc-800">Date & Time:</strong> {formatDateLong(b.appointmentDate)} · {b.appointmentTime}</p>
+              <p><strong className="text-zinc-800">Phone:</strong> {b.phone || '—'}</p>
+              <p className="truncate"><strong className="text-zinc-800">Email:</strong> {b.email}</p>
             </div>
-            <div className="rounded-lg border border-steel/40 bg-card/50 p-2">
+            
+            {/* Trial schedule edit */}
+            <div className="rounded-xl border border-zinc-200 bg-white p-3 shadow-xs">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-mid-grey">Trial schedule</p>
-                  <p className="text-xs font-semibold text-foreground">{formatDateLong(dateValue)}</p>
-                  <p className="text-[10px] text-light-grey">{timeValue}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-500">Reschedule Slot</p>
+                  <p className="text-xs font-bold text-zinc-900">{formatDateLong(dateValue)} at {timeValue}</p>
                 </div>
                 <button
                   type="button"
@@ -346,15 +339,15 @@ function TrialRow({
                     setScheduleMessage(null)
                     setEditingSchedule((value) => !value)
                   }}
-                  className="inline-flex items-center gap-1 rounded-md border border-steel/60 px-2 py-1 text-[10px] font-semibold text-light-grey transition-colors hover:border-neon-blue hover:text-foreground"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-zinc-100 transition-colors"
                 >
-                  <CalendarDays className="size-3" />
-                  {editingSchedule ? 'Cancel' : 'Edit'}
+                  <CalendarDays className="size-3.5" />
+                  <span>{editingSchedule ? 'Cancel' : 'Change Date/Time'}</span>
                 </button>
               </div>
               {editingSchedule && (
-                <div className="mt-2 flex flex-wrap items-end gap-2">
-                  <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-[10px] font-semibold uppercase tracking-wide text-mid-grey">
+                <div className="mt-3 flex flex-wrap items-end gap-2 border-t border-zinc-100 pt-3">
+                  <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
                     New date
                     <input
                       type="date"
@@ -362,15 +355,15 @@ function TrialRow({
                       min={minDate}
                       max={maxDate}
                       onChange={(e) => setDateValue(e.target.value)}
-                      className="rounded border border-steel bg-background px-2 py-1.5 text-xs font-medium normal-case tracking-normal text-foreground outline-none focus:border-neon-green"
+                      className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
                     />
                   </label>
-                  <label className="flex min-w-[160px] flex-1 flex-col gap-1 text-[10px] font-semibold uppercase tracking-wide text-mid-grey">
+                  <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
                     New time
                     <select
                       value={timeValue}
                       onChange={(e) => setTimeValue(e.target.value)}
-                      className="rounded border border-steel bg-background px-2 py-1.5 text-xs font-medium normal-case tracking-normal text-foreground outline-none focus:border-neon-green"
+                      className="rounded-lg border border-zinc-300 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
                     >
                       {slotGroups.map((group) => (
                         <optgroup key={group.label} label={group.label}>
@@ -387,17 +380,17 @@ function TrialRow({
                     type="button"
                     onClick={handleScheduleSave}
                     disabled={schedulePending || !dateValue || !timeValue || availableTimes.length === 0}
-                    className="rounded border border-neon-green px-2.5 py-1.5 text-[10px] font-semibold text-neon-green disabled:opacity-50"
+                    className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-xs"
                   >
-                    {schedulePending ? 'Sending…' : 'Confirm and Email'}
+                    {schedulePending ? 'Updating…' : 'Save & Email'}
                   </button>
                 </div>
               )}
               {editingSchedule && availableTimes.length === 0 && (
-                <p className="mt-2 text-[10px] text-red-400">No trial slots are available on that day.</p>
+                <p className="mt-2 text-xs text-rose-600 font-medium">No trial slots available on that day.</p>
               )}
               {scheduleMessage && (
-                <p className={`mt-2 text-[10px] ${scheduleMessage.tone === 'success' ? 'text-neon-green' : 'text-red-400'}`}>
+                <p className={`mt-2 text-xs font-medium ${scheduleMessage.tone === 'success' ? 'text-emerald-700' : 'text-rose-600'}`}>
                   {scheduleMessage.text}
                 </p>
               )}
@@ -411,26 +404,27 @@ function TrialRow({
               <input type="hidden" name="value" value={b.manuallyConverted ? 'false' : 'true'} />
               <button
                 type="submit"
-                className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1.5 text-[10px] font-semibold transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors ${
                   b.manuallyConverted
-                    ? 'border-steel/60 text-light-grey hover:border-red-400 hover:text-red-400'
-                    : 'border-neon-green/50 text-neon-green hover:border-neon-green'
+                    ? 'border-zinc-300 bg-white text-zinc-700 hover:border-rose-300 hover:text-rose-700'
+                    : 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                 }`}
               >
-                <CheckCircle2 className="size-3" />
-                {b.manuallyConverted ? 'Undo manual conversion' : 'Mark as converted'}
+                <CheckCircle2 className="size-3.5" />
+                <span>{b.manuallyConverted ? 'Undo manual conversion' : 'Mark as converted (different email used)'}</span>
               </button>
             </form>
           )}
 
           {/* Notes */}
           {notes.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Trial Notes</p>
               {notes.map((n) => (
-                <div key={n.id} className="flex items-start justify-between gap-1.5 rounded bg-card px-2 py-1.5 text-xs">
+                <div key={n.id} className="flex items-start justify-between gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-xs">
                   <div>
-                    <p className="text-foreground">{n.note}</p>
-                    <p className="text-[10px] text-light-grey">
+                    <p className="text-zinc-800">{n.note}</p>
+                    <p className="text-[10px] text-zinc-400 mt-0.5">
                       {new Date(n.createdAt).toLocaleString('en-ZA', {
                         timeZone: 'Africa/Johannesburg',
                         day: '2-digit',
@@ -442,8 +436,8 @@ function TrialRow({
                   </div>
                   <form action={deleteTrialNote} className="shrink-0">
                     <input type="hidden" name="id" value={n.id} />
-                    <button type="submit" className="rounded p-0.5 text-light-grey hover:text-red-400" aria-label="Delete note">
-                      <Trash2 className="size-3" />
+                    <button type="submit" className="rounded p-1 text-zinc-400 hover:text-rose-600 transition-colors" aria-label="Delete note">
+                      <Trash2 className="size-3.5" />
                     </button>
                   </form>
                 </div>
@@ -452,22 +446,22 @@ function TrialRow({
           )}
 
           {/* Add note */}
-          <div className="flex gap-1.5">
+          <div className="flex gap-2">
             <input
               type="text"
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleNote() }}
-              placeholder="Add note…"
-              className="flex-1 rounded border border-steel bg-card px-2 py-1 text-xs text-foreground outline-none placeholder:text-light-grey focus:border-neon-green"
+              placeholder="Add quick trial note…"
+              className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500"
             />
             <button
               type="button"
               onClick={handleNote}
               disabled={pending || !noteText.trim()}
-              className="rounded border border-neon-green px-2.5 py-1 text-[10px] font-semibold text-neon-green disabled:opacity-50"
+              className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-900 disabled:opacity-40 transition-colors"
             >
-              Save
+              Add Note
             </button>
           </div>
         </div>

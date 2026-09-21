@@ -11,6 +11,7 @@ import {
   ChevronUp,
   AlertTriangle,
   CheckCircle2,
+  SlidersHorizontal,
 } from 'lucide-react'
 import {
   adjustStockQty,
@@ -87,29 +88,31 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
       {/* ── Confirmation banner ─────────────────────────────────── */}
       <div
         suppressHydrationWarning
-        className={`mb-3 rounded-xl border px-3.5 py-2.5 ${
+        className={`mb-3.5 rounded-xl border p-3.5 shadow-xs transition-colors ${
           confirmedToday
-            ? 'border-neon-green/30 bg-neon-green/5'
-            : 'border-red-500/40 bg-red-500/10'
+            ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
+            : 'border-amber-200 bg-amber-50/70 text-amber-950'
         }`}
       >
-        <div className="flex items-start gap-2.5">
-          {confirmedToday ? (
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-neon-green" />
-          ) : (
-            <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-400" />
-          )}
+        <div className="flex items-start gap-3">
+          <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${confirmedToday ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+            {confirmedToday ? (
+              <CheckCircle2 className="size-4" />
+            ) : (
+              <AlertTriangle className="size-4" />
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             {confirmedToday ? (
-              <p className="text-xs font-bold text-neon-green">
+              <p className="text-xs font-bold text-emerald-900">
                 Stock confirmed today by {lastConfirmation!.staffName}
               </p>
             ) : (
-              <p className="text-xs font-bold text-red-300">
-                Stock not confirmed today — please do a stock take
+              <p className="text-xs font-bold text-amber-900">
+                Stock take required today — please verify stock levels
               </p>
             )}
-            <p className="mt-0.5 text-[11px] text-light-grey" suppressHydrationWarning>
+            <p className="mt-0.5 text-[11px] text-zinc-500" suppressHydrationWarning>
               {lastDate
                 ? `Last confirmed by ${lastConfirmation!.staffName} · ${lastDate.toLocaleDateString('en-ZA', {
                     weekday: 'short',
@@ -128,13 +131,13 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
 
         {/* Confirm control */}
         {confirming ? (
-          <div className="mt-2.5 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             {staff.length > 0 ? (
               <select
                 value={confirmName}
                 onChange={(e) => setConfirmName(e.target.value)}
                 autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-steel bg-background px-2.5 py-2 text-xs text-foreground outline-none focus:border-neon-green"
+                className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
               >
                 <option value="">Select trainer…</option>
                 {staff.map((s) => (
@@ -149,37 +152,37 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitConfirm() }}
                 placeholder="Trainer name"
                 autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-steel bg-background px-2.5 py-2 text-xs text-foreground outline-none placeholder:text-mid-grey focus:border-neon-green"
+                className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500"
               />
             )}
             <button
               type="button"
               onClick={submitConfirm}
               disabled={confirmPending || !confirmName.trim()}
-              className="rounded-lg bg-neon-green px-3 py-2 text-xs font-bold text-black transition-opacity hover:opacity-80 disabled:opacity-40"
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-opacity hover:bg-emerald-700 disabled:opacity-40 shadow-xs"
             >
               {confirmPending ? '…' : 'Confirm'}
             </button>
             <button
               type="button"
               onClick={() => { setConfirming(false); setConfirmName('') }}
-              className="rounded-lg border border-steel px-2 py-2 text-xs text-mid-grey hover:text-foreground"
+              className="rounded-xl border border-zinc-200 bg-white px-2.5 py-2 text-xs text-zinc-500 hover:text-zinc-800"
               aria-label="Cancel"
             >
-              <X className="size-3.5" />
+              <X className="size-4" />
             </button>
           </div>
         ) : (
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className={`mt-2.5 w-full rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+            className={`mt-3 w-full rounded-xl py-2 text-xs font-bold shadow-xs transition-colors ${
               confirmedToday
-                ? 'border border-steel text-light-grey hover:border-neon-green hover:text-neon-green'
-                : 'bg-red-500 text-white hover:bg-red-500/85'
+                ? 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
             }`}
           >
-            {confirmedToday ? 'Confirm again' : 'Confirm stock take'}
+            {confirmedToday ? 'Confirm stock take again' : 'Confirm today\'s stock take'}
           </button>
         )}
       </div>
@@ -187,73 +190,85 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
       {/* ── Header ──────────────────────────────────────────────── */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-full bg-neon-green/15">
-            <Package className="size-3.5 text-neon-green" />
+          <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+            <Package className="size-4" />
           </div>
-          <span className="text-xs font-bold text-foreground">
-            Stock Levels
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
+              Stock Inventory
+            </h3>
             {lowCount > 0 && (
-              <span className="ml-2 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400">
+              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">
                 {lowCount} low
               </span>
             )}
-          </span>
+          </div>
         </div>
         <button
           type="button"
           onClick={() => setShowManage(true)}
-          className="text-xs font-semibold text-neon-green transition-colors hover:text-neon-green/70"
+          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
         >
-          Manage
+          <SlidersHorizontal className="size-3 text-zinc-500" />
+          <span>Manage Stock</span>
         </button>
       </div>
 
       {/* ── Item list ───────────────────────────────────────────── */}
       {items.length === 0 ? (
-        <p className="py-3 text-center text-xs text-light-grey">No stock items yet — tap Manage to add.</p>
+        <p className="py-6 text-center text-xs font-medium text-zinc-400">No stock items yet — click Manage to add.</p>
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => {
             const low = isLow(item)
             const pct = fillPercent(item)
             return (
-              <div key={item.id} className="rounded-2xl border border-steel/60 bg-card px-3.5 py-2.5">
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-foreground">{item.name}</span>
-                      <span className={`shrink-0 text-xs font-black tabular-nums ${low ? 'text-red-400' : 'text-neon-green'}`}>
-                        {item.currentQty}
-                        <span className="text-mid-grey">/{item.maxQty}</span>
-                      </span>
-                    </div>
-                    {/* Progress bar */}
-                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-steel/40">
-                      <div
-                        className={`h-full rounded-full transition-all ${low ? 'bg-red-500' : 'bg-neon-green'}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
+              <div
+                key={item.id}
+                className={`flex flex-col justify-between rounded-xl border p-3.5 shadow-xs transition-colors ${
+                  low ? 'border-rose-200 bg-rose-50/30' : 'border-zinc-200 bg-white'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="truncate text-sm font-bold text-zinc-900">{item.name}</span>
+                    <span className={`shrink-0 text-xs font-black tabular-nums ${low ? 'text-rose-700' : 'text-emerald-700'}`}>
+                      {item.currentQty}
+                      <span className="text-zinc-400 font-medium">/{item.maxQty}</span>
+                    </span>
                   </div>
-                  {/* Quick adjust */}
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  {/* Progress bar */}
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 border border-zinc-200/50">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${low ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Quick adjust controls */}
+                <div className="mt-3 flex items-center justify-between pt-2 border-t border-zinc-100">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${low ? 'text-rose-600' : 'text-zinc-400'}`}>
+                    {low ? 'Low Stock' : 'Optimal'}
+                  </span>
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => adjust(item, -1)}
                       disabled={pending || item.currentQty <= 0}
-                      className="flex size-8 items-center justify-center rounded-lg border border-steel/80 bg-background text-light-grey transition-colors hover:border-red-400/60 hover:text-red-400 disabled:opacity-30"
+                      className="flex size-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-30 transition-colors active:scale-95"
                       aria-label={`Reduce ${item.name}`}
                     >
-                      <Minus className="size-3.5" />
+                      <Minus className="size-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => adjust(item, 1)}
                       disabled={pending}
-                      className="flex size-8 items-center justify-center rounded-lg border border-steel/80 bg-background text-light-grey transition-colors hover:border-neon-green/60 hover:text-neon-green disabled:opacity-30"
+                      className="flex size-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 transition-colors active:scale-95"
                       aria-label={`Add ${item.name}`}
                     >
-                      <Plus className="size-3.5" />
+                      <Plus className="size-3" />
                     </button>
                   </div>
                 </div>
@@ -314,21 +329,24 @@ function ManageModal({ items, onClose }: { items: StockItem[]; onClose: () => vo
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-2xl border border-steel bg-card shadow-2xl">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border border-zinc-200 bg-white shadow-2xl overflow-hidden">
         {/* Modal header */}
-        <div className="flex items-center justify-between border-b border-steel px-5 py-4">
+        <div className="flex items-center justify-between border-b border-zinc-200 bg-zinc-50/80 px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-full bg-neon-green/15">
-              <Package className="size-4 text-neon-green" />
+            <div className="flex size-8 items-center justify-center rounded-xl bg-emerald-500 text-white font-bold">
+              <Package className="size-4" />
             </div>
-            <h2 className="font-display text-base font-black uppercase tracking-tight text-foreground">
-              Manage Stock
-            </h2>
+            <div>
+              <h2 className="font-display text-base font-black uppercase tracking-tight text-zinc-900">
+                Manage Stock Inventory
+              </h2>
+              <p className="text-xs text-zinc-500">Add stock items, update targets or delete items</p>
+            </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1.5 text-light-grey transition-colors hover:bg-steel/40 hover:text-foreground"
+            className="rounded-xl p-1.5 text-zinc-400 hover:bg-zinc-200 hover:text-zinc-700 transition-colors"
             aria-label="Close"
           >
             <X className="size-4" />
@@ -336,36 +354,38 @@ function ManageModal({ items, onClose }: { items: StockItem[]; onClose: () => vo
         </div>
 
         {/* Modal body */}
-        <div className="overflow-y-auto px-5 py-4">
+        <div className="overflow-y-auto p-5">
           {/* Add new item */}
-          <p className="mb-2.5 text-xs font-bold text-foreground">Add New Item</p>
-          <div className="mb-2 flex flex-col gap-2">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Item name"
-              className="w-full rounded-xl border border-steel bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-mid-grey focus:border-neon-green"
-            />
-            <div className="flex items-center gap-2">
-              <NumberField label="In stock" value={newCur} onChange={setNewCur} />
-              <NumberField label="Target" value={newMax} onChange={setNewMax} />
-              <button
-                type="button"
-                onClick={handleAdd}
-                disabled={addPending || !newName.trim()}
-                className="ml-auto flex h-11 items-center gap-1.5 rounded-xl bg-neon-green px-4 text-sm font-bold text-black transition-opacity hover:opacity-80 disabled:opacity-40"
-              >
-                <Plus className="size-4" /> Add
-              </button>
+          <div className="mb-5 rounded-xl border border-zinc-200 bg-zinc-50/50 p-3.5">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-600">Add New Item</p>
+            <div className="flex flex-col gap-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Item name (e.g. Energy Bars, Towels)"
+                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500"
+              />
+              <div className="flex items-center gap-2">
+                <NumberField label="Current" value={newCur} onChange={setNewCur} />
+                <NumberField label="Target" value={newMax} onChange={setNewMax} />
+                <button
+                  type="button"
+                  onClick={handleAdd}
+                  disabled={addPending || !newName.trim()}
+                  className="ml-auto flex h-11 items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-xs font-bold text-white transition-opacity hover:bg-emerald-700 disabled:opacity-40"
+                >
+                  <Plus className="size-4" /> Add Item
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Existing items */}
-          <p className="mb-2.5 mt-5 text-xs font-bold text-foreground">Items</p>
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-zinc-600">Inventory Items ({items.length})</p>
           <div className="space-y-2">
             {items.length === 0 ? (
-              <p className="text-xs text-light-grey">No items yet.</p>
+              <p className="text-xs text-zinc-400 py-3 text-center">No items in inventory.</p>
             ) : (
               items.map((item) => (
                 <ManageRow
@@ -400,15 +420,15 @@ function ManageRow({
   const dirty = cur !== item.currentQty || max !== item.maxQty
 
   return (
-    <div className="flex items-center gap-2.5 rounded-xl border border-steel/60 bg-background px-3 py-2.5">
-      <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{item.name}</p>
-      <NumberField label="In" value={cur} onChange={setCur} compact />
-      <NumberField label="Target" value={max} onChange={setMax} compact />
+    <div className="flex items-center gap-2.5 rounded-xl border border-zinc-200 bg-white p-3 shadow-xs">
+      <p className="min-w-0 flex-1 truncate text-xs font-bold text-zinc-900">{item.name}</p>
+      <NumberField label="Cur" value={cur} onChange={setCur} compact />
+      <NumberField label="Tgt" value={max} onChange={setMax} compact />
       <button
         type="button"
         onClick={() => onSave(item, cur, max)}
         disabled={disabled || !dirty}
-        className="rounded-lg bg-neon-green/90 px-2.5 py-1.5 text-[11px] font-bold text-black transition-opacity hover:opacity-80 disabled:opacity-30"
+        className="rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-bold text-white transition-opacity hover:bg-emerald-700 disabled:opacity-30 shadow-xs"
       >
         Save
       </button>
@@ -416,7 +436,7 @@ function ManageRow({
         type="button"
         onClick={() => onDelete(item)}
         disabled={disabled}
-        className="rounded-lg p-1.5 text-light-grey transition-colors hover:text-red-400 disabled:opacity-40"
+        className="rounded-lg p-1.5 text-zinc-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-40 transition-colors"
         aria-label={`Remove ${item.name}`}
       >
         <Trash2 className="size-4" />
@@ -438,16 +458,16 @@ function NumberField({
 }) {
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="text-[9px] font-bold uppercase tracking-wider text-mid-grey">{label}</span>
-      <div className="flex items-center rounded-xl border border-steel bg-card">
-        <span className={`px-2 text-center text-sm font-bold tabular-nums text-foreground ${compact ? 'w-8' : 'w-10'}`}>
+      <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">{label}</span>
+      <div className="flex items-center rounded-xl border border-zinc-300 bg-zinc-50 overflow-hidden">
+        <span className={`px-2 text-center text-xs font-bold tabular-nums text-zinc-900 ${compact ? 'w-8' : 'w-10'}`}>
           {value}
         </span>
-        <div className="flex flex-col border-l border-steel">
+        <div className="flex flex-col border-l border-zinc-200">
           <button
             type="button"
             onClick={() => onChange(value + 1)}
-            className="flex h-5 w-7 items-center justify-center border-b border-steel text-light-grey hover:text-foreground"
+            className="flex h-4 w-6 items-center justify-center border-b border-zinc-200 text-zinc-500 hover:text-zinc-900"
             aria-label={`Increase ${label}`}
           >
             <ChevronUp className="size-3" />
@@ -455,7 +475,7 @@ function NumberField({
           <button
             type="button"
             onClick={() => onChange(Math.max(0, value - 1))}
-            className="flex h-5 w-7 items-center justify-center text-light-grey hover:text-foreground"
+            className="flex h-4 w-6 items-center justify-center text-zinc-500 hover:text-zinc-900"
             aria-label={`Decrease ${label}`}
           >
             <ChevronDown className="size-3" />
@@ -465,3 +485,4 @@ function NumberField({
     </div>
   )
 }
+
