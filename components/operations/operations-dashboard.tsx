@@ -181,7 +181,7 @@ export function OperationsDashboard({
 
   if (showSettings) {
     return (
-      <div className="min-h-screen bg-[#f4f5f7] text-zinc-900 px-4 pb-12 pt-6">
+      <div className="min-h-screen bg-[#f7f8fa] text-zinc-900 px-4 pb-12 pt-6">
         <div className="mx-auto max-w-4xl">
           <div className="mb-6 flex items-center justify-between border-b border-zinc-200 pb-4">
             <div>
@@ -205,7 +205,7 @@ export function OperationsDashboard({
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f5f7] text-zinc-900 antialiased selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#f7f8fa] text-zinc-900 antialiased selection:bg-emerald-500 selection:text-white">
       <div className="mx-auto max-w-[1600px] px-3 py-3 sm:px-6 sm:py-4">
 
         {/* ── 1. Top Header ─────────────────────────────────────── */}
@@ -458,17 +458,17 @@ export function OperationsDashboard({
             {previewTrials.length === 0 ? (
               <p className="py-6 text-center text-xs font-medium text-zinc-400">No upcoming trials booked.</p>
             ) : (
-              <div className="space-y-2 flex-1">
+              <div className="divide-y divide-zinc-100">
                 {previewTrials.map((b) => {
                   const conv = getTrialConversion(b, signupIndex, sessionPurchaseIndex, todayYmd)
                   const isConverted = conv.status === 'converted'
                   return (
                     <div
                       key={b.id}
-                      className={`rounded-xl border px-3 py-2.5 transition-colors ${
+                      className={`border-l-2 py-3 pl-3 transition-colors ${
                         isConverted
-                          ? 'border-emerald-200 bg-emerald-50/60'
-                          : 'border-amber-200 bg-amber-50/60'
+                          ? 'border-l-emerald-500'
+                          : 'border-l-amber-500'
                       }`}
                     >
                       <p className={`text-[10px] font-black uppercase tracking-wider ${isConverted ? 'text-emerald-800' : 'text-amber-800'}`}>
@@ -516,14 +516,14 @@ export function OperationsDashboard({
             {recentSignupsList.length === 0 ? (
               <p className="py-6 text-center text-xs font-medium text-zinc-400">No recent member sign-ups.</p>
             ) : (
-              <div className="space-y-2 flex-1">
+              <div className="divide-y divide-zinc-100">
                 {recentSignupsList.map((item) => (
                   <div
                     key={item.id}
-                    className={`rounded-xl border px-3 py-2.5 ${
+                    className={`border-l-2 py-3 pl-3 ${
                       item.type === 'membership'
-                        ? 'border-emerald-200 bg-emerald-50/60'
-                        : 'border-fuchsia-200 bg-fuchsia-50/60'
+                        ? 'border-l-emerald-500'
+                        : 'border-l-fuchsia-500'
                     }`}
                   >
                     <p className={`text-[10px] font-black uppercase tracking-wider ${
