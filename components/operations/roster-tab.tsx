@@ -136,6 +136,16 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
   const todayYmd = ymdInJohannesburg()
   const signupIndex = useMemo(() => buildSignupEmailIndex(signups), [signups])
   const sessionPurchaseIndex = useMemo(() => buildSessionPurchaseEmailIndex(sessionPurchases), [sessionPurchases])
+  const convertedSignupIds = useMemo(() => {
+    const ids = new Set<number>()
+    for (const booking of bookings) {
+      const conversion = getTrialConversion(booking, signupIndex, sessionPurchaseIndex, todayYmd)
+      if (conversion.status === 'converted' && conversion.source === 'membership' && conversion.signup) {
+        ids.add(conversion.signup.id)
+      }
+    }
+    return ids
+  }, [bookings, sessionPurchaseIndex, signupIndex, todayYmd])
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor])
   const weekLabel = `${weekDates[0].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} – ${weekDates[5].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}`
@@ -206,7 +216,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                 ? saturdayShift ? [saturdayShift] : []
                 : gridShifts
 
-              // Attribute same-day trials / new members to their shift (client-only)
+              // Converted trials stay on their trial shift; only direct sign-ups appear here.
               const trialsByShift: Record<string, { booking: TrialBooking; conversion: TrialConversion }[]> = {}
               const membersByShift: Record<string, MembershipSignup[]> = {}
               const newSessionMembersByShift: Record<string, SessionPurchase[]> = {}
@@ -221,6 +231,7 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                   }
                 }
                 for (const s of signups) {
+                  if (convertedSignupIds.has(s.id)) continue
                   if (ymdInJohannesburg(new Date(s.createdAt)) !== dateStr) continue
                   const st = shiftForTime(jhbTime(s.createdAt), dayShifts, isSat)
                   if (st) (membersByShift[st] ??= []).push(s)
@@ -724,4 +735,3 @@ function ShiftIndicators({
     </div>
   )
 }
-
