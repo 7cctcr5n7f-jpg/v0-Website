@@ -95,6 +95,8 @@ export function OperationsDashboard({
 }: Props) {
   const [showSettings, setShowSettings] = useState(false)
   const [modalView, setModalView] = useState<'trials' | 'members' | null>(null)
+  const [waterFocusRequest, setWaterFocusRequest] = useState(0)
+  const [stockFocusRequest, setStockFocusRequest] = useState(0)
 
   const todayYmd = ymdInJohannesburg()
   const signupIndex = useMemo(() => buildSignupEmailIndex(signups), [signups])
@@ -148,6 +150,10 @@ export function OperationsDashboard({
       .sort((a, b) => b.date.getTime() - a.date.getTime())
       .slice(0, 5)
   }, [sessionPurchases, signups])
+
+  function focusSection(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
 
   if (showSettings) {
     return (
@@ -226,11 +232,24 @@ export function OperationsDashboard({
             
             {/* Water alerts */}
             <div
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                setWaterFocusRequest((request) => request + 1)
+                focusSection('water')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setWaterFocusRequest((request) => request + 1)
+                  focusSection('water')
+                }
+              }}
               className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all ${
                 negativeWaterAccounts.length > 0
                   ? 'border-rose-200 bg-rose-50/70 text-rose-950'
                   : 'border-zinc-200/80 bg-white text-zinc-800'
-              }`}
+              } cursor-pointer hover:border-rose-300`}
             >
               <div
                 className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
@@ -256,8 +275,8 @@ export function OperationsDashboard({
             <div
               role="button"
               tabIndex={0}
-              onClick={() => setModalView('trials')}
-              onKeyDown={(e) => { if (e.key === 'Enter') setModalView('trials') }}
+              onClick={() => focusSection('upcoming-trials')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focusSection('upcoming-trials') } }}
               className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-sm transition-all hover:border-amber-300 hover:bg-amber-50/20"
             >
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
@@ -276,11 +295,24 @@ export function OperationsDashboard({
 
             {/* Low stock */}
             <div
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                setStockFocusRequest((request) => request + 1)
+                focusSection('stock')
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setStockFocusRequest((request) => request + 1)
+                  focusSection('stock')
+                }
+              }}
               className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all ${
                 lowStockItems.length > 0
                   ? 'border-rose-200 bg-rose-50/70 text-rose-950'
                   : 'border-zinc-200/80 bg-white text-zinc-800'
-              }`}
+              } cursor-pointer hover:border-rose-300`}
             >
               <div
                 className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
@@ -304,11 +336,15 @@ export function OperationsDashboard({
 
             {/* Stock take confirmation */}
             <div
+              role="button"
+              tabIndex={0}
+              onClick={() => focusSection('stock')}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focusSection('stock') } }}
               className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all ${
                 stockConfirmedToday
                   ? 'border-emerald-200 bg-emerald-50/60 text-emerald-950'
                   : 'border-amber-200 bg-amber-50/60 text-amber-950'
-              }`}
+              } cursor-pointer hover:border-emerald-300`}
             >
               <div
                 className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
@@ -372,7 +408,7 @@ export function OperationsDashboard({
         <section className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           
           {/* Upcoming Trials Card */}
-          <div className="flex flex-col rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+          <div id="upcoming-trials" className="flex flex-col rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
@@ -420,17 +456,13 @@ export function OperationsDashboard({
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-500">
-                          <span className="font-semibold text-zinc-700">{b.appointmentDate}</span>
-                          <span>·</span>
-                          <span className="font-semibold text-zinc-700">{b.appointmentTime}</span>
-                          {b.phone && (
-                            <>
-                              <span>·</span>
-                              <span className="truncate">{b.phone}</span>
-                            </>
-                          )}
-                        </div>
+                        <p className="mt-0.5 text-xs font-semibold text-zinc-600">
+                          {new Date(`${b.appointmentDate}T00:00:00`).toLocaleDateString('en-ZA', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: 'short',
+                          })} · {b.appointmentTime}
+                        </p>
                       </div>
                     </div>
                   )
@@ -486,11 +518,12 @@ export function OperationsDashboard({
                         </span>
                       </div>
                       <p className="mt-0.5 text-xs text-zinc-500 truncate">{item.title}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-[11px] font-medium text-zinc-400">
-                        {item.date.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })}
-                      </span>
+                      <p className="mt-1 text-[11px] font-semibold text-zinc-600">
+                        {item.date.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} · {item.date.toLocaleTimeString('en-ZA', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -504,8 +537,8 @@ export function OperationsDashboard({
         <section className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           
           {/* Water Tracker */}
-          <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
-            <WaterTab credits={waterCredits} auditLog={waterAuditLog} />
+          <div id="water" className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+            <WaterTab credits={waterCredits} auditLog={waterAuditLog} focusBelowZeroRequest={waterFocusRequest} />
           </div>
 
           {/* Staff Hours */}
@@ -526,8 +559,13 @@ export function OperationsDashboard({
         </section>
 
         {/* ── 6. Stock Inventory Section ────────────────────────── */}
-        <section className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
-          <StockTab items={stockItems} lastConfirmation={lastStockConfirmation} staff={staff} />
+        <section id="stock" className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+          <StockTab
+            items={stockItems}
+            lastConfirmation={lastStockConfirmation}
+            staff={staff}
+            focusLowStockRequest={stockFocusRequest}
+          />
         </section>
 
       </div>

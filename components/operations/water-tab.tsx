@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useEffect, useState, useTransition, useMemo } from 'react'
 import { Droplets, X, Plus, Minus, Trash2, ChevronDown, ChevronUp, Search, SlidersHorizontal } from 'lucide-react'
 import { adjustWaterCredit, addWaterMember, deleteWaterMember, setWaterBalance } from '@/app/actions/operations'
 import type { WaterCredit, WaterAuditLog } from '@/lib/db/schema'
@@ -8,16 +8,21 @@ import type { WaterCredit, WaterAuditLog } from '@/lib/db/schema'
 interface Props {
   credits: WaterCredit[]
   auditLog: WaterAuditLog[]
+  focusBelowZeroRequest?: number
 }
 
 type FilterType = 'all' | 'positive' | 'zero' | 'negative'
 
-export function WaterTab({ credits, auditLog }: Props) {
+export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props) {
   const [showManage, setShowManage] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<FilterType>('all')
   const [pending, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (focusBelowZeroRequest > 0) setFilter('negative')
+  }, [focusBelowZeroRequest])
 
   function handleAdjust(credit: WaterCredit, delta: number) {
     startTransition(async () => {

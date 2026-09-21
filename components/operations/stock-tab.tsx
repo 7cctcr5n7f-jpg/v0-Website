@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import {
   Package,
   Plus,
@@ -28,6 +28,7 @@ interface Props {
   items: StockItem[]
   lastConfirmation: StockConfirmation | null
   staff: Staff[]
+  focusLowStockRequest?: number
 }
 
 function jhbYmd(d: Date) {
@@ -49,7 +50,7 @@ function isLow(item: StockItem) {
   return item.currentQty / item.maxQty < LOW_RATIO
 }
 
-export function StockTab({ items, lastConfirmation, staff }: Props) {
+export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest = 0 }: Props) {
   const [showManage, setShowManage] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [confirmName, setConfirmName] = useState('')
@@ -61,6 +62,10 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
   const confirmedToday = lastDate ? jhbYmd(lastDate) === todayYmd : false
 
   const lowCount = items.filter(isLow).length
+  const orderedItems = useMemo(
+    () => [...items].sort((a, b) => Number(isLow(b)) - Number(isLow(a)) || a.name.localeCompare(b.name)),
+    [items],
+  )
 
   function adjust(item: StockItem, delta: number) {
     startTransition(async () => {
@@ -219,14 +224,18 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
         <p className="py-6 text-center text-xs font-medium text-zinc-400">No stock items yet — click Manage to add.</p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          {items.map((item) => {
+          {orderedItems.map((item) => {
             const low = isLow(item)
             const pct = fillPercent(item)
             return (
               <div
                 key={item.id}
                 className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1.5 border-b border-zinc-100 px-3 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_90px_auto] ${
-                  low ? 'bg-rose-50/50' : 'bg-white'
+                  low
+                    ? focusLowStockRequest > 0
+                      ? 'bg-rose-50 ring-1 ring-inset ring-rose-300'
+                      : 'bg-rose-50/50'
+                    : 'bg-white'
                 }`}
               >
                 <div className="min-w-0">

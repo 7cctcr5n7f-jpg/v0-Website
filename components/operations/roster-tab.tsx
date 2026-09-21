@@ -5,6 +5,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Check,
+  Pencil,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { deleteShiftAssignment, saveShiftAssignment } from '@/app/actions/operations'
 import {
@@ -264,16 +268,16 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
                   key={dateStr}
                   className={`flex h-[540px] flex-col overflow-hidden rounded-xl border shadow-sm transition-colors ${
                     isToday
-                      ? 'border-emerald-500/70 bg-emerald-50/15 ring-2 ring-emerald-500/20'
+                      ? 'border-blue-500/70 bg-blue-50/20 ring-2 ring-blue-500/20'
                       : 'border-zinc-200 bg-white'
                   }`}
                 >
                   {/* Day header */}
-                  <div className={`px-2 py-2 text-center border-b ${isToday ? 'bg-emerald-50 border-emerald-200' : 'bg-zinc-50 border-zinc-200'}`}>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-emerald-700' : 'text-zinc-500'}`}>
+                  <div className={`px-2 py-2 text-center border-b ${isToday ? 'border-blue-200 bg-blue-50' : 'bg-zinc-50 border-zinc-200'}`}>
+                    <p className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-blue-700' : 'text-zinc-500'}`}>
                       {WEEK_DAYS[i]}
                     </p>
-                    <p className={`text-base font-black leading-tight ${isToday ? 'text-emerald-900' : 'text-zinc-900'}`}>
+                    <p className={`text-base font-black leading-tight ${isToday ? 'text-blue-900' : 'text-zinc-900'}`}>
                       {d.getDate()}
                     </p>
                   </div>
@@ -347,7 +351,9 @@ function ShiftBlock({
   const [pending, setPending] = useState(false)
   const disabled = !shift
 
-  const hasConversion = trials.some((t) => t.conversion.status === 'converted') || newMembers.length > 0 || newSessionMembers.length > 0
+  const hasConvertedTrial = trials.some((t) => t.conversion.status === 'converted')
+  const hasUnconvertedTrial = trials.some((t) => t.conversion.status !== 'converted')
+  const trialTreatment = hasConvertedTrial ? 'converted' : hasUnconvertedTrial ? 'trial' : null
 
   const assignedIds = new Set(assignments.map((a) => a.staffId))
   const available = applyWholeWeek ? staff : staff.filter((s) => !assignedIds.has(s.id))
@@ -389,8 +395,10 @@ function ShiftBlock({
       className={`flex h-full min-h-0 flex-col overflow-hidden rounded-lg border transition-all ${
         disabled
           ? 'border-zinc-200/50 bg-zinc-50/50'
-          : hasConversion
+          : trialTreatment === 'converted'
           ? 'border-emerald-300 bg-emerald-50/40 ring-1 ring-emerald-200/60'
+          : trialTreatment === 'trial'
+          ? 'border-amber-300 bg-amber-50/50 ring-1 ring-amber-200/60'
           : 'border-zinc-200 bg-zinc-50/70'
       }`}
     >
@@ -398,8 +406,10 @@ function ShiftBlock({
         className={`flex items-center justify-between border-b px-2 py-1 ${
           disabled
             ? 'border-zinc-200/50 bg-zinc-100/50'
-            : hasConversion
+            : trialTreatment === 'converted'
             ? 'border-emerald-200 bg-emerald-100/50'
+            : trialTreatment === 'trial'
+            ? 'border-amber-200 bg-amber-100/50'
             : 'border-zinc-200 bg-zinc-100/70'
         }`}
       >
@@ -564,11 +574,22 @@ function AssignmentChip({
           aria-label={`Hours for ${name}`}
         />
         <span className="text-[10px] text-zinc-500">h</span>
-        <button type="button" onClick={handleSave} disabled={pending} className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-50">
-          Save
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={pending}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded text-emerald-700 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600 disabled:opacity-50"
+          aria-label={`Save hours for ${name}`}
+        >
+          <Check className="size-3.5" aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }} className="text-[11px] font-medium text-zinc-500 hover:text-zinc-800">
-          Cancel
+        <button
+          type="button"
+          onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-zinc-600"
+          aria-label={`Cancel editing ${name}`}
+        >
+          <X className="size-3.5" aria-hidden="true" />
         </button>
       </div>
     )
@@ -576,33 +597,27 @@ function AssignmentChip({
 
   return (
     <div className={`flex min-h-[32px] items-center gap-1.5 border-b border-zinc-100 py-1 last:border-b-0 ${pending ? 'opacity-40' : ''}`}>
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        disabled={pending}
-        className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-zinc-900 hover:text-emerald-800 focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
-        aria-label={`Edit ${name}`}
-      >
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">
         {name}
-      </button>
+      </span>
       <span className="shrink-0 tabular-nums text-xs font-semibold text-zinc-600">{hours || defaultHours}h</span>
       <button
         type="button"
         onClick={() => setEditing(true)}
         disabled={pending}
-        className="shrink-0 text-[11px] font-medium text-zinc-600 hover:text-emerald-800 focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50"
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-600 hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600 disabled:opacity-50"
         aria-label={`Edit ${name}'s hours`}
       >
-        Edit
+        <Pencil className="size-3.5" aria-hidden="true" />
       </button>
       <button
         type="button"
         onClick={handleRemove}
         disabled={pending}
-        className="shrink-0 text-[11px] font-medium text-zinc-500 hover:text-rose-700 focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 disabled:opacity-50"
+        className="inline-flex size-6 shrink-0 items-center justify-center rounded text-zinc-500 hover:bg-rose-50 hover:text-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-rose-600 disabled:opacity-50"
         aria-label={`Remove ${name} from shift`}
       >
-        Remove
+        <Trash2 className="size-3.5" aria-hidden="true" />
       </button>
     </div>
   )
