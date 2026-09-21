@@ -70,6 +70,14 @@ function toIso(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
+function normalizedName(value: string) {
+  return value.trim().toLocaleLowerCase().replace(/\s+/g, ' ')
+}
+
+function signupName(signup: MembershipSignup) {
+  return normalizedName(`${signup.firstName} ${signup.surname}`)
+}
+
 function getWeekDates(anchor: Date): Date[] {
   const d = new Date(anchor)
   d.setHours(0, 0, 0, 0)
@@ -140,12 +148,26 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
     const ids = new Set<number>()
     for (const booking of bookings) {
       const conversion = getTrialConversion(booking, signupIndex, sessionPurchaseIndex, todayYmd)
-      if (conversion.status === 'converted' && conversion.source === 'membership' && conversion.signup) {
+      if (conversion.status !== 'converted') continue
+
+      if (conversion.signup) {
         ids.add(conversion.signup.id)
+      }
+
+      // A manually confirmed conversion may use a different email. In that case,
+      // associate the later membership record by the member's full name.
+      const trialName = normalizedName(booking.fullName)
+      for (const signup of signups) {
+        if (
+          signupName(signup) === trialName &&
+          ymdInJohannesburg(new Date(signup.createdAt)) >= booking.appointmentDate
+        ) {
+          ids.add(signup.id)
+        }
       }
     }
     return ids
-  }, [bookings, sessionPurchaseIndex, signupIndex, todayYmd])
+  }, [bookings, sessionPurchaseIndex, signups, signupIndex, todayYmd])
 
   const weekDates = useMemo(() => getWeekDates(anchor), [anchor])
   const weekLabel = `${weekDates[0].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} – ${weekDates[5].toLocaleDateString('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' })}`
