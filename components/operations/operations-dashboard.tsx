@@ -79,6 +79,30 @@ function jhbFormattedDate(d: Date = new Date()) {
   }).format(d)
 }
 
+function recentSignupTimeLabel(date: Date, todayYmd: string) {
+  const eventYmd = jhbYmd(date)
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const dayLabel = eventYmd === todayYmd
+    ? 'Today'
+    : eventYmd === jhbYmd(yesterday)
+      ? 'Yesterday'
+      : date.toLocaleDateString('en-ZA', {
+          timeZone: 'Africa/Johannesburg',
+          day: '2-digit',
+          month: 'short',
+        })
+
+  const time = new Intl.DateTimeFormat('en-ZA', {
+    timeZone: 'Africa/Johannesburg',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
+
+  return `${dayLabel} · ${time}`
+}
+
 export function OperationsDashboard({
   actionAuthToken,
   staff,
@@ -441,29 +465,23 @@ export function OperationsDashboard({
                   return (
                     <div
                       key={b.id}
-                      className={`flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors ${
+                      className={`rounded-xl border px-3 py-2.5 transition-colors ${
                         isConverted
-                          ? 'border-emerald-200 bg-emerald-50/40'
-                          : 'border-zinc-100 bg-zinc-50/60 hover:bg-zinc-50'
+                          ? 'border-emerald-200 bg-emerald-50/60'
+                          : 'border-amber-200 bg-amber-50/60'
                       }`}
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold text-sm text-zinc-900 truncate">{b.fullName}</p>
-                          {isConverted && (
-                            <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800">
-                              Converted
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-0.5 text-xs font-semibold text-zinc-600">
-                          {new Date(`${b.appointmentDate}T00:00:00`).toLocaleDateString('en-ZA', {
-                            weekday: 'short',
-                            day: '2-digit',
-                            month: 'short',
-                          })} · {b.appointmentTime}
-                        </p>
-                      </div>
+                      <p className={`text-[10px] font-black uppercase tracking-wider ${isConverted ? 'text-emerald-800' : 'text-amber-800'}`}>
+                        {isConverted ? 'Converted member' : 'Trial'}
+                      </p>
+                      <p className="mt-0.5 truncate text-sm font-black text-zinc-900">{b.fullName}</p>
+                      <p className="mt-1 text-xs font-semibold text-zinc-600">
+                        {new Date(`${b.appointmentDate}T00:00:00`).toLocaleDateString('en-ZA', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: 'short',
+                        })} · {b.appointmentTime}
+                      </p>
                     </div>
                   )
                 })}
@@ -502,29 +520,20 @@ export function OperationsDashboard({
                 {recentSignupsList.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-zinc-100 bg-zinc-50/60 p-3 hover:bg-zinc-50 transition-colors"
+                    className={`rounded-xl border px-3 py-2.5 ${
+                      item.type === 'membership'
+                        ? 'border-emerald-200 bg-emerald-50/60'
+                        : 'border-fuchsia-200 bg-fuchsia-50/60'
+                    }`}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-zinc-900 truncate">{item.name}</p>
-                        <span
-                          className={`rounded-md px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${
-                            item.type === 'membership'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-fuchsia-100 text-fuchsia-800'
-                          }`}
-                        >
-                          {item.type === 'membership' ? 'Member' : 'Pack'}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-zinc-500 truncate">{item.title}</p>
-                      <p className="mt-1 text-[11px] font-semibold text-zinc-600">
-                        {item.date.toLocaleDateString('en-ZA', { day: '2-digit', month: 'short' })} · {item.date.toLocaleTimeString('en-ZA', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    </div>
+                    <p className={`text-[10px] font-black uppercase tracking-wider ${
+                      item.type === 'membership' ? 'text-emerald-800' : 'text-fuchsia-800'
+                    }`}>
+                      {item.type === 'membership' ? 'New member' : 'Session pack'}
+                    </p>
+                    <p className="mt-0.5 truncate text-sm font-black text-zinc-900">{item.name}</p>
+                    <p className="mt-1 text-xs font-semibold text-zinc-600">{recentSignupTimeLabel(item.date, todayYmd)}</p>
+                    <p className="mt-0.5 truncate text-[11px] font-medium text-zinc-500">{item.title}</p>
                   </div>
                 ))}
               </div>

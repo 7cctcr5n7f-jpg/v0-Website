@@ -266,16 +266,19 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
               return (
                 <div
                   key={dateStr}
-                  className={`flex h-[540px] flex-col overflow-hidden rounded-xl border shadow-sm transition-colors ${
+                  className={`flex h-[500px] flex-col overflow-hidden rounded-xl border shadow-sm transition-colors ${
                     isToday
-                      ? 'border-blue-500/70 bg-blue-50/20 ring-2 ring-blue-500/20'
+                      ? 'border-blue-200 bg-blue-50/30 shadow-none'
                       : 'border-zinc-200 bg-white'
                   }`}
                 >
                   {/* Day header */}
                   <div className={`px-2 py-2 text-center border-b ${isToday ? 'border-blue-200 bg-blue-50' : 'bg-zinc-50 border-zinc-200'}`}>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-blue-700' : 'text-zinc-500'}`}>
+                    <p className={`flex items-center justify-center gap-1 text-[10px] font-black uppercase tracking-widest ${isToday ? 'text-blue-700' : 'text-zinc-500'}`}>
                       {WEEK_DAYS[i]}
+                      {isToday && (
+                        <span className="rounded bg-blue-100 px-1 py-px text-[8px] tracking-wide text-blue-700">Today</span>
+                      )}
                     </p>
                     <p className={`text-base font-black leading-tight ${isToday ? 'text-blue-900' : 'text-zinc-900'}`}>
                       {d.getDate()}
@@ -427,7 +430,7 @@ function ShiftBlock({
           <p className="mt-2 text-center text-[10px] uppercase tracking-wide text-zinc-400 font-medium">No shift</p>
         ) : (
           <>
-            <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5">
+            <div className="max-h-[88px] shrink-0 space-y-1 overflow-y-auto pr-0.5">
               {orderedAssignments.map((a) => {
                 const member = staff.find((s) => s.id === a.staffId)
                 return (
@@ -625,6 +628,49 @@ function AssignmentChip({
 
 // ── Shift Indicators (trials / new members during a shift) ───────────────────
 
+type ActivityEvent = {
+  id: number
+  name: string
+  detail: string
+}
+
+function ActivityPanel({
+  label,
+  events,
+  tone,
+}: {
+  label: string
+  events: ActivityEvent[]
+  tone: 'amber' | 'emerald' | 'purple'
+}) {
+  const visibleEvents = events.length === 2 ? events : events.slice(0, 1)
+  const remainingCount = events.length - visibleEvents.length
+  const styles = {
+    amber: 'border-amber-300 bg-amber-100 text-amber-950',
+    emerald: 'border-emerald-600 bg-emerald-600 text-white shadow-sm',
+    purple: 'border-purple-300 bg-purple-100 text-purple-950',
+  }[tone]
+  const labelColor = tone === 'emerald' ? 'text-emerald-100' : tone === 'purple' ? 'text-purple-700' : 'text-amber-800'
+  const detailColor = tone === 'emerald' ? 'text-emerald-100' : tone === 'purple' ? 'text-purple-700' : 'text-amber-800'
+
+  return (
+    <div className={`rounded-md border px-2 py-1.5 ${styles}`}>
+      <p className={`text-[8px] font-black uppercase tracking-wider ${labelColor}`}>{label}</p>
+      <div className="space-y-0.5">
+        {visibleEvents.map((event) => (
+          <div key={event.id}>
+            <p className="truncate text-[11px] font-bold leading-tight">{event.name}</p>
+            <p className={`text-[9px] font-medium leading-tight ${detailColor}`}>{event.detail}</p>
+          </div>
+        ))}
+        {remainingCount > 0 && (
+          <p className={`text-[9px] font-semibold ${detailColor}`}>+{remainingCount} more</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function ShiftIndicators({
   trials,
   newMembers,
@@ -634,99 +680,44 @@ function ShiftIndicators({
   newMembers: MembershipSignup[]
   newSessionMembers: SessionPurchase[]
 }) {
-  const [open, setOpen] = useState<null | 'trials' | 'converted' | 'members' | 'sessions'>(null)
-
-  const convertedTrials = trials.filter((t) => t.conversion.status === 'converted')
-  const unconvertedTrials = trials.filter((t) => t.conversion.status !== 'converted')
+  const convertedTrials = trials
+    .filter((t) => t.conversion.status === 'converted')
+    .map((t) => ({
+      id: t.booking.id,
+      name: t.booking.fullName,
+      detail: `Trial · ${t.booking.appointmentTime}`,
+    }))
+  const unconvertedTrials = trials
+    .filter((t) => t.conversion.status !== 'converted')
+    .map((t) => ({
+      id: t.booking.id,
+      name: t.booking.fullName,
+      detail: `Trial · ${t.booking.appointmentTime}`,
+    }))
+  const signupEvents = newMembers.map((member) => ({
+    id: member.id,
+    name: `${member.firstName} ${member.surname}`,
+    detail: `Signup · ${jhbTime(member.createdAt)}`,
+  }))
+  const sessionEvents = newSessionMembers.map((member) => ({
+    id: member.id,
+    name: `${member.firstName} ${member.surname}`,
+    detail: `Session · ${jhbTime(sessionPurchaseOccurredAt(member))}`,
+  }))
 
   return (
     <div className="mb-0.5 flex flex-col gap-1">
       {convertedTrials.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'converted' ? null : 'converted'))}
-          className="flex w-full items-center justify-between rounded-md border border-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 text-left transition-colors hover:bg-emerald-500/20"
-        >
-          <span className="text-[9px] font-black uppercase tracking-wide text-emerald-800">
-            {convertedTrials.length} Converted member{convertedTrials.length > 1 ? 's' : ''}
-          </span>
-          <span className="text-[8px] font-bold text-emerald-700">{open === 'converted' ? 'Hide' : 'Show'}</span>
-        </button>
+        <ActivityPanel label="Converted member" events={convertedTrials} tone="emerald" />
       )}
-      {open === 'converted' && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50/80 px-2 py-1">
-          {convertedTrials.map((t) => (
-            <p key={t.booking.id} className="truncate text-[9px] font-semibold leading-relaxed text-emerald-900">
-              {t.booking.appointmentTime} · {t.booking.fullName} (Converted)
-            </p>
-          ))}
-        </div>
-      )}
-
       {unconvertedTrials.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'trials' ? null : 'trials'))}
-          className="flex w-full items-center justify-between rounded-md border border-amber-300 bg-amber-400/20 px-1.5 py-0.5 text-left transition-colors hover:bg-amber-400/30"
-        >
-          <span className="text-[9px] font-black uppercase tracking-wide text-amber-800">
-            {unconvertedTrials.length} Trial{unconvertedTrials.length > 1 ? 's' : ''}
-          </span>
-          <span className="text-[8px] font-bold text-amber-700">{open === 'trials' ? 'Hide' : 'Show'}</span>
-        </button>
+        <ActivityPanel label="Trial" events={unconvertedTrials} tone="amber" />
       )}
-      {open === 'trials' && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1">
-          {unconvertedTrials.map((t) => (
-            <p key={t.booking.id} className="truncate text-[9px] font-medium leading-relaxed text-amber-900">
-              {t.booking.appointmentTime} · {t.booking.fullName}
-            </p>
-          ))}
-        </div>
+      {signupEvents.length > 0 && (
+        <ActivityPanel label="New signup" events={signupEvents} tone="emerald" />
       )}
-
-      {newMembers.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'members' ? null : 'members'))}
-          className="flex w-full items-center justify-between rounded-md border border-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 text-left transition-colors hover:bg-emerald-500/20"
-        >
-          <span className="text-[9px] font-black uppercase tracking-wide text-emerald-800">
-            {newMembers.length} Signup{newMembers.length > 1 ? 's' : ''}
-          </span>
-          <span className="text-[8px] font-bold text-emerald-700">{open === 'members' ? 'Hide' : 'Show'}</span>
-        </button>
-      )}
-      {open === 'members' && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1">
-          {newMembers.map((m) => (
-            <p key={m.id} className="truncate text-[9px] font-semibold leading-relaxed text-emerald-900">
-              {m.firstName} {m.surname}
-            </p>
-          ))}
-        </div>
-      )}
-
-      {newSessionMembers.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setOpen((o) => (o === 'sessions' ? null : 'sessions'))}
-          className="flex w-full items-center justify-between rounded-md border border-fuchsia-300 bg-fuchsia-400/15 px-1.5 py-0.5 text-left transition-colors hover:bg-fuchsia-400/25"
-        >
-          <span className="text-[9px] font-black uppercase tracking-wide text-fuchsia-800">
-            {newSessionMembers.length} Session{newSessionMembers.length > 1 ? 's' : ''}
-          </span>
-          <span className="text-[8px] font-bold text-fuchsia-700">{open === 'sessions' ? 'Hide' : 'Show'}</span>
-        </button>
-      )}
-      {open === 'sessions' && (
-        <div className="rounded-md border border-fuchsia-200 bg-fuchsia-50 px-2 py-1">
-          {newSessionMembers.map((member) => (
-            <p key={member.id} className="truncate text-[9px] font-semibold leading-relaxed text-fuchsia-900">
-              {member.firstName} {member.surname}
-            </p>
-          ))}
-        </div>
+      {sessionEvents.length > 0 && (
+        <ActivityPanel label="Session member" events={sessionEvents} tone="purple" />
       )}
     </div>
   )
