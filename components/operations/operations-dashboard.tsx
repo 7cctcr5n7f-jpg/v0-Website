@@ -9,8 +9,6 @@ import {
   Clock,
   Droplets,
   Package,
-  Users,
-  CalendarDays,
   UserPlus,
   X,
   ChevronRight,
@@ -251,7 +249,7 @@ export function OperationsDashboard({
         </header>
 
         {/* ── 2. Needs Attention Strip ──────────────────────────── */}
-        <section className="mb-4">
+        <section className="mb-3">
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
             
             {/* Water alerts */}
@@ -269,14 +267,14 @@ export function OperationsDashboard({
                   focusSection('water')
                 }
               }}
-              className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all ${
+              className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all ${
                 negativeWaterAccounts.length > 0
                   ? 'border-rose-200 bg-rose-50/70 text-rose-950'
                   : 'border-zinc-200/80 bg-white text-zinc-800'
               } cursor-pointer hover:border-rose-300`}
             >
               <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+              className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
                   negativeWaterAccounts.length > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                 }`}
               >
@@ -301,9 +299,9 @@ export function OperationsDashboard({
               tabIndex={0}
               onClick={() => focusSection('upcoming-trials')}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focusSection('upcoming-trials') } }}
-              className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white p-3.5 shadow-sm transition-all hover:border-amber-300 hover:bg-amber-50/20"
+              className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-3 py-2.5 transition-all hover:border-amber-300 hover:bg-amber-50/20"
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-sm shadow-amber-500/20">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white">
                 <Clock className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -332,14 +330,14 @@ export function OperationsDashboard({
                   focusSection('stock')
                 }
               }}
-              className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all ${
+              className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all ${
                 lowStockItems.length > 0
                   ? 'border-rose-200 bg-rose-50/70 text-rose-950'
                   : 'border-zinc-200/80 bg-white text-zinc-800'
               } cursor-pointer hover:border-rose-300`}
             >
               <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
                   lowStockItems.length > 0 ? 'bg-rose-500 text-white' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                 }`}
               >
@@ -364,14 +362,14 @@ export function OperationsDashboard({
               tabIndex={0}
               onClick={() => focusSection('stock')}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); focusSection('stock') } }}
-              className={`flex items-center gap-3 rounded-2xl border p-3.5 shadow-sm transition-all ${
+              className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all ${
                 stockConfirmedToday
                   ? 'border-emerald-200 bg-emerald-50/60 text-emerald-950'
                   : 'border-amber-200 bg-amber-50/60 text-amber-950'
               } cursor-pointer hover:border-emerald-300`}
             >
               <div
-                className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
+                className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
                   stockConfirmedToday ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
                 }`}
               >
@@ -395,17 +393,14 @@ export function OperationsDashboard({
         </section>
 
         {/* ── 3. Weekly Roster Section ──────────────────────────── */}
-        <section className="mb-4 rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+        <section className="mb-4 rounded-2xl border border-zinc-200/80 bg-white p-4">
           <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-                <CalendarDays className="size-4" />
-              </div>
-              <h2 className="font-display text-base font-black tracking-tight text-zinc-900">
-                Weekly roster
-              </h2>
-            </div>
+            <h2 className="font-display text-base font-black tracking-tight text-zinc-900">Weekly roster</h2>
             <div className="flex items-center gap-3 text-xs font-medium text-zinc-500">
+              <span className="inline-flex items-center gap-1">
+                <span className="size-2 rounded-full bg-blue-500" />
+                <span>Today</span>
+              </span>
               <span className="inline-flex items-center gap-1">
                 <span className="size-2 rounded-full bg-emerald-500" />
                 <span>Converted Member</span>
@@ -413,6 +408,10 @@ export function OperationsDashboard({
               <span className="inline-flex items-center gap-1">
                 <span className="size-2 rounded-full bg-amber-400" />
                 <span>Trial</span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="size-2 rounded-full bg-fuchsia-500" />
+                <span>Session</span>
               </span>
             </div>
           </div>
@@ -432,12 +431,9 @@ export function OperationsDashboard({
         <section className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           
           {/* Upcoming Trials Card */}
-          <div id="upcoming-trials" className="flex flex-col rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+          <div id="upcoming-trials" className="flex flex-col rounded-2xl border border-zinc-200/80 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
-                  <Clock className="size-4" />
-                </div>
                 <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
                   Upcoming trials
                 </h3>
@@ -490,12 +486,9 @@ export function OperationsDashboard({
           </div>
 
           {/* Recent Sign-ups Card */}
-          <div className="flex flex-col rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+          <div className="flex flex-col rounded-2xl border border-zinc-200/80 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-                  <UserPlus className="size-4" />
-                </div>
                 <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
                   Recent sign-ups
                 </h3>
@@ -546,21 +539,16 @@ export function OperationsDashboard({
         <section className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           
           {/* Water Tracker */}
-          <div id="water" className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+          <div id="water" className="rounded-2xl border border-zinc-200/80 bg-white p-4">
             <WaterTab credits={waterCredits} auditLog={waterAuditLog} focusBelowZeroRequest={waterFocusRequest} />
           </div>
 
           {/* Staff Hours */}
-          <div className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-zinc-200/80 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
-                  <Users className="size-4" />
-                </div>
-                <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
-                  Staff Hours & Pay Periods
-                </h3>
-              </div>
+              <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
+                Staff Hours & Pay Periods
+              </h3>
             </div>
             <StaffHoursSummary staff={staff} assignments={assignments} shiftSettings={shiftSettings} />
           </div>
@@ -568,7 +556,7 @@ export function OperationsDashboard({
         </section>
 
         {/* ── 6. Stock Inventory Section ────────────────────────── */}
-        <section id="stock" className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm">
+        <section id="stock" className="rounded-2xl border border-zinc-200/80 bg-white p-4">
           <StockTab
             items={stockItems}
             lastConfirmation={lastStockConfirmation}

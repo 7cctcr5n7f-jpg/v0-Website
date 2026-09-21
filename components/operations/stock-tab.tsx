@@ -40,11 +40,6 @@ function jhbYmd(d: Date) {
   }).format(d)
 }
 
-function fillPercent(item: StockItem) {
-  if (item.maxQty <= 0) return item.currentQty > 0 ? 100 : 0
-  return Math.max(0, Math.min(100, Math.round((item.currentQty / item.maxQty) * 100)))
-}
-
 function isLow(item: StockItem) {
   if (item.maxQty <= 0) return item.currentQty <= 0
   return item.currentQty / item.maxQty < LOW_RATIO
@@ -90,17 +85,16 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
 
   return (
     <div>
-      {/* ── Confirmation banner ─────────────────────────────────── */}
       <div
         suppressHydrationWarning
-        className={`mb-3.5 rounded-xl border p-3.5 shadow-xs transition-colors ${
+        className={`mb-4 border-y px-1 py-3 transition-colors ${
           confirmedToday
-            ? 'border-emerald-200 bg-emerald-50/70 text-emerald-950'
-            : 'border-amber-200 bg-amber-50/70 text-amber-950'
+            ? 'border-emerald-100 text-emerald-950'
+            : 'border-amber-200 text-amber-950'
         }`}
       >
-        <div className="flex items-start gap-3">
-          <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${confirmedToday ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+        <div className="flex items-center gap-2">
+          <div className={`flex size-6 shrink-0 items-center justify-center ${confirmedToday ? 'text-emerald-600' : 'text-amber-600'}`}>
             {confirmedToday ? (
               <CheckCircle2 className="size-4" />
             ) : (
@@ -109,40 +103,29 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
           </div>
           <div className="min-w-0 flex-1">
             {confirmedToday ? (
-              <p className="text-xs font-bold text-emerald-900">
-                Stock confirmed today by {lastConfirmation!.staffName}
+              <p className="truncate text-xs font-semibold text-emerald-900" suppressHydrationWarning>
+                Stock confirmed by {lastConfirmation!.staffName} · Today {lastDate!.toLocaleTimeString('en-ZA', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'Africa/Johannesburg',
+                })}
               </p>
             ) : (
-              <p className="text-xs font-bold text-amber-900">
-                Stock take required today — please verify stock levels
+              <p className="text-xs font-semibold text-amber-900">
+                Stock take required today
               </p>
             )}
-            <p className="mt-0.5 text-[11px] text-zinc-500" suppressHydrationWarning>
-              {lastDate
-                ? `Last confirmed by ${lastConfirmation!.staffName} · ${lastDate.toLocaleDateString('en-ZA', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: 'short',
-                    timeZone: 'Africa/Johannesburg',
-                  })} ${lastDate.toLocaleTimeString('en-ZA', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'Africa/Johannesburg',
-                  })}`
-                : 'No stock take recorded yet.'}
-            </p>
           </div>
         </div>
 
-        {/* Confirm control */}
         {confirming ? (
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-2 flex items-center gap-2">
             {staff.length > 0 ? (
               <select
                 value={confirmName}
                 onChange={(e) => setConfirmName(e.target.value)}
                 autoFocus
-                className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
+                className="h-10 min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-900 outline-none focus:border-emerald-500"
               >
                 <option value="">Select trainer…</option>
                 {staff.map((s) => (
@@ -157,21 +140,21 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitConfirm() }}
                 placeholder="Trainer name"
                 autoFocus
-                className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500"
+                className="h-10 min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500"
               />
             )}
             <button
               type="button"
               onClick={submitConfirm}
               disabled={confirmPending || !confirmName.trim()}
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-opacity hover:bg-emerald-700 disabled:opacity-40 shadow-xs"
+              className="h-10 rounded-lg bg-emerald-600 px-4 text-xs font-bold text-white transition-opacity hover:bg-emerald-700 disabled:opacity-40"
             >
               {confirmPending ? '…' : 'Confirm'}
             </button>
             <button
               type="button"
               onClick={() => { setConfirming(false); setConfirmName('') }}
-              className="rounded-xl border border-zinc-200 bg-white px-2.5 py-2 text-xs text-zinc-500 hover:text-zinc-800"
+              className="flex size-10 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
               aria-label="Cancel"
             >
               <X className="size-4" />
@@ -181,10 +164,10 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className={`mt-3 w-full rounded-xl py-2 text-xs font-bold shadow-xs transition-colors ${
+            className={`mt-2 h-9 text-xs font-semibold transition-colors ${
               confirmedToday
-                ? 'border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                ? 'text-zinc-600 hover:text-zinc-900'
+                : 'text-emerald-700 hover:text-emerald-900'
             }`}
           >
             {confirmedToday ? 'Confirm stock take again' : 'Confirm today\'s stock take'}
@@ -192,10 +175,9 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
         )}
       </div>
 
-      {/* ── Header ──────────────────────────────────────────────── */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
+          <div className="flex size-7 items-center justify-center text-emerald-600">
             <Package className="size-4" />
           </div>
           <div className="flex items-center gap-2">
@@ -203,7 +185,7 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
               Stock Inventory
             </h3>
             {lowCount > 0 && (
-              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-black text-rose-700">
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700">
                 {lowCount} low
               </span>
             )}
@@ -212,29 +194,27 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
         <button
           type="button"
           onClick={() => setShowManage(true)}
-          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+          className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
         >
           <SlidersHorizontal className="size-3 text-zinc-500" />
           <span>Manage Stock</span>
         </button>
       </div>
 
-      {/* ── Compact inventory rows ───────────────────────────────── */}
       {items.length === 0 ? (
         <p className="py-6 text-center text-xs font-medium text-zinc-400">No stock items yet — click Manage to add.</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
+        <div className="border-y border-zinc-200 bg-white">
           {orderedItems.map((item) => {
             const low = isLow(item)
-            const pct = fillPercent(item)
             return (
               <div
                 key={item.id}
-                className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1.5 border-b border-zinc-100 px-3 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_90px_auto] ${
+                className={`grid min-h-14 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 border-b border-zinc-100 px-1 py-2 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_90px_auto] ${
                   low
                     ? focusLowStockRequest > 0
-                      ? 'bg-rose-50 ring-1 ring-inset ring-rose-300'
-                      : 'bg-rose-50/50'
+                      ? 'bg-rose-50/70'
+                      : 'bg-white'
                     : 'bg-white'
                 }`}
               >
@@ -242,12 +222,6 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
                   <div className="flex items-center gap-2">
                     <span className={`size-2 shrink-0 rounded-full ${low ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                     <span className="truncate text-sm font-bold text-zinc-900">{item.name}</span>
-                  </div>
-                  <div className="mt-1 ml-4 h-1 w-full max-w-md overflow-hidden rounded-full bg-zinc-100">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${low ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                      style={{ width: `${pct}%` }}
-                    />
                   </div>
                 </div>
                 <span className={`text-right text-sm font-black tabular-nums ${low ? 'text-rose-700' : 'text-zinc-700'}`}>
@@ -258,7 +232,7 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
                     type="button"
                     onClick={() => adjust(item, -1)}
                     disabled={pending || item.currentQty <= 0}
-                    className="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-30 transition-colors active:scale-95"
+                    className="flex size-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-30 transition-colors active:scale-95"
                     aria-label={`Reduce ${item.name}`}
                   >
                     <Minus className="size-3.5" />
@@ -267,7 +241,7 @@ export function StockTab({ items, lastConfirmation, staff, focusLowStockRequest 
                     type="button"
                     onClick={() => adjust(item, 1)}
                     disabled={pending}
-                    className="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 transition-colors active:scale-95"
+                    className="flex size-10 items-center justify-center rounded-lg text-zinc-600 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 transition-colors active:scale-95"
                     aria-label={`Add ${item.name}`}
                   >
                     <Plus className="size-3.5" />

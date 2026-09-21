@@ -3,7 +3,6 @@
 import { useMemo, useState, Fragment } from 'react'
 import { ChevronDown, Pencil, Check, X } from 'lucide-react'
 import { saveShiftAssignment } from '@/app/actions/operations'
-import { StaffIcon } from './staff-icon'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
 
 function toIso(d: Date) {
@@ -26,7 +25,6 @@ function getPayPeriod(offset: number) {
   return { start, end, label, shortLabel, rangeLabel }
 }
 
-// colour for shift type dot/accent
 const SHIFT_STYLES: Record<string, { dot: string; label: string }> = {
   morning: { dot: 'bg-amber-500', label: 'AM' },
   afternoon: { dot: 'bg-blue-500', label: 'PM' },
@@ -55,15 +53,6 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
       .reduce((sum, a) => sum + (parseFloat(a.hours) || 0), 0)
   }
 
-  function calcDays(staffId: number, start: string, end: string) {
-    const dates = new Set(
-      assignments
-        .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
-        .map((a) => a.shiftDate),
-    )
-    return dates.size
-  }
-
   function getShiftDetails(staffId: number, start: string, end: string) {
     return assignments
       .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
@@ -76,9 +65,7 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
         .map((s) => ({
           ...s,
           curH: calcHours(s.id, currentMonth.start, currentMonth.end),
-          curD: calcDays(s.id, currentMonth.start, currentMonth.end),
           prevH: calcHours(s.id, prevMonth.start, prevMonth.end),
-          prevD: calcDays(s.id, prevMonth.start, prevMonth.end),
         }))
         .sort((a, b) => b.curH - a.curH),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,24 +90,18 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-      {/* Header row */}
-      <div className="flex items-center gap-2 border-b border-zinc-200 bg-zinc-50/80 px-3.5 py-2">
-        <p className="flex-1 text-[10px] font-black uppercase tracking-wider text-zinc-500">Trainer</p>
-        <div className="w-28 text-right">
-          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-700">
-            {currentMonth.shortLabel} Pay
-          </p>
-          <p className="text-[9px] font-semibold text-zinc-400">{currentMonth.rangeLabel}</p>
+    <div className="border-y border-zinc-200 bg-white">
+      <div className="flex items-center gap-2 border-b border-zinc-200 px-3 py-2.5">
+        <p className="flex-1 text-[11px] font-semibold text-zinc-500">Trainer</p>
+        <div className="w-24 text-right sm:w-28">
+          <p className="text-[11px] font-bold text-zinc-800">Current</p>
+          <p className="text-[9px] font-medium text-zinc-400">{currentMonth.rangeLabel}</p>
         </div>
-        <div className="w-24 text-right">
-          <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500">
-            {prevMonth.shortLabel} Pay
-          </p>
-          <p className="text-[9px] font-semibold text-zinc-400">{prevMonth.rangeLabel}</p>
+        <div className="w-20 text-right sm:w-24">
+          <p className="text-[11px] font-semibold text-zinc-500">Previous</p>
+          <p className="text-[9px] font-medium text-zinc-400">{prevMonth.rangeLabel}</p>
         </div>
-        {/* spacer for chevron */}
-        <div className="w-4" />
+        <div className="w-5" />
       </div>
 
       {staffWithHours.map((s) => {
@@ -130,10 +111,9 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
 
         return (
           <Fragment key={s.id}>
-            {/* Single compact row — tap/click to expand */}
             <button
               type="button"
-              className={`flex w-full items-center gap-2 border-b border-zinc-100 px-3.5 py-2.5 text-left transition-colors hover:bg-zinc-50/80 ${
+              className={`flex min-h-13 w-full items-center gap-2 border-b border-zinc-100 px-3 py-2.5 text-left transition-colors hover:bg-zinc-50/80 ${
                 isExpanded ? 'bg-zinc-50/80' : 'bg-white'
               }`}
               onClick={() => {
@@ -145,59 +125,48 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
                 }
               }}
             >
-              {/* Avatar + name */}
-              <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-xs font-bold text-zinc-700 border border-zinc-200">
-                  {s.icon ? <StaffIcon icon={s.icon} /> : s.name.charAt(0).toUpperCase()}
-                </div>
-                <span className="truncate text-xs font-bold text-zinc-900">{s.name}</span>
+              <div className="min-w-0 flex-1">
+                <span className="truncate text-sm font-semibold text-zinc-900">{s.name}</span>
               </div>
 
-              {/* Current month: Xh · Yd on one line */}
-              <div className="w-28 shrink-0 text-right">
+              <div className="w-24 shrink-0 text-right sm:w-28">
                 {s.curH > 0 ? (
-                  <span className="whitespace-nowrap text-xs font-black tabular-nums text-emerald-700">
+                  <span className="whitespace-nowrap text-sm font-bold tabular-nums text-zinc-900">
                     {s.curH}h
-                    <span className="ml-1 text-[10px] font-medium text-zinc-400">· {s.curD}d</span>
                   </span>
                 ) : (
                   <span className="text-xs font-medium text-zinc-400">—</span>
                 )}
               </div>
 
-              {/* Prev month */}
-              <div className="w-24 shrink-0 text-right">
+              <div className="w-20 shrink-0 text-right sm:w-24">
                 {s.prevH > 0 ? (
-                  <span className="whitespace-nowrap text-xs font-bold tabular-nums text-zinc-600">
+                  <span className="whitespace-nowrap text-sm font-medium tabular-nums text-zinc-600">
                     {s.prevH}h
-                    <span className="ml-1 text-[10px] font-medium text-zinc-400">· {s.prevD}d</span>
                   </span>
                 ) : (
                   <span className="text-xs font-medium text-zinc-400">—</span>
                 )}
               </div>
 
-              {/* Chevron */}
               <ChevronDown
                 className={`size-4 shrink-0 text-zinc-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
               />
             </button>
 
-            {/* Expandable shift detail */}
             {isExpanded && (
-              <div className="border-b border-zinc-200 bg-zinc-50/90 px-4 pb-3 pt-2">
-                {/* Month toggle buttons */}
+              <div className="border-b border-zinc-200 bg-zinc-50/70 px-3 pb-3 pt-2.5">
                 <div className="mb-2 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-zinc-500">
-                    Shift Log: {month.label} ({month.rangeLabel})
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    Shift log · {month.label}
                   </p>
-                  <div className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-0.5 shadow-xs">
+                  <div className="flex items-center gap-1 rounded-lg bg-white p-0.5">
                     <button
                       type="button"
                       onClick={() => setViewMonth('current')}
                       className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-colors ${
                         viewMonth === 'current'
-                          ? 'bg-emerald-600 text-white'
+                          ? 'bg-blue-600 text-white'
                           : 'text-zinc-600 hover:text-zinc-900'
                       }`}
                     >
@@ -220,7 +189,7 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
                 {detailAssignments.length === 0 ? (
                   <p className="text-xs text-zinc-400 py-1">No shifts recorded in this pay period.</p>
                 ) : (
-                  <div className="divide-y divide-zinc-200/60 rounded-xl border border-zinc-200 bg-white shadow-xs">
+                  <div className="divide-y divide-zinc-200/60 border-y border-zinc-200 bg-white">
                     {detailAssignments.map((a) => {
                       const shift = shiftSettings.find((ss) => ss.shiftType === a.shiftType)
                       const style = SHIFT_STYLES[a.shiftType] ?? SHIFT_STYLES.morning
@@ -288,8 +257,7 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
                         </div>
                       )
                     })}
-                    {/* Total summary row */}
-                    <div className="flex items-center justify-between bg-zinc-50/80 px-3 py-2 rounded-b-xl" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between bg-zinc-50/80 px-3 py-2" onClick={(e) => e.stopPropagation()}>
                       <span className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Period Total</span>
                       <span className="text-xs font-black text-emerald-800">
                         {detailAssignments.reduce((sum, a) => {

@@ -58,29 +58,23 @@ export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header with Manage button */}
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100">
+          <div className="flex size-7 items-center justify-center text-blue-600">
             <Droplets className="size-4" />
           </div>
-          <div>
-            <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
-              Water
-            </h3>
-          </div>
+          <h3 className="font-display text-base font-black tracking-tight text-zinc-900">Water</h3>
         </div>
         <button
           type="button"
           onClick={() => setShowManage(true)}
-          className="flex items-center gap-1 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-bold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+          className="flex h-10 items-center gap-1.5 rounded-lg px-3 text-xs font-bold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
         >
           <SlidersHorizontal className="size-3 text-zinc-500" />
           <span>Manage</span>
         </button>
       </div>
 
-      {/* Search & Filter bar */}
       <div className="mb-3 space-y-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-zinc-400" />
@@ -89,7 +83,7 @@ export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search member name..."
-            className="w-full rounded-xl border border-zinc-200 bg-zinc-50/70 pl-8 pr-3 py-1.5 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-emerald-500 focus:bg-white transition-all"
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50/70 pl-8 pr-3 text-xs font-medium text-zinc-900 outline-none placeholder:text-zinc-400 transition-colors focus:border-blue-500 focus:bg-white"
           />
           {search && (
             <button
@@ -102,51 +96,50 @@ export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props
           )}
         </div>
 
-        {/* Filter pills */}
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
             onClick={() => setFilter('all')}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+            className={`min-h-8 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
               filter === 'all'
                 ? 'bg-zinc-900 text-white'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
             }`}
           >
-            All ({credits.length})
+            All <span className="tabular-nums">({credits.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setFilter('positive')}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+            className={`min-h-8 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
               filter === 'positive'
                 ? 'bg-emerald-600 text-white'
                 : 'bg-emerald-50 text-emerald-800 border border-emerald-100 hover:bg-emerald-100'
             }`}
           >
-            In Credit ({stats.positive})
+            In credit <span className="tabular-nums">({stats.positive})</span>
           </button>
           <button
             type="button"
             onClick={() => setFilter('negative')}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+            className={`min-h-8 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
               filter === 'negative'
                 ? 'bg-rose-600 text-white'
                 : 'bg-rose-50 text-rose-800 border border-rose-100 hover:bg-rose-100'
             }`}
           >
-            Below Zero ({stats.negative})
+            Below zero <span className="tabular-nums">({stats.negative})</span>
           </button>
           <button
             type="button"
             onClick={() => setFilter('zero')}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+            className={`min-h-8 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
               filter === 'zero'
                 ? 'bg-zinc-600 text-white'
                 : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
             }`}
           >
-            Zero ({stats.zero})
+            Zero <span className="tabular-nums">({stats.zero})</span>
           </button>
         </div>
       </div>
@@ -157,49 +150,39 @@ export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props
           {search ? 'No members matching search.' : 'No members yet — click Manage to add.'}
         </p>
       ) : (
-        <div className="space-y-2 max-h-[380px] overflow-y-auto pr-0.5">
+        <div className="max-h-[380px] divide-y divide-zinc-100 overflow-y-auto pr-0.5">
           {filteredCredits.map((c) => {
             const memberLog = auditLog.filter((l) => l.creditId === c.id)
             const isExpanded = expandedId === c.id
             const isNegative = c.balance < 0
 
             return (
-              <div key={c.id} className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-                {/* Main row */}
-                <div className="flex items-center gap-2.5 px-3 py-2.5">
-                  {/* Name & remaining */}
+              <div key={c.id} className="overflow-hidden bg-white">
+                <div className="flex min-h-14 items-center gap-3 px-1 py-2">
                   <button
                     type="button"
                     onClick={() => toggleExpand(c.id)}
-                    className="flex min-w-0 flex-1 flex-col items-start text-left"
+                    className="flex min-h-10 min-w-0 flex-1 flex-col justify-center items-start text-left"
                     aria-expanded={isExpanded}
                   >
-                    <span className="text-sm font-bold text-zinc-900 truncate">{c.memberName}</span>
+                    <span className="truncate text-sm font-semibold text-zinc-900">{c.memberName}</span>
                     <span className={`text-[11px] font-medium ${isNegative ? 'text-rose-600' : 'text-zinc-500'}`}>
                       {c.balance} {c.balance === 1 ? 'bottle' : 'bottles'} remaining
                     </span>
                   </button>
 
-                  {/* Balance badge */}
-                  <div
-                    className={`flex min-w-[2.5rem] items-center justify-center rounded-lg px-2 py-1 text-xs font-black tabular-nums border ${
-                      isNegative
-                        ? 'bg-rose-50 text-rose-700 border-rose-200'
-                        : c.balance === 0
-                        ? 'bg-zinc-100 text-zinc-600 border-zinc-200'
-                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    }`}
-                  >
+                  <div className={`min-w-7 text-center text-sm font-black tabular-nums ${
+                    isNegative ? 'text-rose-700' : c.balance === 0 ? 'text-zinc-500' : 'text-emerald-700'
+                  }`}>
                     {c.balance}
                   </div>
 
-                  {/* Quick controls: Minus & Plus */}
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleAdjust(c, -1)}
                       disabled={pending}
-                      className="flex size-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40 transition-colors active:scale-95"
+                      className="flex size-10 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40 active:scale-95"
                       aria-label={`Use 1 bottle for ${c.memberName}`}
                     >
                       <Minus className="size-3.5" />
@@ -208,7 +191,7 @@ export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props
                       type="button"
                       onClick={() => handleAdjust(c, 1)}
                       disabled={pending}
-                      className="flex size-8 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40 transition-colors active:scale-95"
+                      className="flex size-10 items-center justify-center rounded-lg text-zinc-600 transition-colors hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-40 active:scale-95"
                       aria-label={`Add 1 bottle for ${c.memberName}`}
                     >
                       <Plus className="size-3.5" />
@@ -216,10 +199,9 @@ export function WaterTab({ credits, auditLog, focusBelowZeroRequest = 0 }: Props
                   </div>
                 </div>
 
-                {/* Expandable history */}
                 {isExpanded && (
-                  <div className="border-t border-zinc-100 bg-zinc-50/80 px-3.5 py-2.5">
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Activity History</p>
+                  <div className="border-t border-zinc-100 bg-zinc-50/70 px-3 py-2.5">
+                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Activity history</p>
                     {memberLog.length === 0 ? (
                       <p className="text-xs text-zinc-400">No activity logged yet.</p>
                     ) : (
