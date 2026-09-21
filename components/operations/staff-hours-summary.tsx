@@ -11,13 +11,17 @@ function toIso(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-function getMonthRange(monthOffset: number) {
+function getPayPeriod(offset: number) {
   const now = new Date()
-  const d = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1)
-  const start = toIso(d)
-  const end = toIso(new Date(d.getFullYear(), d.getMonth() + 1, 0))
-  const label = d.toLocaleDateString('en-ZA', { month: 'long', year: 'numeric' })
-  const shortLabel = d.toLocaleDateString('en-ZA', { month: 'short' })
+  // Pay period runs from the 21st of previous month to 20th of the named month.
+  // If today is on or after the 21st, the active period is next month's (e.g. on 21 Sep -> Oct period: 21 Sep - 20 Oct).
+  const baseMonthOffset = now.getDate() >= 21 ? 1 : 0
+  const target = new Date(now.getFullYear(), now.getMonth() + baseMonthOffset + offset, 1)
+
+  const start = toIso(new Date(target.getFullYear(), target.getMonth() - 1, 21))
+  const end = toIso(new Date(target.getFullYear(), target.getMonth(), 20))
+  const label = target.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  const shortLabel = target.toLocaleDateString('en-US', { month: 'short' })
   return { start, end, label, shortLabel }
 }
 
@@ -41,8 +45,8 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
   const [editingHours, setEditingHours] = useState<Record<number, string>>({})
   const [savingId, setSavingId] = useState<number | null>(null)
 
-  const currentMonth = getMonthRange(0)
-  const prevMonth = getMonthRange(-1)
+  const currentMonth = getPayPeriod(0)
+  const prevMonth = getPayPeriod(-1)
 
   function calcHours(staffId: number, start: string, end: string) {
     return assignments
