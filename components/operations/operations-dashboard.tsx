@@ -39,7 +39,7 @@ interface Props {
   lastStockConfirmation: StockConfirmation | null
 }
 
-type LeftTab = 'trials' | 'members' | 'water'
+type LeftTab = 'trials' | 'members'
 
 export function OperationsDashboard({
   actionAuthToken,
@@ -109,37 +109,42 @@ export function OperationsDashboard({
         {/* iPad landscape (lg+): left sidebar + roster side by side */}
         <div className="flex h-full gap-3 lg:flex-row flex-col">
 
-          {/* ── Left sidebar: tabbed Trials / Members / Water ── */}
-          <div className="flex shrink-0 flex-col lg:w-[360px] lg:h-full">
-            {/* Tab bar */}
-            <div className="mb-2 flex shrink-0 rounded-xl border border-steel/60 bg-card p-1">
-              {(['trials', 'members', 'water'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  onClick={() => setLeftTab(tab)}
-                  className={`flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
-                    leftTab === tab
-                      ? 'bg-neon-green/20 text-neon-green'
-                      : 'text-mid-grey hover:text-foreground'
-                  }`}
-                >
-                  {tab === 'trials' ? 'Trials' : tab === 'members' ? 'Members' : 'Water'}
-                </button>
-              ))}
+          {/* ── Left sidebar: tabbed Trials / Members + Permanent Water ── */}
+          <div className="flex shrink-0 flex-col gap-3 lg:w-[360px] lg:h-full">
+            {/* Tabbed Trials / Members */}
+            <div className="flex min-h-0 flex-1 flex-col">
+              {/* Tab bar */}
+              <div className="mb-2 flex shrink-0 rounded-xl border border-steel/60 bg-card p-1">
+                {(['trials', 'members'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setLeftTab(tab)}
+                    className={`flex-1 rounded-lg py-1.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                      leftTab === tab
+                        ? 'bg-neon-green/20 text-neon-green'
+                        : 'text-mid-grey hover:text-foreground'
+                    }`}
+                  >
+                    {tab === 'trials' ? 'Trials' : 'Members'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab content — scrollable */}
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-steel bg-card p-4">
+                {leftTab === 'trials' && (
+                  <TrialsTab bookings={bookings} notes={notes} signups={signups} sessionPurchases={sessionPurchases} />
+                )}
+                {leftTab === 'members' && (
+                  <MembersTab signups={signups} sessionPurchases={sessionPurchases} />
+                )}
+              </div>
             </div>
 
-            {/* Tab content — scrollable */}
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-steel bg-card p-4">
-              {leftTab === 'trials' && (
-                <TrialsTab bookings={bookings} notes={notes} signups={signups} sessionPurchases={sessionPurchases} />
-              )}
-              {leftTab === 'members' && (
-                <MembersTab signups={signups} sessionPurchases={sessionPurchases} />
-              )}
-              {leftTab === 'water' && (
-                <WaterTab credits={waterCredits} auditLog={waterAuditLog} />
-              )}
+            {/* Permanent Water section */}
+            <div className="shrink-0 max-h-[45%] overflow-y-auto rounded-2xl border border-steel bg-card p-4">
+              <WaterTab credits={waterCredits} auditLog={waterAuditLog} />
             </div>
           </div>
 
