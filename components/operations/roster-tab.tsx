@@ -5,14 +5,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Check,
-  X,
-  CalendarClock,
-  UserPlus2,
-  CheckCircle2,
 } from 'lucide-react'
 import { deleteShiftAssignment, saveShiftAssignment } from '@/app/actions/operations'
-import { StaffIcon } from './staff-icon'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -91,38 +85,19 @@ function getWeekDates(anchor: Date): Date[] {
   })
 }
 
-const SHIFT_STYLES: Record<string, { dot: string; accent: string; label: string }> = {
+const SHIFT_STYLES: Record<string, { accent: string; label: string }> = {
   morning: {
-    dot: 'bg-amber-500',
     accent: 'text-amber-800',
     label: 'AM',
   },
   afternoon: {
-    dot: 'bg-blue-500',
     accent: 'text-blue-800',
     label: 'PM',
   },
   saturday: {
-    dot: 'bg-amber-500',
     accent: 'text-amber-800',
     label: 'AM',
   },
-}
-
-const STAFF_TONES = [
-  { name: 'text-fuchsia-900', dot: 'bg-fuchsia-500' },
-  { name: 'text-cyan-900', dot: 'bg-cyan-600' },
-  { name: 'text-emerald-900', dot: 'bg-emerald-600' },
-  { name: 'text-violet-900', dot: 'bg-violet-600' },
-  { name: 'text-amber-900', dot: 'bg-amber-600' },
-  { name: 'text-rose-900', dot: 'bg-rose-600' },
-] as const
-
-function toneForStaff(staffId: number, name: string) {
-  const seed = Number.isFinite(staffId) && staffId > 0
-    ? staffId
-    : [...name].reduce((n, ch) => n + ch.charCodeAt(0), 0)
-  return STAFF_TONES[Math.abs(seed) % STAFF_TONES.length]
 }
 
 function handleOpsActionError(error: unknown) {
@@ -225,6 +200,17 @@ export function RosterTab({ actionAuthToken, staff, assignments, shiftSettings, 
           >
             <ChevronRight className="size-4" />
           </button>
+        </div>
+
+        <div className="mb-2 flex items-center justify-end gap-3 px-1 text-[10px] font-semibold text-zinc-600" aria-label="Roster legend">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-sm bg-emerald-500" aria-hidden="true" />
+            Converted member
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="size-2 rounded-sm bg-amber-400" aria-hidden="true" />
+            Trial
+          </span>
         </div>
 
         {/* Day cards */}
@@ -347,7 +333,7 @@ function ShiftBlock({
   date: string
   shiftType: string
   shift: ShiftSetting | null
-  style: { dot: string; accent: string; label: string }
+  style: { accent: string; label: string }
   assignments: ShiftAssignment[]
   staff: Staff[]
   trials: { booking: TrialBooking; conversion: TrialConversion }[]
@@ -418,7 +404,6 @@ function ShiftBlock({
         }`}
       >
         <div className="flex items-center gap-1.5">
-          <span className={`size-1.5 rounded-full ${style.dot}`} />
           <p className={`text-[10px] font-black uppercase tracking-widest ${disabled ? 'text-zinc-400' : style.accent}`}>
             {style.label}
           </p>
@@ -441,8 +426,6 @@ function ShiftBlock({
                     key={a.id}
                     assignment={a}
                     name={member?.name ?? 'Unknown'}
-                    icon={member?.icon ?? ''}
-                    tone={toneForStaff(member?.id ?? 0, member?.name ?? 'Unknown')}
                     defaultHours={shift.defaultHours}
                   />
                 )
@@ -522,15 +505,11 @@ function AssignmentChip({
   actionAuthToken,
   assignment,
   name,
-  icon,
-  tone,
   defaultHours,
 }: {
   actionAuthToken: string
   assignment: ShiftAssignment
   name: string
-  icon: string
-  tone: { name: string; dot: string }
   defaultHours: string
 }) {
   const [editing, setEditing] = useState(false)
@@ -572,62 +551,58 @@ function AssignmentChip({
 
   if (editing) {
     return (
-      <div className="my-0.5 flex items-center gap-1 rounded-md border border-emerald-300 bg-white p-1 shadow-sm">
-        <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
-        <span className={`flex min-w-0 flex-1 items-center gap-1 text-[10px] font-bold ${tone.name}`}>
-          <StaffIcon icon={icon} className="shrink-0" />
-          <span className="leading-tight truncate">{name}</span>
-        </span>
+      <div className="flex min-h-[32px] items-center gap-1.5 border-b border-zinc-100 py-1">
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-900">{name}</span>
         <input
           type="number"
           step="0.5"
           min="0"
           value={hours}
           onChange={(e) => setHours(e.target.value)}
-          className="w-9 rounded border border-zinc-300 bg-zinc-50 px-1 py-0.5 text-center text-[10px] font-bold text-zinc-900 outline-none focus:border-emerald-500"
+          className="w-10 rounded border border-zinc-300 bg-white px-1 py-0.5 text-center text-xs font-semibold text-zinc-900 outline-none focus:border-emerald-500"
           autoFocus
-          aria-label="Hours"
+          aria-label={`Hours for ${name}`}
         />
-        <span className="text-[9px] text-zinc-400">h</span>
-        <button type="button" onClick={handleSave} disabled={pending} className="text-emerald-600 hover:text-emerald-700 disabled:opacity-50">
-          <Check className="size-3.5" />
+        <span className="text-[10px] text-zinc-500">h</span>
+        <button type="button" onClick={handleSave} disabled={pending} className="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-50">
+          Save
         </button>
-        <button type="button" onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }} className="text-zinc-400 hover:text-zinc-700">
-          <X className="size-3.5" />
+        <button type="button" onClick={() => { setEditing(false); setHours(assignment.hours || defaultHours) }} className="text-[11px] font-medium text-zinc-500 hover:text-zinc-800">
+          Cancel
         </button>
       </div>
     )
   }
 
-  // Click the chip to open edit mode
   return (
-    <div className={`w-full rounded-md border border-zinc-200 bg-white shadow-xs transition-colors hover:border-zinc-300 ${pending ? 'opacity-40' : ''}`}>
-      {/* Top row: dot + icon + hours + remove */}
-      <div className="flex items-center gap-1 px-1.5 pt-1">
-        <span className={`size-1.5 shrink-0 rounded-full ${tone.dot}`} />
-        <StaffIcon icon={icon} className="shrink-0 text-xs" />
-        <span className="ml-auto shrink-0 rounded bg-zinc-100 px-1 py-0.2 text-[9px] font-black tabular-nums text-zinc-700">
-          {hours || defaultHours}h
-        </span>
-        <button
-          type="button"
-          onClick={handleRemove}
-          disabled={pending}
-          className="inline-flex size-4 shrink-0 items-center justify-center rounded text-zinc-400 transition-colors hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
-          aria-label={`Remove ${name} from shift`}
-        >
-          <X className="size-3" />
-        </button>
-      </div>
-      {/* Bottom row: full name — tappable to edit */}
+    <div className={`flex min-h-[32px] items-center gap-1.5 border-b border-zinc-100 py-1 last:border-b-0 ${pending ? 'opacity-40' : ''}`}>
       <button
         type="button"
         onClick={() => setEditing(true)}
         disabled={pending}
-        className={`block w-full truncate px-1.5 pb-1 pt-0.5 text-left text-[10px] font-bold leading-tight hover:opacity-80 active:scale-[0.98] ${tone.name}`}
+        className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-zinc-900 hover:text-emerald-800 focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
         aria-label={`Edit ${name}`}
       >
         {name}
+      </button>
+      <span className="shrink-0 tabular-nums text-xs font-semibold text-zinc-600">{hours || defaultHours}h</span>
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        disabled={pending}
+        className="shrink-0 text-[11px] font-medium text-zinc-600 hover:text-emerald-800 focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50"
+        aria-label={`Edit ${name}'s hours`}
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        onClick={handleRemove}
+        disabled={pending}
+        className="shrink-0 text-[11px] font-medium text-zinc-500 hover:text-rose-700 focus-visible:rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 disabled:opacity-50"
+        aria-label={`Remove ${name} from shift`}
+      >
+        Remove
       </button>
     </div>
   )
@@ -651,18 +626,14 @@ function ShiftIndicators({
 
   return (
     <div className="mb-0.5 flex flex-col gap-1">
-      {/* Converted trials (Trial -> Member) */}
       {convertedTrials.length > 0 && (
         <button
           type="button"
           onClick={() => setOpen((o) => (o === 'converted' ? null : 'converted'))}
           className="flex w-full items-center justify-between rounded-md border border-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 text-left transition-colors hover:bg-emerald-500/20"
         >
-          <span className="inline-flex items-center gap-1">
-            <CheckCircle2 className="size-2.5 shrink-0 text-emerald-700" />
-            <span className="text-[9px] font-black uppercase tracking-wide text-emerald-800">
-              {convertedTrials.length} New Member{convertedTrials.length > 1 ? 's' : ''}
-            </span>
+          <span className="text-[9px] font-black uppercase tracking-wide text-emerald-800">
+            {convertedTrials.length} Converted member{convertedTrials.length > 1 ? 's' : ''}
           </span>
           <span className="text-[8px] font-bold text-emerald-700">{open === 'converted' ? 'Hide' : 'Show'}</span>
         </button>
@@ -677,18 +648,14 @@ function ShiftIndicators({
         </div>
       )}
 
-      {/* Unconverted / upcoming trials */}
       {unconvertedTrials.length > 0 && (
         <button
           type="button"
           onClick={() => setOpen((o) => (o === 'trials' ? null : 'trials'))}
           className="flex w-full items-center justify-between rounded-md border border-amber-300 bg-amber-400/20 px-1.5 py-0.5 text-left transition-colors hover:bg-amber-400/30"
         >
-          <span className="inline-flex items-center gap-1">
-            <CalendarClock className="size-2.5 shrink-0 text-amber-700" />
-            <span className="text-[9px] font-black uppercase tracking-wide text-amber-800">
-              {unconvertedTrials.length} Trial{unconvertedTrials.length > 1 ? 's' : ''}
-            </span>
+          <span className="text-[9px] font-black uppercase tracking-wide text-amber-800">
+            {unconvertedTrials.length} Trial{unconvertedTrials.length > 1 ? 's' : ''}
           </span>
           <span className="text-[8px] font-bold text-amber-700">{open === 'trials' ? 'Hide' : 'Show'}</span>
         </button>
@@ -703,18 +670,14 @@ function ShiftIndicators({
         </div>
       )}
 
-      {/* Direct new members */}
       {newMembers.length > 0 && (
         <button
           type="button"
           onClick={() => setOpen((o) => (o === 'members' ? null : 'members'))}
           className="flex w-full items-center justify-between rounded-md border border-emerald-300 bg-emerald-500/15 px-1.5 py-0.5 text-left transition-colors hover:bg-emerald-500/20"
         >
-          <span className="inline-flex items-center gap-1">
-            <UserPlus2 className="size-2.5 shrink-0 text-emerald-700" />
-            <span className="text-[9px] font-black uppercase tracking-wide text-emerald-800">
-              {newMembers.length} Signup{newMembers.length > 1 ? 's' : ''}
-            </span>
+          <span className="text-[9px] font-black uppercase tracking-wide text-emerald-800">
+            {newMembers.length} Signup{newMembers.length > 1 ? 's' : ''}
           </span>
           <span className="text-[8px] font-bold text-emerald-700">{open === 'members' ? 'Hide' : 'Show'}</span>
         </button>
@@ -729,18 +692,14 @@ function ShiftIndicators({
         </div>
       )}
 
-      {/* Session members */}
       {newSessionMembers.length > 0 && (
         <button
           type="button"
           onClick={() => setOpen((o) => (o === 'sessions' ? null : 'sessions'))}
           className="flex w-full items-center justify-between rounded-md border border-fuchsia-300 bg-fuchsia-400/15 px-1.5 py-0.5 text-left transition-colors hover:bg-fuchsia-400/25"
         >
-          <span className="inline-flex items-center gap-1">
-            <UserPlus2 className="size-2.5 shrink-0 text-fuchsia-700" />
-            <span className="text-[9px] font-black uppercase tracking-wide text-fuchsia-800">
-              {newSessionMembers.length} Session{newSessionMembers.length > 1 ? 's' : ''}
-            </span>
+          <span className="text-[9px] font-black uppercase tracking-wide text-fuchsia-800">
+            {newSessionMembers.length} Session{newSessionMembers.length > 1 ? 's' : ''}
           </span>
           <span className="text-[8px] font-bold text-fuchsia-700">{open === 'sessions' ? 'Hide' : 'Show'}</span>
         </button>

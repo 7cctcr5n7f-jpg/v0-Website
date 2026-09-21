@@ -194,7 +194,7 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
             <Package className="size-4" />
           </div>
           <div className="flex items-center gap-2">
-            <h3 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
+            <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
               Stock Inventory
             </h3>
             {lowCount > 0 && (
@@ -214,63 +214,55 @@ export function StockTab({ items, lastConfirmation, staff }: Props) {
         </button>
       </div>
 
-      {/* ── Item list ───────────────────────────────────────────── */}
+      {/* ── Compact inventory rows ───────────────────────────────── */}
       {items.length === 0 ? (
         <p className="py-6 text-center text-xs font-medium text-zinc-400">No stock items yet — click Manage to add.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
           {items.map((item) => {
             const low = isLow(item)
             const pct = fillPercent(item)
             return (
               <div
                 key={item.id}
-                className={`flex flex-col justify-between rounded-xl border p-3.5 shadow-xs transition-colors ${
-                  low ? 'border-rose-200 bg-rose-50/30' : 'border-zinc-200 bg-white'
+                className={`grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1.5 border-b border-zinc-100 px-3 py-2.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_90px_auto] ${
+                  low ? 'bg-rose-50/50' : 'bg-white'
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`size-2 shrink-0 rounded-full ${low ? 'bg-rose-500' : 'bg-emerald-500'}`} />
                     <span className="truncate text-sm font-bold text-zinc-900">{item.name}</span>
-                    <span className={`shrink-0 text-xs font-black tabular-nums ${low ? 'text-rose-700' : 'text-emerald-700'}`}>
-                      {item.currentQty}
-                      <span className="text-zinc-400 font-medium">/{item.maxQty}</span>
-                    </span>
                   </div>
-                  {/* Progress bar */}
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100 border border-zinc-200/50">
+                  <div className="mt-1 ml-4 h-1 w-full max-w-md overflow-hidden rounded-full bg-zinc-100">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${low ? 'bg-rose-500' : 'bg-emerald-500'}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
                 </div>
-
-                {/* Quick adjust controls */}
-                <div className="mt-3 flex items-center justify-between pt-2 border-t border-zinc-100">
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${low ? 'text-rose-600' : 'text-zinc-400'}`}>
-                    {low ? 'Low Stock' : 'Optimal'}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => adjust(item, -1)}
-                      disabled={pending || item.currentQty <= 0}
-                      className="flex size-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-30 transition-colors active:scale-95"
-                      aria-label={`Reduce ${item.name}`}
-                    >
-                      <Minus className="size-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => adjust(item, 1)}
-                      disabled={pending}
-                      className="flex size-7 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 transition-colors active:scale-95"
-                      aria-label={`Add ${item.name}`}
-                    >
-                      <Plus className="size-3" />
-                    </button>
-                  </div>
+                <span className={`text-right text-sm font-black tabular-nums ${low ? 'text-rose-700' : 'text-zinc-700'}`}>
+                  {item.currentQty}<span className="font-medium text-zinc-400"> / {item.maxQty}</span>
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => adjust(item, -1)}
+                    disabled={pending || item.currentQty <= 0}
+                    className="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-30 transition-colors active:scale-95"
+                    aria-label={`Reduce ${item.name}`}
+                  >
+                    <Minus className="size-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => adjust(item, 1)}
+                    disabled={pending}
+                    className="flex size-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-700 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 disabled:opacity-30 transition-colors active:scale-95"
+                    aria-label={`Add ${item.name}`}
+                  >
+                    <Plus className="size-3.5" />
+                  </button>
                 </div>
               </div>
             )
@@ -485,4 +477,3 @@ function NumberField({
     </div>
   )
 }
-

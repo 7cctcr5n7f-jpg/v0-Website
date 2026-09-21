@@ -60,8 +60,8 @@ export function WaterTab({ credits, auditLog }: Props) {
             <Droplets className="size-4" />
           </div>
           <div>
-            <h3 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
-              Water Tracker
+            <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
+              Water
             </h3>
           </div>
         </div>
@@ -442,4 +442,3 @@ function ManageModal({ credits, onClose }: { credits: WaterCredit[]; onClose: ()
     </div>
   )
 }
-

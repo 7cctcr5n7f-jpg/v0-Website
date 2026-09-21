@@ -240,21 +240,15 @@ export function OperationsDashboard({
                 <Droplets className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Water Accounts</p>
-                  {negativeWaterAccounts.length > 0 && (
-                    <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] font-black text-white">
-                      {negativeWaterAccounts.length}
-                    </span>
-                  )}
-                </div>
-                {negativeWaterAccounts.length > 0 ? (
-                  <p className="text-xs font-bold text-rose-700 mt-0.5 truncate">
-                    {negativeWaterAccounts.length} {negativeWaterAccounts.length === 1 ? 'account is' : 'accounts are'} below zero
-                  </p>
-                ) : (
-                  <p className="text-xs font-semibold text-emerald-700 mt-0.5">All accounts in credit</p>
-                )}
+                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Water accounts</p>
+                <p className={`mt-0.5 text-2xl font-black leading-none tabular-nums ${negativeWaterAccounts.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {negativeWaterAccounts.length}
+                </p>
+                <p className={`mt-1 text-xs font-semibold ${negativeWaterAccounts.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {negativeWaterAccounts.length > 0
+                    ? `${negativeWaterAccounts.length === 1 ? 'account' : 'accounts'} below zero`
+                    : 'All accounts in credit'}
+                </p>
               </div>
             </div>
 
@@ -270,13 +264,9 @@ export function OperationsDashboard({
                 <Clock className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Upcoming Trials</p>
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800">
-                    {upcomingTrials.length}
-                  </span>
-                </div>
-                <p className="text-xs font-bold text-zinc-900 mt-0.5 truncate">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Upcoming trials</p>
+                <p className="mt-0.5 text-2xl font-black leading-none tabular-nums text-amber-700">{upcomingTrials.length}</p>
+                <p className="mt-1 text-xs font-semibold text-zinc-700 truncate">
                   {upcomingTrials.length > 0
                     ? `${upcomingTrials.length} booked ahead`
                     : 'No upcoming trials'}
@@ -300,21 +290,15 @@ export function OperationsDashboard({
                 <Package className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Stock Alerts</p>
-                  {lowStockItems.length > 0 && (
-                    <span className="rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] font-black text-white">
-                      {lowStockItems.length}
-                    </span>
-                  )}
-                </div>
-                {lowStockItems.length > 0 ? (
-                  <p className="text-xs font-bold text-rose-700 mt-0.5 truncate">
-                    {lowStockItems.length} {lowStockItems.length === 1 ? 'item' : 'items'} below 20%
-                  </p>
-                ) : (
-                  <p className="text-xs font-semibold text-emerald-700 mt-0.5">Stock levels healthy</p>
-                )}
+                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Stock alerts</p>
+                <p className={`mt-0.5 text-2xl font-black leading-none tabular-nums ${lowStockItems.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {lowStockItems.length}
+                </p>
+                <p className={`mt-1 text-xs font-semibold ${lowStockItems.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {lowStockItems.length > 0
+                    ? `${lowStockItems.length === 1 ? 'item' : 'items'} below minimum`
+                    : 'Stock levels healthy'}
+                </p>
               </div>
             </div>
 
@@ -334,13 +318,13 @@ export function OperationsDashboard({
                 {stockConfirmedToday ? <CheckCircle2 className="size-5" /> : <AlertTriangle className="size-5" />}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Daily Stock Take</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Daily stock take</p>
                 {stockConfirmedToday ? (
-                  <p className="text-xs font-bold text-emerald-800 mt-0.5 truncate">
+                  <p className="mt-1 text-sm font-black text-emerald-800 truncate">
                     Confirmed by {lastStockConfirmation?.staffName}
                   </p>
                 ) : (
-                  <p className="text-xs font-bold text-amber-800 mt-0.5 truncate">
+                  <p className="mt-1 text-sm font-black text-amber-800 truncate">
                     Not confirmed yet today
                   </p>
                 )}
@@ -357,8 +341,8 @@ export function OperationsDashboard({
               <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
                 <CalendarDays className="size-4" />
               </div>
-              <h2 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
-                Weekly Roster & Shifts
+              <h2 className="font-display text-base font-black tracking-tight text-zinc-900">
+                Weekly roster
               </h2>
             </div>
             <div className="flex items-center gap-3 text-xs font-medium text-zinc-500">
@@ -394,8 +378,8 @@ export function OperationsDashboard({
                 <div className="flex size-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100">
                   <Clock className="size-4" />
                 </div>
-                <h3 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
-                  Upcoming Trials
+                <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
+                  Upcoming trials
                 </h3>
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
                   {upcomingTrials.length}
@@ -462,8 +446,8 @@ export function OperationsDashboard({
                 <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
                   <UserPlus className="size-4" />
                 </div>
-                <h3 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
-                  Recent Sign-ups
+                <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
+                  Recent sign-ups
                 </h3>
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
                   Latest 5
@@ -531,7 +515,7 @@ export function OperationsDashboard({
                 <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100">
                   <Users className="size-4" />
                 </div>
-                <h3 className="font-display text-sm font-black uppercase tracking-wider text-zinc-900">
+                <h3 className="font-display text-base font-black tracking-tight text-zinc-900">
                   Staff Hours & Pay Periods
                 </h3>
               </div>
@@ -632,4 +616,3 @@ export function OperationsDashboard({
     </div>
   )
 }
-
