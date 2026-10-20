@@ -222,14 +222,20 @@ export function MembershipFinder({
               {/* price */}
               <div className="mt-6">
                 {pricing.hasDiscount && (
-                  <p className="mb-1 flex items-center gap-2">
-                    <span className="font-display text-2xl font-bold tracking-tight text-light-grey line-through">
-                      {formatRand(pricing.listMonthly)}
-                    </span>
-                    <span className="rounded-full bg-neon-green px-2 py-0.5 font-display text-[11px] font-black uppercase tracking-wide text-background">
-                      Save {pricing.discountPercent}%
-                    </span>
-                  </p>
+                  <div className="mb-3">
+                    <p className="mb-1.5 font-display text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">
+                      Limited-time member offer
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <span className="font-display text-2xl font-bold tracking-tight text-light-grey line-through">
+                        {formatRand(pricing.listMonthly)}
+                      </span>
+                      <span className="inline-flex items-center rounded-md bg-amber-400 px-3 py-1.5 font-display text-sm font-black uppercase tracking-wide text-zinc-950 shadow-[0_0_20px_rgba(251,191,36,0.4)] ring-1 ring-amber-200">
+                        <strong className="text-xl leading-none">{pricing.discountPercent}%</strong>
+                        <span className="ml-1">Off</span>
+                      </span>
+                    </div>
+                  </div>
                 )}
                 <p className="flex items-end gap-2">
                   <span
