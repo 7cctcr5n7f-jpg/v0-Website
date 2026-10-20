@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
 import { PageHero } from '@/components/page-hero'
 import { MembershipSignupForm, type Selection } from '@/components/forms/membership-signup-form'
-import { getMembership, accessTiers, type ContractLength } from '@/lib/memberships'
-import { getMembershipDiscounts } from '@/lib/content-queries'
+import {
+  applyMembershipPriceOverrides,
+  getMembership,
+  type ContractLength,
+} from '@/lib/memberships'
+import { getMembershipDiscounts, getMembershipPriceOverrides } from '@/lib/content-queries'
 import { computePricing } from '@/lib/memberships'
 
 export const metadata: Metadata = {
@@ -22,26 +26,30 @@ function tierIdFor(membershipId: string): string {
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ m?: string; len?: string; fee?: string }>
+  searchParams: Promise<{ m?: string; len?: string }>
 }) {
   const params = await searchParams
-  const discounts = await getMembershipDiscounts()
+  const [discounts, priceOverrides] = await Promise.all([
+    getMembershipDiscounts(),
+    getMembershipPriceOverrides(),
+  ])
+  const tiers = applyMembershipPriceOverrides(priceOverrides)
 
   // Default to a sensible plan when the visitor arrives without a selection.
-  const membershipId = params.m && getMembership(tierIdFor(params.m), params.m).membership ? params.m : 'anytime-twice'
+  const membershipId =
+    params.m && getMembership(tierIdFor(params.m), params.m, tiers).membership
+      ? params.m
+      : 'anytime-twice'
   const lengthRaw = Number(params.len)
   const contractLength: ContractLength = [3, 6, 12].includes(lengthRaw) ? (lengthRaw as ContractLength) : 12
 
-  const { tier, membership } = getMembership(tierIdFor(membershipId), membershipId)
-  const resolvedTier = tier ?? accessTiers[0]
+  const { tier, membership } = getMembership(tierIdFor(membershipId), membershipId, tiers)
+  const resolvedTier = tier ?? tiers[0]
   const resolvedMembership = membership ?? resolvedTier.memberships[0]
 
-  // Use the posted fee (carries any active special discount) when valid,
-  // otherwise recompute from the canonical price list.
   const discountPercent = discounts[resolvedMembership.id] ?? 0
   const pricing = computePricing(resolvedMembership, contractLength, discountPercent)
-  const postedFee = Number(params.fee)
-  const monthlyFee = Number.isFinite(postedFee) && postedFee > 0 ? Math.round(postedFee) : pricing.monthly
+  const monthlyFee = pricing.monthly
   const totalContractValue = monthlyFee * contractLength
 
   // Savings, all measured against the entry-level 3-month rate.

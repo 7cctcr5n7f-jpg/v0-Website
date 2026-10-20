@@ -8,13 +8,13 @@ import {
   logout,
   saveChowWinnerState,
   saveSessionMilestoneState,
+  saveMembershipPricingAndSpecialState,
   saveSettingState,
   saveSpecialState,
 } from '@/app/actions/admin'
 import { AdminForm } from '@/components/admin/admin-form'
 import { CheckField, FieldGrid, TextArea, TextField } from '@/components/admin/fields'
 import { ImageField } from '@/components/admin/image-field'
-import { DiscountSelect } from '@/components/admin/discount-select'
 import { TrialBookingsTable } from '@/components/admin/trial-bookings-table'
 import { BlockedDaysManager } from '@/components/admin/blocked-days-manager'
 import { SignupsTable } from '@/components/admin/signups-table'
@@ -23,6 +23,7 @@ import { GalleryAdmin } from '@/components/admin/gallery-admin'
 import { CommsAdmin } from '@/components/admin/comms-admin'
 import type { BlockedDay, ChowWinner, GalleryCategory, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
 import type { GalleryPhotoWithCategory } from '@/lib/content-queries'
+import { applyMembershipPriceOverrides, formatRand, type MembershipPriceOverrides } from '@/lib/memberships'
 import type { WaSettings } from '@/lib/whatsapp'
 
 type TabKey = 'bookings' | 'signups' | 'purchases' | 'chow' | 'celebration' | 'specials' | 'gallery' | 'comms'
@@ -38,60 +39,173 @@ const cardCls = 'rounded-2xl border border-steel bg-card p-5 sm:p-6'
 const deleteBtn =
   'inline-flex items-center gap-1.5 rounded-md border border-steel px-4 py-2.5 text-sm font-semibold text-light-grey transition-colors hover:border-red-500 hover:text-red-400'
 
-function SpecialForm({ special }: { special?: Special }) {
-  const selectedIds = (special?.discountMembershipIds ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+function getMembershipDiscounts(special?: Special) {
+  const discounts: Record<string, number> = {}
+  for (const value of (special?.discountMembershipIds ?? '').split(',')) {
+    const [rawId, rawPercent] = value.trim().split(':')
+    if (!rawId) continue
+    const percent = rawPercent == null ? special?.discountPercent ?? 0 : Number(rawPercent)
+    discounts[rawId] = Number.isFinite(percent) ? Math.max(0, Math.min(percent, 100)) : 0
+  }
+  return discounts
+}
+
+function MembershipPricingSpecialForm({
+  priceOverrides,
+  special,
+}: {
+  priceOverrides: MembershipPriceOverrides
+  special?: Special
+}) {
+  const tiers = applyMembershipPriceOverrides(priceOverrides)
+  const initialDiscounts = getMembershipDiscounts(special)
+  const [prices, setPrices] = useState(() =>
+    Object.fromEntries(
+      tiers.flatMap((tier) =>
+        tier.memberships.map((membership) => [membership.id, { ...membership.prices }]),
+      ),
+    ),
+  )
+  const [selected, setSelected] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(Object.keys(initialDiscounts).map((id) => [id, true])),
+  )
+  const [discounts, setDiscounts] = useState<Record<string, number>>(() => initialDiscounts)
+
   return (
     <div className={cardCls}>
-      <AdminForm action={saveSpecialState} submitLabel={special ? 'Save Changes' : 'Create Membership Special'}>
+      <AdminForm
+        action={saveMembershipPricingAndSpecialState}
+        submitLabel={special ? 'Save Pricing & Special' : 'Create Pricing Special'}
+      >
         <input type="hidden" name="id" defaultValue={special?.id ?? 0} />
         <input type="hidden" name="kind" value="membership" />
-        <FieldGrid>
-          <TextField label="Title" name="title" defaultValue={special?.title} required placeholder="First Class Free" />
-          <TextField label="Badge" name="badge" defaultValue={special?.badge} placeholder="Limited Offer" />
-        </FieldGrid>
-        <TextArea label="Description" name="description" defaultValue={special?.description} />
-        <FieldGrid>
-          <TextField label="Button Label" name="ctaLabel" defaultValue={special?.ctaLabel} placeholder="Claim Now" />
-          <TextField label="Button Link" name="ctaHref" defaultValue={special?.ctaHref} placeholder="/free-trial" />
-        </FieldGrid>
-        <ImageField label="Image (optional)" name="imageUrl" defaultValue={special?.imageUrl} />
+        <input type="hidden" name="description" defaultValue={special?.description ?? ''} />
+        <input type="hidden" name="badge" defaultValue={special?.badge ?? ''} />
+        <input type="hidden" name="ctaLabel" defaultValue={special?.ctaLabel ?? ''} />
+        <input type="hidden" name="ctaHref" defaultValue={special?.ctaHref ?? ''} />
+        <input type="hidden" name="imageUrl" defaultValue={special?.imageUrl ?? ''} />
+        <input type="hidden" name="discountPercent" value="0" />
+        <input type="hidden" name="startsAt" defaultValue={toLocalInput(special?.startsAt ?? null)} />
+        <input type="hidden" name="endsAt" defaultValue={toLocalInput(special?.endsAt ?? null)} />
+        <input type="hidden" name="sortOrder" defaultValue={String(special?.sortOrder ?? 0)} />
+
+        <TextField
+          label="Special title"
+          name="title"
+          defaultValue={special?.title}
+          required
+          placeholder="Summer Savings"
+        />
         <div className="rounded-lg border border-steel/60 bg-background/50 p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-light-grey">Where to show this special</p>
           <div className="flex flex-wrap gap-x-6 gap-y-3">
             <CheckField label="Popup overlay" name="showPopup" defaultChecked={special ? special.showPopup : true} />
             <CheckField label="Inline on pricing" name="showInline" defaultChecked={special ? special.showInline : true} />
             <CheckField label="Sticky top bar" name="showBar" defaultChecked={special ? special.showBar : false} />
+            <CheckField label="Active on website" name="active" defaultChecked={special ? special.active : true} />
           </div>
         </div>
 
-        {/* Membership discount */}
-        <FieldGrid>
-          <TextField
-            label="Discount %"
-            name="discountPercent"
-            type="number"
-            defaultValue={String(special?.discountPercent ?? 0)}
-            placeholder="20"
-          />
-          <div className="flex items-end pb-1 text-xs leading-relaxed text-light-grey">
-            Set a percentage (e.g. 20) and tick the memberships below to discount them.
+        <div className="overflow-x-auto rounded-lg border border-steel/60">
+          <div className="min-w-[760px]">
+            <div className="grid grid-cols-[1.5fr_84px_96px_repeat(3,minmax(120px,1fr))] gap-3 border-b border-steel/60 bg-background/50 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-light-grey">
+              <span>Membership</span>
+              <span>Apply</span>
+              <span>Discount</span>
+              <span>3 months</span>
+              <span>6 months</span>
+              <span>12 months</span>
+            </div>
+            {tiers.map((tier) => (
+              <div key={tier.id}>
+                <div className="border-b border-steel/60 bg-background/30 px-4 py-2 text-xs font-bold uppercase tracking-wide text-neon-green">
+                  {tier.name}{tier.perMember ? ' · Per member' : ''}
+                </div>
+                {tier.memberships.map((membership) => {
+                  const applies = selected[membership.id] ?? false
+                  const discount = discounts[membership.id] ?? 0
+                  return (
+                    <div
+                      key={membership.id}
+                      className="grid grid-cols-[1.5fr_84px_96px_repeat(3,minmax(120px,1fr))] items-center gap-3 border-b border-steel/40 px-4 py-3 last:border-b-0"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{membership.name}</p>
+                        <p className="text-xs text-light-grey">Monthly price</p>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={applies}
+                          onChange={(event) =>
+                            setSelected((current) => ({ ...current, [membership.id]: event.target.checked }))
+                          }
+                          className="size-4 accent-[var(--color-neon-blue)]"
+                        />
+                        {applies ? 'Yes' : 'No'}
+                      </label>
+                      {applies ? (
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={discount}
+                          onChange={(event) =>
+                            setDiscounts((current) => ({
+                              ...current,
+                              [membership.id]: Math.max(0, Math.min(100, Number(event.target.value) || 0)),
+                            }))
+                          }
+                          className="w-full rounded-md border border-steel bg-background px-2 py-2 text-sm text-foreground outline-none focus:border-neon-blue"
+                          aria-label={`Discount percentage for ${membership.name}`}
+                        />
+                      ) : (
+                        <span className="text-sm text-light-grey">—</span>
+                      )}
+                      {applies ? (
+                        <input
+                          type="hidden"
+                          name="discountMembershipIds"
+                          value={`${membership.id}:${discount}`}
+                        />
+                      ) : null}
+                      {([3, 6, 12] as const).map((length) => {
+                        const price = prices[membership.id][length]
+                        const specialPrice = Math.round(price * (1 - discount / 100))
+                        return (
+                          <label key={length} className="block">
+                            <span className="sr-only">{membership.name} {length}-month monthly price</span>
+                            <input
+                              type="number"
+                              min="1"
+                              name={`price_${membership.id}_${length}`}
+                              value={price}
+                              onChange={(event) =>
+                                setPrices((current) => ({
+                                  ...current,
+                                  [membership.id]: {
+                                    ...current[membership.id],
+                                    [length]: Number(event.target.value) || 0,
+                                  },
+                                }))
+                              }
+                              className="w-full rounded-md border border-steel bg-background px-2 py-2 text-sm font-semibold text-foreground outline-none focus:border-neon-blue"
+                            />
+                            {applies && discount > 0 ? (
+                              <span className="mt-1 block text-xs font-semibold text-neon-green">
+                                Special: {formatRand(specialPrice)}
+                              </span>
+                            ) : null}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
           </div>
-        </FieldGrid>
-        <DiscountSelect selected={selectedIds} />
-
-        <FieldGrid>
-          <TextField label="Starts (optional)" name="startsAt" type="datetime-local" defaultValue={toLocalInput(special?.startsAt ?? null)} />
-          <TextField label="Ends (optional)" name="endsAt" type="datetime-local" defaultValue={toLocalInput(special?.endsAt ?? null)} />
-        </FieldGrid>
-        <FieldGrid>
-          <TextField label="Sort order" name="sortOrder" type="number" defaultValue={String(special?.sortOrder ?? 0)} />
-          <div className="flex items-end pb-2">
-            <CheckField label="Active (visible on site)" name="active" defaultChecked={special ? special.active : true} />
-          </div>
-        </FieldGrid>
+        </div>
       </AdminForm>
       {special ? (
         <form action={deleteSpecial} className="mt-3 border-t border-steel/60 pt-3">
@@ -278,6 +392,7 @@ export function AdminDashboard({
   galleryCategories: galleryCats,
   galleryPhotos: galleryPics,
   waSettings,
+  membershipPriceOverrides,
   }: {
   specials: Special[]
   winners: ChowWinner[]
@@ -290,6 +405,7 @@ export function AdminDashboard({
   galleryCategories: GalleryCategory[]
   galleryPhotos: GalleryPhotoWithCategory[]
   waSettings: WaSettings
+  membershipPriceOverrides: MembershipPriceOverrides
   }) {
   const femaleWinner = winners.find((w) => w.label.toLowerCase().includes('female'))
   const maleWinner = winners.find((w) => !w.label.toLowerCase().includes('female'))
@@ -304,7 +420,7 @@ export function AdminDashboard({
     { key: 'purchases', label: 'Sessions', icon: ShoppingCart },
     { key: 'chow', label: 'CHOW', icon: Trophy },
     { key: 'celebration', label: 'Celebration', icon: Dumbbell },
-    { key: 'specials', label: 'Specials', icon: Tag },
+    { key: 'specials', label: 'Pricing', icon: Tag },
     { key: 'gallery', label: 'Gallery', icon: ImageIcon },
     { key: 'comms', label: 'Comms', icon: MessageSquare },
   ]
@@ -465,38 +581,46 @@ export function AdminDashboard({
       </div>
       )}
 
-      {/* TAB — Specials */}
+      {/* TAB — Pricing */}
       {tab === 'specials' && (
       <div role="tabpanel">
       <section className="mt-10">
         <div className="flex items-center gap-2">
           <Tag className="size-5 text-neon-blue" />
-          <h2 className="font-display text-2xl font-black uppercase tracking-tight">Specials</h2>
+          <h2 className="font-display text-2xl font-black uppercase tracking-tight">Pricing</h2>
         </div>
 
         {/* Membership Specials */}
         <div className="mt-8">
           <h3 className="font-display text-lg font-black uppercase tracking-tight text-neon-green">
-            Membership Specials
+            Membership Pricing &amp; Specials
           </h3>
           <p className="mt-1 text-sm text-light-grey">
-            Shown in the green-bordered banner above the membership finder. Can also discount selected memberships.
+            Edit each regular monthly price, select the memberships on special, and enter a discount percentage per membership.
           </p>
           <div className="mt-5 flex flex-col gap-5">
             {membershipSpecials.length === 0 ? (
-              <p className="text-sm text-light-grey">No membership specials yet. Add one below.</p>
+              <MembershipPricingSpecialForm priceOverrides={membershipPriceOverrides} />
             ) : (
-              membershipSpecials.map((s) => <SpecialForm key={s.id} special={s} />)
+              membershipSpecials.map((s) => (
+                <MembershipPricingSpecialForm
+                  key={s.id}
+                  priceOverrides={membershipPriceOverrides}
+                  special={s}
+                />
+              ))
             )}
           </div>
-          <details className="group mt-6">
-            <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-dashed border-neon-blue/50 px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-neon-blue transition-colors hover:bg-neon-blue/10">
-              <Plus className="size-4" /> Add Membership Special
-            </summary>
-            <div className="mt-4">
-              <SpecialForm />
-            </div>
-          </details>
+          {membershipSpecials.length > 0 ? (
+            <details className="group mt-6">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-dashed border-neon-blue/50 px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-neon-blue transition-colors hover:bg-neon-blue/10">
+                <Plus className="size-4" /> Add Another Pricing Special
+              </summary>
+              <div className="mt-4">
+                <MembershipPricingSpecialForm priceOverrides={membershipPriceOverrides} />
+              </div>
+            </details>
+          ) : null}
         </div>
 
         {/* Sessions Specials */}

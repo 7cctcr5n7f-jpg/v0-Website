@@ -38,14 +38,16 @@ function StepBadge({ n, label }: { n: number; label: string }) {
 
 export function MembershipFinder({
   discounts = {},
+  tiers = accessTiers,
 }: {
   discounts?: Record<string, number>
+  tiers?: AccessTier[]
 }) {
   const [tierId, setTierId] = useState<AccessTier['id']>('anytime')
   const [membershipId, setMembershipId] = useState<string>('anytime-twice')
   const [length, setLength] = useState<ContractLength>(12)
 
-  const tier = useMemo(() => accessTiers.find((t) => t.id === tierId)!, [tierId])
+  const tier = useMemo(() => tiers.find((t) => t.id === tierId)!, [tierId, tiers])
   const membership = useMemo(
     () => tier.memberships.find((m) => m.id === membershipId) ?? tier.memberships[0],
     [tier, membershipId],
@@ -78,7 +80,7 @@ export function MembershipFinder({
           <div>
             <StepBadge n={1} label="Select Access Type" />
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
-              {accessTiers.map((t) => {
+              {tiers.map((t) => {
                 const Icon = iconMap[t.icon]
                 const active = t.id === tierId
                 return (

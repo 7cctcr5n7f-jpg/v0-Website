@@ -4,7 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { membershipSignups } from '@/lib/db/schema'
-import { getMembership, formatRand, type ContractLength } from '@/lib/memberships'
+import {
+  applyMembershipPriceOverrides,
+  computePricing,
+  getMembership,
+  formatRand,
+  type ContractLength,
+} from '@/lib/memberships'
+import { getMembershipDiscounts, getMembershipPriceOverrides } from '@/lib/content-queries'
 import { generateMembershipPdf } from '@/lib/membership-pdf'
 import { sendEmail } from '@/lib/email'
 import { business } from '@/lib/business'
@@ -34,18 +41,31 @@ export async function submitMembershipSignup(
 
   // ── Selected membership ──
   const membershipId = str(formData, 'membershipId')
-  const contractLength = Number(str(formData, 'contractLength')) || 12
+  const contractLengthRaw = Number(str(formData, 'contractLength'))
+  const contractLength: ContractLength = [3, 6, 12].includes(contractLengthRaw)
+    ? (contractLengthRaw as ContractLength)
+    : 12
+  const [discounts, priceOverrides] = await Promise.all([
+    getMembershipDiscounts(),
+    getMembershipPriceOverrides(),
+  ])
+  const tiers = applyMembershipPriceOverrides(priceOverrides)
   const { tier, membership } = getMembership(
     membershipId.startsWith('anytime') ? 'anytime' : membershipId.startsWith('pairup') ? 'pair-up' : 'off-peak',
     membershipId,
+    tiers,
   )
-  // Recompute price server-side from the canonical data (never trust the client),
-  // but fall back to the posted fee if a special discount applied.
-  const postedFee = Number(str(formData, 'monthlyFee')) || 0
-  const monthlyFee = postedFee > 0 ? postedFee : membership ? membership.prices[contractLength as ContractLength] : 0
+  if (!membership || !tier) {
+    return { ok: false, error: 'Please select a valid membership before signing up.' }
+  }
+  const monthlyFee = computePricing(
+    membership,
+    contractLength,
+    discounts[membership.id] ?? 0,
+  ).monthly
   const totalContractValue = monthlyFee * contractLength
-  const membershipType = tier?.name ?? str(formData, 'membershipType')
-  const accessType = membership?.name ?? str(formData, 'accessType')
+  const membershipType = tier.name
+  const accessType = membership.name
 
   // ── Member details ──
   const firstName = str(formData, 'firstName')

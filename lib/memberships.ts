@@ -18,6 +18,10 @@ export type AccessTier = {
   memberships: Membership[]
 }
 
+export type MembershipPriceOverrides = Partial<
+  Record<string, Partial<Record<ContractLength, number>>>
+>
+
 export const accessTiers: AccessTier[] = [
   {
     id: 'anytime',
@@ -100,6 +104,29 @@ export const contractLengths: { value: ContractLength; label: string; badge?: st
   { value: 12, label: '12 Months', badge: 'Best Value' },
 ]
 
+const contractLengthValues: ContractLength[] = [3, 6, 12]
+
+export function applyMembershipPriceOverrides(
+  overrides: MembershipPriceOverrides = {},
+): AccessTier[] {
+  return accessTiers.map((tier) => ({
+    ...tier,
+    memberships: tier.memberships.map((membership) => {
+      const prices = { ...membership.prices }
+      const override = overrides[membership.id]
+
+      for (const length of contractLengthValues) {
+        const value = override?.[length]
+        if (Number.isFinite(value) && value != null && value > 0) {
+          prices[length] = Math.round(value)
+        }
+      }
+
+      return { ...membership, prices }
+    }),
+  }))
+}
+
 // Off-peak access is restricted to these daily hours.
 export const OFF_PEAK_HOURS = '13:00 – 16:00 daily'
 
@@ -144,8 +171,12 @@ export function sessionPrice(pack: SessionPack) {
   return Math.round(pack.price / pack.quantity)
 }
 
-export function getMembership(tierId: string, membershipId: string) {
-  const tier = accessTiers.find((t) => t.id === tierId)
+export function getMembership(
+  tierId: string,
+  membershipId: string,
+  tiers: AccessTier[] = accessTiers,
+) {
+  const tier = tiers.find((t) => t.id === tierId)
   const membership = tier?.memberships.find((m) => m.id === membershipId)
   return { tier, membership }
 }

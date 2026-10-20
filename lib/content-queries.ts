@@ -1,7 +1,12 @@
 import 'server-only'
 import { and, asc, desc, eq, gt, isNull, lte, or } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { sessionPacks } from '@/lib/memberships'
+import {
+  accessTiers,
+  sessionPacks,
+  type ContractLength,
+  type MembershipPriceOverrides,
+} from '@/lib/memberships'
 import {
   chowWinners,
   galleryCategories,
@@ -169,11 +174,14 @@ export async function getMembershipDiscounts(): Promise<Record<string, number>> 
   const active = await getActiveSpecials()
   const map: Record<string, number> = {}
   for (const s of active) {
-    if (s.discountPercent <= 0 || !s.discountMembershipIds) continue
+    if (!s.discountMembershipIds) continue
     for (const raw of s.discountMembershipIds.split(',')) {
-      const id = raw.trim()
+      const [rawId, rawPercent] = raw.trim().split(':')
+      const id = rawId.trim()
+      const discountPercent = rawPercent == null ? s.discountPercent : Number(rawPercent)
       if (!id) continue
-      map[id] = Math.max(map[id] ?? 0, s.discountPercent)
+      if (!Number.isFinite(discountPercent) || discountPercent <= 0) continue
+      map[id] = Math.max(map[id] ?? 0, Math.min(discountPercent, 100))
     }
   }
   return map
@@ -200,6 +208,42 @@ export async function getMembershipSignup(id: number): Promise<MembershipSignup 
 export async function getSetting(key: string): Promise<string> {
   const rows = await db.select().from(settings).where(eq(settings.key, key)).limit(1)
   return rows[0]?.value ?? ''
+}
+
+const membershipPriceLengths: ContractLength[] = [3, 6, 12]
+const membershipIds = new Set(
+  accessTiers.flatMap((tier) => tier.memberships.map((membership) => membership.id)),
+)
+
+export async function getMembershipPriceOverrides(): Promise<MembershipPriceOverrides> {
+  const raw = await getSetting('membership_prices')
+  if (!raw) return {}
+
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+
+    const overrides: MembershipPriceOverrides = {}
+    for (const [membershipId, prices] of Object.entries(parsed)) {
+      if (!membershipIds.has(membershipId) || !prices || typeof prices !== 'object' || Array.isArray(prices)) {
+        continue
+      }
+
+      const validated: Partial<Record<ContractLength, number>> = {}
+      for (const length of membershipPriceLengths) {
+        const value = (prices as Record<string, unknown>)[String(length)]
+        if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+          validated[length] = Math.round(value)
+        }
+      }
+      if (Object.keys(validated).length > 0) overrides[membershipId] = validated
+    }
+
+    return overrides
+  } catch {
+    console.error('[v0] Invalid membership pricing setting')
+    return {}
+  }
 }
 
 // The single most-recent active session milestone (or null).
