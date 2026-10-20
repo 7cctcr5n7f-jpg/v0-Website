@@ -8,6 +8,7 @@ import {
   logout,
   saveChowWinnerState,
   saveSessionMilestoneState,
+  saveMembershipPricingState,
   saveSettingState,
   saveSpecialState,
 } from '@/app/actions/admin'
@@ -23,6 +24,7 @@ import { GalleryAdmin } from '@/components/admin/gallery-admin'
 import { CommsAdmin } from '@/components/admin/comms-admin'
 import type { BlockedDay, ChowWinner, GalleryCategory, MembershipSignup, SessionMilestone, SessionPurchase, Special, TrialBooking } from '@/lib/db/schema'
 import type { GalleryPhotoWithCategory } from '@/lib/content-queries'
+import { applyMembershipPriceOverrides, type MembershipPriceOverrides } from '@/lib/memberships'
 import type { WaSettings } from '@/lib/whatsapp'
 
 type TabKey = 'bookings' | 'signups' | 'purchases' | 'chow' | 'celebration' | 'specials' | 'gallery' | 'comms'
@@ -37,6 +39,60 @@ function toLocalInput(d: Date | null) {
 const cardCls = 'rounded-2xl border border-steel bg-card p-5 sm:p-6'
 const deleteBtn =
   'inline-flex items-center gap-1.5 rounded-md border border-steel px-4 py-2.5 text-sm font-semibold text-light-grey transition-colors hover:border-red-500 hover:text-red-400'
+
+function MembershipPricingForm({
+  priceOverrides,
+}: {
+  priceOverrides: MembershipPriceOverrides
+}) {
+  const tiers = applyMembershipPriceOverrides(priceOverrides)
+
+  return (
+    <div className={cardCls}>
+      <AdminForm action={saveMembershipPricingState} submitLabel="Save Membership Prices">
+        <div>
+          <p className="font-display text-lg font-black uppercase tracking-tight text-neon-green">
+            Membership Prices
+          </p>
+          <p className="mt-1 text-sm text-light-grey">
+            Set the actual monthly price in Rand for every contract. Changes go live on the website and are used for new signups immediately.
+          </p>
+        </div>
+        <div className="space-y-5">
+          {tiers.map((tier) => (
+            <div key={tier.id} className="rounded-lg border border-steel/60 bg-background/50 p-4">
+              <p className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+                {tier.name}
+              </p>
+              {tier.perMember ? (
+                <p className="mt-1 text-xs text-light-grey">All prices are per member.</p>
+              ) : null}
+              <div className="mt-4 space-y-4">
+                {tier.memberships.map((membership) => (
+                  <div key={membership.id} className="border-t border-steel/50 pt-4 first:border-t-0 first:pt-0">
+                    <p className="text-sm font-semibold text-foreground">{membership.name}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-3">
+                      {([3, 6, 12] as const).map((length) => (
+                        <TextField
+                          key={length}
+                          label={`${length} months (R/month)`}
+                          name={`price_${membership.id}_${length}`}
+                          type="number"
+                          required
+                          defaultValue={String(membership.prices[length])}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </AdminForm>
+    </div>
+  )
+}
 
 function SpecialForm({ special }: { special?: Special }) {
   const selectedIds = (special?.discountMembershipIds ?? '')
@@ -278,6 +334,7 @@ export function AdminDashboard({
   galleryCategories: galleryCats,
   galleryPhotos: galleryPics,
   waSettings,
+  membershipPriceOverrides,
   }: {
   specials: Special[]
   winners: ChowWinner[]
@@ -290,6 +347,7 @@ export function AdminDashboard({
   galleryCategories: GalleryCategory[]
   galleryPhotos: GalleryPhotoWithCategory[]
   waSettings: WaSettings
+  membershipPriceOverrides: MembershipPriceOverrides
   }) {
   const femaleWinner = winners.find((w) => w.label.toLowerCase().includes('female'))
   const maleWinner = winners.find((w) => !w.label.toLowerCase().includes('female'))
@@ -304,7 +362,7 @@ export function AdminDashboard({
     { key: 'purchases', label: 'Sessions', icon: ShoppingCart },
     { key: 'chow', label: 'CHOW', icon: Trophy },
     { key: 'celebration', label: 'Celebration', icon: Dumbbell },
-    { key: 'specials', label: 'Specials', icon: Tag },
+    { key: 'specials', label: 'Pricing', icon: Tag },
     { key: 'gallery', label: 'Gallery', icon: ImageIcon },
     { key: 'comms', label: 'Comms', icon: MessageSquare },
   ]
@@ -465,22 +523,26 @@ export function AdminDashboard({
       </div>
       )}
 
-      {/* TAB — Specials */}
+      {/* TAB — Pricing */}
       {tab === 'specials' && (
       <div role="tabpanel">
       <section className="mt-10">
         <div className="flex items-center gap-2">
           <Tag className="size-5 text-neon-blue" />
-          <h2 className="font-display text-2xl font-black uppercase tracking-tight">Specials</h2>
+          <h2 className="font-display text-2xl font-black uppercase tracking-tight">Pricing</h2>
+        </div>
+
+        <div className="mt-8">
+          <MembershipPricingForm priceOverrides={membershipPriceOverrides} />
         </div>
 
         {/* Membership Specials */}
-        <div className="mt-8">
+        <div className="mt-12 border-t border-steel pt-10">
           <h3 className="font-display text-lg font-black uppercase tracking-tight text-neon-green">
-            Membership Specials
+            Membership Discounts &amp; Specials
           </h3>
           <p className="mt-1 text-sm text-light-grey">
-            Shown in the green-bordered banner above the membership finder. Can also discount selected memberships.
+            Create a visible website special and choose the memberships it discounts. Selected plans show their regular and discounted prices on the website.
           </p>
           <div className="mt-5 flex flex-col gap-5">
             {membershipSpecials.length === 0 ? (
@@ -491,7 +553,7 @@ export function AdminDashboard({
           </div>
           <details className="group mt-6">
             <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-dashed border-neon-blue/50 px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-neon-blue transition-colors hover:bg-neon-blue/10">
-              <Plus className="size-4" /> Add Membership Special
+              <Plus className="size-4" /> Add Membership Discount
             </summary>
             <div className="mt-4">
               <SpecialForm />

@@ -15,10 +15,12 @@ import { SpecialInline } from '@/components/specials/special-inline'
 import {
   getInlineSpecials,
   getMembershipDiscounts,
+  getMembershipPriceOverrides,
   getSessionSpecials,
   getSessionPackDiscounts,
   getSessionPackBonuses,
 } from '@/lib/content-queries'
+import { applyMembershipPriceOverrides } from '@/lib/memberships'
 
 export const metadata: Metadata = {
   title: 'Gym Memberships & Pricing Pretoria East',
@@ -58,14 +60,16 @@ const benefits = [
 ]
 
 export default async function MembershipsPage() {
-  const [inlineSpecials, discounts, sessionSpecials, sessionDiscounts, sessionBonuses] =
+  const [inlineSpecials, discounts, priceOverrides, sessionSpecials, sessionDiscounts, sessionBonuses] =
     await Promise.all([
       getInlineSpecials(),
       getMembershipDiscounts(),
+      getMembershipPriceOverrides(),
       getSessionSpecials(),
       getSessionPackDiscounts(),
       getSessionPackBonuses(),
     ])
+  const tiers = applyMembershipPriceOverrides(priceOverrides)
   return (
     <main>
       <JsonLd data={[faqSchema(pricingFaqs), breadcrumbSchema([
@@ -88,7 +92,7 @@ export default async function MembershipsPage() {
       {/* finder */}
       <section className="bg-background pb-20 pt-6 lg:pb-28 lg:pt-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <MembershipFinder discounts={discounts} />
+          <MembershipFinder discounts={discounts} tiers={tiers} />
         </div>
       </section>
 

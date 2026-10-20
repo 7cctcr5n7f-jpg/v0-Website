@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { blockedDays, chowWinners, galleryCategories, galleryPhotos, membershipSignups, sessionMilestones, sessionPurchases, settings, specials, trialBookings, whatsappSettings } from '@/lib/db/schema'
+import { accessTiers, type ContractLength, type MembershipPriceOverrides } from '@/lib/memberships'
 import {
   clearAdminCookie,
   isAdminAuthed,
@@ -19,6 +20,7 @@ function revalidateAll() {
   revalidatePath('/')
   revalidatePath('/memberships')
   revalidatePath('/members')
+  revalidatePath('/signup')
   revalidatePath('/admin')
 }
 
@@ -234,6 +236,36 @@ export async function saveSetting(formData: FormData) {
   revalidateAll()
 }
 
+const membershipPriceLengths: ContractLength[] = [3, 6, 12]
+
+export async function saveMembershipPricing(formData: FormData) {
+  await requireAdmin()
+
+  const prices: MembershipPriceOverrides = {}
+  for (const tier of accessTiers) {
+    for (const membership of tier.memberships) {
+      const membershipPrices: Partial<Record<ContractLength, number>> = {}
+      for (const length of membershipPriceLengths) {
+        const value = Number(formData.get(`price_${membership.id}_${length}`))
+        if (!Number.isInteger(value) || value < 1 || value > 100000) {
+          throw new Error('Each membership price must be a whole Rand amount between R1 and R100,000.')
+        }
+        membershipPrices[length] = value
+      }
+      prices[membership.id] = membershipPrices
+    }
+  }
+
+  await db
+    .insert(settings)
+    .values({ key: 'membership_prices', value: JSON.stringify(prices), updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: settings.key,
+      set: { value: JSON.stringify(prices), updatedAt: new Date() },
+    })
+  revalidateAll()
+}
+
 // ── Session milestone celebration ──
 export async function saveSessionMilestone(formData: FormData) {
   await requireAdmin()
@@ -277,6 +309,10 @@ async function runSave(fn: () => Promise<void>): Promise<SaveState> {
 
 export async function saveSettingState(_prev: SaveState, formData: FormData): Promise<SaveState> {
   return runSave(() => saveSetting(formData))
+}
+
+export async function saveMembershipPricingState(_prev: SaveState, formData: FormData): Promise<SaveState> {
+  return runSave(() => saveMembershipPricing(formData))
 }
 
 export async function saveChowWinnerState(_prev: SaveState, formData: FormData): Promise<SaveState> {
