@@ -45,16 +45,13 @@ export async function isAdminAuthed(): Promise<boolean> {
 export async function setAdminCookie() {
   const passcode = getPasscode()
   if (!passcode) throw new Error('ADMIN_PASSWORD is not set — cannot create an admin session.')
+  const isProduction = process.env.NODE_ENV === 'production'
   ;(await cookies()).set(COOKIE_NAME, expectedToken(passcode), {
     httpOnly: true, // not readable from client-side JS (mitigates XSS theft)
-    secure: true, // only sent over HTTPS
-    // 'none' is required so the session cookie is sent with server-action
-    // requests made from the cross-origin v0 preview iframe. Without it the
-    // browser drops the cookie on those subrequests and every save fails with
-    // "session expired" even immediately after logging in. Paired with
-    // secure + httpOnly this remains safe, and it also works fine in
-    // production where the dashboard is same-origin.
-    sameSite: 'none',
+    secure: isProduction, // HTTPS-only in production; localhost uses HTTP.
+    // Cross-origin production previews require SameSite=None with a secure
+    // cookie. Local HTTP development must use a standard same-origin cookie.
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 30, // 30 days
   })
