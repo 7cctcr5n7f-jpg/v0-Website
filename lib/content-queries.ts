@@ -174,11 +174,14 @@ export async function getMembershipDiscounts(): Promise<Record<string, number>> 
   const active = await getActiveSpecials()
   const map: Record<string, number> = {}
   for (const s of active) {
-    if (s.discountPercent <= 0 || !s.discountMembershipIds) continue
+    if (!s.discountMembershipIds) continue
     for (const raw of s.discountMembershipIds.split(',')) {
-      const id = raw.trim()
+      const [rawId, rawPercent] = raw.trim().split(':')
+      const id = rawId.trim()
+      const discountPercent = rawPercent == null ? s.discountPercent : Number(rawPercent)
       if (!id) continue
-      map[id] = Math.max(map[id] ?? 0, s.discountPercent)
+      if (!Number.isFinite(discountPercent) || discountPercent <= 0) continue
+      map[id] = Math.max(map[id] ?? 0, Math.min(discountPercent, 100))
     }
   }
   return map

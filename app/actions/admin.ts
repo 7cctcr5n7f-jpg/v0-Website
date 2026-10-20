@@ -315,6 +315,16 @@ export async function saveMembershipPricingState(_prev: SaveState, formData: For
   return runSave(() => saveMembershipPricing(formData))
 }
 
+export async function saveMembershipPricingAndSpecialState(
+  _prev: SaveState,
+  formData: FormData,
+): Promise<SaveState> {
+  return runSave(async () => {
+    await saveMembershipPricing(formData)
+    await saveSpecial(formData)
+  })
+}
+
 export async function saveChowWinnerState(_prev: SaveState, formData: FormData): Promise<SaveState> {
   return runSave(() => saveChowWinner(formData))
 }
