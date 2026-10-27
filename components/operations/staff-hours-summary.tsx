@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, Fragment } from 'react'
-import { ChevronDown, Pencil, Check, X } from 'lucide-react'
+import { ChevronDown, Pencil, Check, X, ClipboardCheck } from 'lucide-react'
 import { saveShiftAssignment } from '@/app/actions/operations'
 import type { Staff, ShiftAssignment, ShiftSetting } from '@/lib/db/schema'
 
@@ -25,6 +25,19 @@ function getPayPeriod(offset: number) {
   return { start, end, label, shortLabel, rangeLabel }
 }
 
+function getDaysInPeriod(start: string, end: string) {
+  const days: string[] = []
+  const cursor = new Date(`${start}T00:00:00`)
+  const last = new Date(`${end}T00:00:00`)
+
+  while (cursor <= last) {
+    days.push(toIso(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return days
+}
+
 const SHIFT_STYLES: Record<string, { dot: string; label: string }> = {
   morning: { dot: 'bg-amber-500', label: 'AM' },
   afternoon: { dot: 'bg-blue-500', label: 'PM' },
@@ -40,6 +53,8 @@ interface Props {
 export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [viewMonth, setViewMonth] = useState<'current' | 'prev'>('current')
+  const [auditOpen, setAuditOpen] = useState(false)
+  const [auditMonth, setAuditMonth] = useState<'current' | 'prev'>('current')
   // per-row inline edit state: key = assignmentId
   const [editingHours, setEditingHours] = useState<Record<number, string>>({})
   const [savingId, setSavingId] = useState<number | null>(null)
@@ -47,10 +62,22 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
   const currentMonth = getPayPeriod(0)
   const prevMonth = getPayPeriod(-1)
 
+  const defaultHoursByShift = useMemo(
+    () =>
+      Object.fromEntries(
+        shiftSettings.map((shift) => [shift.shiftType, parseFloat(shift.defaultHours) || 0]),
+      ),
+    [shiftSettings],
+  )
+
+  function getAssignmentHours(assignment: ShiftAssignment) {
+    return parseFloat(assignment.hours) || defaultHoursByShift[assignment.shiftType] || 0
+  }
+
   function calcHours(staffId: number, start: string, end: string) {
     return assignments
       .filter((a) => a.staffId === staffId && a.shiftDate >= start && a.shiftDate <= end)
-      .reduce((sum, a) => sum + (parseFloat(a.hours) || 0), 0)
+      .reduce((sum, a) => sum + getAssignmentHours(a), 0)
   }
 
   function getShiftDetails(staffId: number, start: string, end: string) {
@@ -69,8 +96,56 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
         }))
         .sort((a, b) => b.curH - a.curH),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [staff, assignments, currentMonth.start, currentMonth.end, prevMonth.start, prevMonth.end],
+    [staff, assignments, currentMonth.start, currentMonth.end, prevMonth.start, prevMonth.end, defaultHoursByShift],
   )
+
+  const audit = useMemo(() => {
+    const period = auditMonth === 'current' ? currentMonth : prevMonth
+    const staffById = new Map(staff.map((person) => [person.id, person]))
+    const assignmentsByDate = new Map<string, ShiftAssignment[]>()
+
+    for (const assignment of assignments) {
+      if (assignment.shiftDate < period.start || assignment.shiftDate > period.end) continue
+      if (!staffById.has(assignment.staffId)) continue
+      const dailyAssignments = assignmentsByDate.get(assignment.shiftDate) ?? []
+      dailyAssignments.push(assignment)
+      assignmentsByDate.set(assignment.shiftDate, dailyAssignments)
+    }
+
+    const days = getDaysInPeriod(period.start, period.end).map((date) => {
+      const dayOfWeek = new Date(`${date}T00:00:00`).getDay()
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+      const dailyAssignments = assignmentsByDate.get(date) ?? []
+      const morning = dailyAssignments.filter(
+        (assignment) => assignment.shiftType === 'morning' || assignment.shiftType === 'saturday',
+      )
+      const afternoon = dailyAssignments.filter((assignment) => assignment.shiftType === 'afternoon')
+      const morningIds = new Set(morning.map((assignment) => assignment.staffId))
+      const doubleShiftStaff = afternoon
+        .filter((assignment) => morningIds.has(assignment.staffId))
+        .map((assignment) => staffById.get(assignment.staffId)?.name ?? 'Unknown trainer')
+      const limit = isWeekend ? 1 : 3
+
+      return {
+        date,
+        isWeekend,
+        morning,
+        afternoon,
+        limit,
+        doubleShiftStaff,
+        isMorningOverLimit: morning.length > limit,
+        isAfternoonOverLimit: afternoon.length > limit,
+      }
+    })
+
+    const doubleShiftCount = days.reduce((total, day) => total + day.doubleShiftStaff.length, 0)
+    const overLimitCount = days.reduce(
+      (total, day) => total + Number(day.isMorningOverLimit) + Number(day.isAfternoonOverLimit),
+      0,
+    )
+
+    return { period, staffById, days, doubleShiftCount, overLimitCount }
+  }, [assignments, auditMonth, currentMonth, prevMonth, staff])
 
   async function handleSaveHours(a: ShiftAssignment, newHours: string) {
     setSavingId(a.id)
@@ -101,7 +176,7 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
           <p className="text-[11px] font-semibold text-zinc-500">Previous</p>
           <p className="text-[9px] font-medium text-zinc-400">{prevMonth.rangeLabel}</p>
         </div>
-        <div className="w-5" />
+        <div className="w-5" aria-hidden="true" />
       </div>
 
       {staffWithHours.map((s) => {
@@ -276,6 +351,143 @@ export function StaffHoursSummary({ staff, assignments, shiftSettings }: Props) 
           </Fragment>
         )
       })}
+
+      <div className="border-t border-zinc-200 bg-zinc-50/60 px-3 py-3">
+        <button
+          type="button"
+          onClick={() => setAuditOpen((open) => !open)}
+          className={`flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+            auditOpen
+              ? 'border-blue-200 bg-blue-50 text-blue-900'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:border-blue-200 hover:bg-blue-50/50'
+          }`}
+          aria-expanded={auditOpen}
+        >
+          <span className="flex items-center gap-2 text-xs font-bold">
+            <ClipboardCheck className="size-4 text-blue-600" aria-hidden="true" />
+            Daily staff audit
+          </span>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-zinc-500">
+            View AM / PM coverage
+            <ChevronDown className={`size-4 transition-transform ${auditOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+          </span>
+        </button>
+
+        {auditOpen ? (
+          <div className="mt-3 rounded-lg border border-zinc-200 bg-white">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 px-3 py-3">
+              <div>
+                <p className="text-xs font-black text-zinc-900">Audit period · {audit.period.label}</p>
+                <p className="mt-0.5 text-[10px] font-medium text-zinc-500">{audit.period.rangeLabel}</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-lg bg-zinc-100 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setAuditMonth('current')}
+                  className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition-colors ${
+                    auditMonth === 'current' ? 'bg-blue-600 text-white' : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  {currentMonth.shortLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAuditMonth('prev')}
+                  className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition-colors ${
+                    auditMonth === 'prev' ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  {prevMonth.shortLabel}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 border-b border-zinc-200 bg-zinc-50 px-3 py-2">
+              <span className="rounded-full bg-zinc-200 px-2 py-1 text-[10px] font-semibold text-zinc-700">
+                Weekdays: max 3 / shift
+              </span>
+              <span className="rounded-full bg-zinc-200 px-2 py-1 text-[10px] font-semibold text-zinc-700">
+                Weekends: max 1 / shift
+              </span>
+              {audit.doubleShiftCount > 0 ? (
+                <span className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-800">
+                  {audit.doubleShiftCount} double-shift issue{audit.doubleShiftCount === 1 ? '' : 's'}
+                </span>
+              ) : null}
+              {audit.overLimitCount > 0 ? (
+                <span className="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-bold text-rose-800">
+                  {audit.overLimitCount} coverage issue{audit.overLimitCount === 1 ? '' : 's'}
+                </span>
+              ) : null}
+              {audit.doubleShiftCount === 0 && audit.overLimitCount === 0 ? (
+                <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
+                  All coverage checks pass
+                </span>
+              ) : null}
+            </div>
+
+            <div className="max-h-[560px] overflow-y-auto">
+              <div className="min-w-[700px]">
+                <div className="grid grid-cols-[126px_minmax(250px,1fr)_minmax(250px,1fr)] gap-3 border-b border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-zinc-500">
+                  <span>Date</span>
+                  <span>Morning</span>
+                  <span>Night</span>
+                </div>
+                {audit.days.map((day) => {
+                  const date = new Date(`${day.date}T00:00:00`)
+                  const showIssue = day.doubleShiftStaff.length > 0 || day.isMorningOverLimit || day.isAfternoonOverLimit
+                  const renderShift = (shiftAssignments: ShiftAssignment[], overLimit: boolean) => (
+                    <div className="flex min-h-8 flex-wrap items-center gap-1.5">
+                      {shiftAssignments.length === 0 ? (
+                        <span className="text-xs text-zinc-400">—</span>
+                      ) : (
+                        shiftAssignments.map((assignment) => {
+                          const trainer = audit.staffById.get(assignment.staffId)
+                          return (
+                            <span
+                              key={assignment.id}
+                              className={`rounded-md px-1.5 py-1 text-[11px] font-semibold ${
+                                overLimit ? 'bg-rose-100 text-rose-800' : 'bg-zinc-100 text-zinc-700'
+                              }`}
+                            >
+                              {trainer?.name ?? 'Unknown'} · {getAssignmentHours(assignment)}h
+                            </span>
+                          )
+                        })
+                      )}
+                    </div>
+                  )
+
+                  return (
+                    <div
+                      key={day.date}
+                      className={`grid grid-cols-[126px_minmax(250px,1fr)_minmax(250px,1fr)] gap-3 border-b border-zinc-100 px-3 py-2.5 last:border-b-0 ${
+                        showIssue ? 'bg-rose-50/50' : day.isWeekend ? 'bg-amber-50/40' : 'bg-white'
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-zinc-800">
+                          {date.toLocaleDateString('en-ZA', { weekday: 'short', day: '2-digit', month: 'short' })}
+                        </p>
+                        <p className={`mt-0.5 text-[10px] font-semibold ${day.isWeekend ? 'text-amber-700' : 'text-zinc-400'}`}>
+                          {day.isWeekend ? 'Weekend · max 1' : 'Weekday · max 3'}
+                        </p>
+                        {day.doubleShiftStaff.length > 0 ? (
+                          <p className="mt-1 text-[10px] font-bold leading-snug text-rose-700">
+                            Both shifts: {day.doubleShiftStaff.join(', ')}
+                          </p>
+                        ) : null}
+                      </div>
+                      {renderShift(day.morning, day.isMorningOverLimit)}
+                      {renderShift(day.afternoon, day.isAfternoonOverLimit)}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
