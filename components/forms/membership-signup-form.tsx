@@ -32,6 +32,7 @@ import {
 import { SignaturePad } from '@/components/forms/signature-pad'
 import { submitMembershipSignup, type SignupState } from '@/app/actions/membership'
 import { SuccessScreen } from '@/components/forms/membership-success'
+import { trackFunnelEvent, useFunnelMilestones } from '@/lib/analytics'
 
 export type Selection = {
   membershipId: string
@@ -55,6 +56,7 @@ const initialState: SignupState = { ok: false }
 
 export function MembershipSignupForm({ selection }: { selection: Selection }) {
   const [state, formAction, pending] = useActionState(submitMembershipSignup, initialState)
+  const [started, setStarted] = useState(false)
 
   // Member details
   const [firstName, setFirstName] = useState('')
@@ -122,6 +124,21 @@ export function MembershipSignupForm({ selection }: { selection: Selection }) {
 
   const isComplete = missing.length === 0
 
+  useFunnelMilestones({
+    membership_form_start: started,
+    membership_details_complete: Boolean(
+      firstName.trim() && surname.trim() && emailValid && contactNumber.trim() &&
+      idNumber.trim() && emName.trim() && emNumber.trim(),
+    ),
+    membership_payment_complete: Boolean(
+      (!isOther || (ahName.trim() && ahId.trim() && ahContact.trim())) &&
+      (!isDebit || (debitDate && accountType && bankName.trim() && accountNumber.trim() && bankHolder.trim() && mandate)),
+    ),
+    membership_agreements_complete: REQUIRED_AGREEMENTS.every((agreement) => agree[agreement.id]) && Boolean(signature),
+    membership_error: Boolean(state.error),
+    membership_success: state.ok && state.recorded === true,
+  })
+
   const signedDate = new Date().toLocaleDateString('en-ZA', {
     day: '2-digit',
     month: 'long',
@@ -137,14 +154,21 @@ export function MembershipSignupForm({ selection }: { selection: Selection }) {
     <form
       ref={formRef}
       action={formAction}
+      onChangeCapture={() => setStarted(true)}
+      onClickCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest('button, canvas')) setStarted(true)
+      }}
       onSubmit={(e) => {
         if (!isComplete) {
+          trackFunnelEvent('membership_validation_error')
           e.preventDefault()
           setAttempted(true)
           // Bring the checklist into view.
           requestAnimationFrame(() => {
             document.getElementById('signup-missing')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
           })
+        } else {
+          trackFunnelEvent('membership_submit')
         }
       }}
       className="space-y-6"

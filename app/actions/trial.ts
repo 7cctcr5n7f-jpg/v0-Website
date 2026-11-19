@@ -15,7 +15,7 @@ import {
   validSlotsForDay,
 } from '@/lib/trial-slots'
 
-export type BookingState = { ok: boolean; error?: string }
+export type BookingState = { ok: boolean; error?: string; recorded?: boolean }
 
 const UPTIVO_LINK = 'https://uptivo.page.link/XX5n'
 
@@ -163,5 +163,5 @@ Booking Time: ${appointmentTime}`,
     console.error('[trial] whatsapp group alert failed:', err)
   }
 
-  return { ok: true }
+  return { ok: true, recorded: true }
 }

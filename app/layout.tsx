@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { SpecialsGlobal } from '@/components/specials/specials-global'
 import { JsonLd } from '@/components/json-ld'
 import { SiteShell } from '@/components/site-shell'
+import { AnalyticsConsent } from '@/components/analytics-consent'
 import { localBusinessSchema, websiteSchema } from '@/lib/seo'
 import { business } from '@/lib/business'
 import './globals.css'
@@ -82,6 +83,7 @@ export default function RootLayout({
         <SiteShell>
           {children}
         </SiteShell>
+        <AnalyticsConsent />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
