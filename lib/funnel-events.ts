@@ -21,6 +21,12 @@ export const FUNNEL_EVENTS = [
 ] as const
 
 export type FunnelEvent = typeof FUNNEL_EVENTS[number]
+export type AnalyticsConsentState = 'granted' | 'denied' | 'unset' | 'unavailable' | 'pending'
+
+export function analyticsMode(consent: AnalyticsConsentState): 'full' | 'cookieless' | 'disabled' {
+  if (consent === 'granted') return 'full'
+  return consent === 'unset' ? 'cookieless' : 'disabled'
+}
 
 export function analyticsPath(pathname: string, allowedPaths: readonly string[]): string | null {
   // Only exact known routes are accepted; never send query strings, hashes or IDs.
