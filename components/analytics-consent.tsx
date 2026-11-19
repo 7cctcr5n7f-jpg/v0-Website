@@ -38,6 +38,8 @@ export function AnalyticsConsent() {
   const [loaded, setLoaded] = useState(false)
   const lastPage = useRef<string | null>(null)
   const initialized = useRef(false)
+  const preferencesPanel = useRef<HTMLElement>(null)
+  const preferencesTrigger = useRef<HTMLButtonElement>(null)
   const path = publicAnalyticsPath(pathname)
   const configured = validMeasurementId(analyticsId)
 
@@ -52,6 +54,7 @@ export function AnalyticsConsent() {
       localStorage.setItem(consentKey, granted ? 'granted' : 'denied')
       window.dispatchEvent(new Event(consentEvent))
       setPreferencesOpen(false)
+      preferencesTrigger.current?.focus({ preventScroll: true })
       setStorageError(false)
     } catch {
       if (configured) window[`ga-disable-${analyticsId}`] = true
@@ -59,6 +62,16 @@ export function AnalyticsConsent() {
       setStorageError(true)
     }
   }
+
+  useEffect(() => {
+    const panel = preferencesPanel.current
+    if (!preferencesOpen || !panel) return
+    panel.focus({ preventScroll: true })
+    panel.scrollIntoView({
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      block: 'start',
+    })
+  }, [preferencesOpen])
 
   useEffect(() => {
     if (!configured) return
@@ -145,19 +158,25 @@ export function AnalyticsConsent() {
       ) : null}
       <div className="border-t border-steel bg-charcoal px-5 py-3 text-center">
         <button
+          ref={preferencesTrigger}
           type="button"
           aria-expanded={preferencesOpen}
           aria-controls="analytics-preferences"
-          onClick={() => setPreferencesOpen(!preferencesOpen)}
+          onClick={(event) => {
+            event.currentTarget.focus({ preventScroll: true })
+            setPreferencesOpen(!preferencesOpen)
+          }}
           className="text-xs text-light-grey underline hover:text-foreground"
         >
           Analytics preferences
         </button>
         {preferencesOpen ? (
           <section
+            ref={preferencesPanel}
             id="analytics-preferences"
             aria-label="Optional analytics preferences"
-            className="mx-auto mt-3 max-w-xl rounded-lg border border-steel p-4 text-left text-foreground"
+            tabIndex={-1}
+            className="mx-auto mt-3 max-w-xl scroll-mt-24 rounded-lg border border-steel p-4 text-left text-foreground"
           >
             <p className="text-sm font-bold">Analytics preferences</p>
             <p className="mt-2 text-xs leading-relaxed text-light-grey">

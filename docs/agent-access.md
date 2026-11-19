@@ -117,6 +117,8 @@ In the GA4 Web stream:
 There is no automatic banner or acceptance step. **Analytics preferences** is a
 quiet footer control that expands inline only when the visitor opens it. It lets
 visitors turn analytics off completely or explicitly allow analytics cookies.
+Opening the panel scrolls it into view and moves keyboard focus to it; saving a
+choice returns focus to the footer control. Reduced-motion preferences are respected.
 Previously saved choices are respected: a refusal blocks the tag entirely;
 permission enables cookie-based measurement. Without a saved choice, the tag
 uses cookieless measurement, not silently granted storage consent.
