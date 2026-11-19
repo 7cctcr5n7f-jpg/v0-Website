@@ -85,7 +85,7 @@ Saved signup records alone cannot identify abandoned visits. Existing Vercel
 page analytics remains unchanged, but is not exported by this new API.
 
 The website's Google Analytics measurement ID is **`G-3R4THL02Y6`**, configured
-as the default in code. Deploy these changes to activate the consent controls;
+as the default in code. Deploy these changes to activate the updated integration;
 no Vercel environment variable is required for this property.
 
 To use a different property (for example a separate preview/test property), set
@@ -93,11 +93,12 @@ To use a different property (for example a separate preview/test property), set
 value disables Google Analytics. The measurement ID is public, not a password;
 **do not** put a Google API secret here.
 
-The integration loads Google's current `gtm.js?id=G-3R4THL02Y6` snippet only
-after consent, with the documented `dataLayer`/`gtag` command format. Consent and
-sanitized configuration are queued before the script loads. Do not paste a
-second Google snippet into the layout, which could bypass consent or duplicate
-events.
+The integration loads Google's current `gtm.js?id=G-3R4THL02Y6` snippet on
+approved public pages without an automatic consent pop-up. New visitors use
+restricted cookieless measurement (`analytics_storage: denied`). Consent and
+sanitized configuration are queued before the script loads, with advertising
+storage, personalization and user data denied. Do not paste a second Google
+snippet into the layout, which could bypass these settings or duplicate events.
 
 In the GA4 Web stream:
 
@@ -108,14 +109,23 @@ In the GA4 Web stream:
    collection off. Do not configure GTM or another GA tag to capture form fields.
 3. Use a short data-retention period (for example 2 months) and restrict account
    access. Review your privacy notice/POPIA obligations before activating Google
-   Analytics; Google still receives normal network/device data from consented
-   analytics requests. This is data minimisation, not a claim of anonymisation.
+   Analytics; Google still receives normal network/device data, including from
+   cookieless requests. Cookieless does not mean anonymous or automatically
+   consent-exempt. The owner must review the appropriate lawful basis and notice
+   for their visitors; this implementation is not a legal-compliance guarantee.
 
-No Google tag loads until the visitor selects **Allow analytics**. Visitors can
-withdraw through **Analytics preferences**; GA cookies are cleared, further
-tracking is disabled, and browser Do Not Track/Global Privacy Control is respected.
-The controls appear only when a valid measurement ID is configured. Tracking
-never blocks form submission and remains off if local preference storage fails.
+There is no automatic banner or acceptance step. **Analytics preferences** is a
+quiet footer control that expands inline only when the visitor opens it. It lets
+visitors turn analytics off completely or explicitly allow analytics cookies.
+Previously saved choices are respected: a refusal blocks the tag entirely;
+permission enables cookie-based measurement. Without a saved choice, the tag
+uses cookieless measurement, not silently granted storage consent.
+
+Opting out clears GA cookies and disables further measurement. Browser Do Not
+Track/Global Privacy Control, unavailable preference storage and private routes
+also block tracking. Hydration waits for the real browser preference before
+loading any tag. Tracking never blocks form submission. The footer controls
+appear only when a valid measurement ID is configured.
 
 Only allowlisted public routes and `/signup` are measured. Admin, Operations,
 member pages, payment/receipt pages, arbitrary paths, URL query strings, hashes,
@@ -138,18 +148,30 @@ server confirms a saved record, not from honeypot/spam success responses.
 GA events are browser-observed and can be blocked/spoofed, so reconcile final
 counts with the authoritative API and do not use analytics as a payment ledger.
 
-In GA4 create funnel explorations using **users or sessions**, not sums of event
-counts. Start with form view -> form start -> submit -> success, then inspect the
+For visitors who allowed analytics cookies, create GA4 funnel explorations using
+**users or sessions**, not sums of event counts. Start with form view -> form
+start -> submit -> success, then inspect the
 individual details/slot/payment/agreement milestones to locate friction.
 Compare mobile/desktop and landing pages before recommending changes. Use open
 funnels or appropriate step ordering for visitors who arrive directly on forms.
 Mark `trial_success` and `membership_success` as key events.
 
-Validate with a separate test property first: no tag before consent, no events on
-private pages, no query strings/form contents, and no new events after withdrawal.
+**Cookieless reporting limitation:** consent-denied events do not provide normal
+cross-page user/session continuity. GA4 may exclude them from standard reports
+unless the property qualifies for behavioral modeling. Modeling requires
+substantial consent-granted traffic as well as denied events; it is not guaranteed
+for this site. Loading/detecting the tag or observing a successful request is not
+proof that complete visitor/funnel reports will populate. Use the existing Vercel
+page analytics and authoritative submission API alongside the available GA data.
+See [Google's modeling requirements](https://support.google.com/analytics/answer/11161109).
+
+Validate with a separate test property first: no automatic banner, denied storage
+for new visitors, no GA cookies in cookieless mode, no tag for saved refusals or
+browser privacy signals, no events on private pages, no query strings/form
+contents, and no new events after opting out.
 Do not create fake production bookings or memberships just to exercise success.
 GA data is not backfilled and may take 24-48 hours to reach standard reports;
-consent refusals/ad blockers mean it represents only observable visitors.
+opt-outs/ad blockers and modeling eligibility limit what appears in reports.
 
 ### Give the analytics agent read access
 

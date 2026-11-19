@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { analyticsPath, FUNNEL_EVENTS, resolveMeasurementId, validMeasurementId, type FunnelEvent } from '@/lib/funnel-events'
+import {
+  analyticsMode, analyticsPath, FUNNEL_EVENTS, resolveMeasurementId, validMeasurementId,
+  type AnalyticsConsentState, type FunnelEvent,
+} from '@/lib/funnel-events'
 import { publicSiteRoutes } from '@/lib/site-routes'
 
 declare global {
@@ -22,14 +25,15 @@ export function publicAnalyticsPath(pathname: string) {
   return analyticsPath(pathname, allowedPaths)
 }
 
-export function analyticsConsent(): 'granted' | 'denied' | 'unset' | 'unavailable' {
-  if (typeof window === 'undefined') return 'unset'
+export function analyticsConsent(): AnalyticsConsentState {
+  if (typeof window === 'undefined') return 'pending'
   if (navigator.doNotTrack === '1' || ('globalPrivacyControl' in navigator && navigator.globalPrivacyControl === true)) {
     return 'denied'
   }
   try {
     const stored = localStorage.getItem(consentKey)
-    return stored === 'granted' || stored === 'denied' ? stored : 'unset'
+    if (stored === null) return 'unset'
+    return stored === 'granted' || stored === 'denied' ? stored : 'denied'
   } catch {
     return 'unavailable'
   }
@@ -38,7 +42,7 @@ export function analyticsConsent(): 'granted' | 'denied' | 'unset' | 'unavailabl
 export function trackFunnelEvent(event: FunnelEvent): boolean {
   if (
     typeof window === 'undefined' || !validMeasurementId(analyticsId) ||
-    !window.tenroundsAnalyticsReady || analyticsConsent() !== 'granted' ||
+    !window.tenroundsAnalyticsReady || analyticsMode(analyticsConsent()) === 'disabled' ||
     !FUNNEL_EVENTS.includes(event)
   ) return false
   const path = publicAnalyticsPath(window.location.pathname)

@@ -7,7 +7,7 @@ import {
   analyticsConsent, analyticsId, consentEvent, consentKey,
   publicAnalyticsPath, trackFunnelEvent,
 } from '@/lib/analytics'
-import { validMeasurementId } from '@/lib/funnel-events'
+import { analyticsMode, validMeasurementId } from '@/lib/funnel-events'
 
 function subscribe(callback: () => void) {
   window.addEventListener('storage', callback)
@@ -30,7 +30,8 @@ function forgetAnalyticsCookies() {
 
 export function AnalyticsConsent() {
   const pathname = usePathname()
-  const consent = useSyncExternalStore(subscribe, analyticsConsent, () => 'unset' as const)
+  const consent = useSyncExternalStore(subscribe, analyticsConsent, () => 'pending' as const)
+  const mode = analyticsMode(consent)
   const [preferencesOpen, setPreferencesOpen] = useState(false)
   const [storageError, setStorageError] = useState(false)
   const [prepared, setPrepared] = useState(false)
@@ -42,30 +43,33 @@ export function AnalyticsConsent() {
 
   function choose(granted: boolean) {
     try {
-      localStorage.setItem(consentKey, granted ? 'granted' : 'denied')
       if (!granted) {
         if (configured) window[`ga-disable-${analyticsId}`] = true
         window.tenroundsAnalyticsReady = false
         window.gtag?.('consent', 'update', { analytics_storage: 'denied' })
         forgetAnalyticsCookies()
       }
+      localStorage.setItem(consentKey, granted ? 'granted' : 'denied')
       window.dispatchEvent(new Event(consentEvent))
       setPreferencesOpen(false)
       setStorageError(false)
     } catch {
+      if (configured) window[`ga-disable-${analyticsId}`] = true
+      window.tenroundsAnalyticsReady = false
       setStorageError(true)
     }
   }
 
   useEffect(() => {
     if (!configured) return
-    const enabled = consent === 'granted' && path !== null
+    const enabled = mode !== 'disabled' && !storageError && path !== null
     window[`ga-disable-${analyticsId}`] = !enabled
     window.tenroundsAnalyticsReady = false
     if (!enabled) {
       lastPage.current = null
       return
     }
+    if (mode === 'cookieless') forgetAnalyticsCookies()
     window.dataLayer ??= []
     window.gtag ??= function () {
       // eslint-disable-next-line prefer-rest-params -- Google expects an Arguments command, not an array.
@@ -75,6 +79,8 @@ export function AnalyticsConsent() {
       send_page_view: false,
       allow_google_signals: false,
       allow_ad_personalization_signals: false,
+      ads_data_redaction: true,
+      url_passthrough: false,
       page_location: `${window.location.origin}${path}`,
       page_referrer: '',
       page_title: `TENROUNDS ${path}`,
@@ -92,7 +98,7 @@ export function AnalyticsConsent() {
       window.gtag('js', new Date())
       initialized.current = true
     }
-    window.gtag('consent', 'update', { analytics_storage: 'granted' })
+    window.gtag('consent', 'update', { analytics_storage: mode === 'full' ? 'granted' : 'denied' })
     window.gtag('config', analyticsId, pageSettings)
     setPrepared(true)
     if (!loaded) return
@@ -109,10 +115,10 @@ export function AnalyticsConsent() {
       if (path === '/signup') trackFunnelEvent('membership_form_view')
       lastPage.current = path
     }
-  }, [configured, consent, path, loaded])
+  }, [configured, mode, storageError, path, loaded])
 
   useEffect(() => {
-    if (!configured || consent !== 'granted' || !path) return
+    if (!configured || mode === 'disabled' || storageError || !path) return
     function onClick(event: MouseEvent) {
       if (!(event.target instanceof Element)) return
       const anchor = event.target.closest('a[href]')
@@ -122,13 +128,13 @@ export function AnalyticsConsent() {
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
-  }, [configured, consent, path])
+  }, [configured, mode, storageError, path])
 
   if (!configured || !path) return null
 
   return (
     <>
-      {consent === 'granted' && prepared ? (
+      {mode !== 'disabled' && !storageError && prepared ? (
         <Script
           id="tenrounds-ga4"
           src={`https://www.googletagmanager.com/gtm.js?id=${analyticsId}`}
@@ -138,36 +144,49 @@ export function AnalyticsConsent() {
         />
       ) : null}
       <div className="border-t border-steel bg-charcoal px-5 py-3 text-center">
-        <button type="button" onClick={() => setPreferencesOpen(true)} className="text-xs text-light-grey underline hover:text-foreground">
+        <button
+          type="button"
+          aria-expanded={preferencesOpen}
+          aria-controls="analytics-preferences"
+          onClick={() => setPreferencesOpen(!preferencesOpen)}
+          className="text-xs text-light-grey underline hover:text-foreground"
+        >
           Analytics preferences
         </button>
+        {preferencesOpen ? (
+          <section
+            id="analytics-preferences"
+            aria-label="Optional analytics preferences"
+            className="mx-auto mt-3 max-w-xl rounded-lg border border-steel p-4 text-left text-foreground"
+          >
+            <p className="text-sm font-bold">Analytics preferences</p>
+            <p className="mt-2 text-xs leading-relaxed text-light-grey">
+              Google Analytics sends limited measurements without analytics cookies unless you allow them.
+              Google still receives network and device information. We do not send form answers, contact or banking details.
+              You can turn analytics off completely.
+            </p>
+            <p className="mt-2 text-xs text-light-grey">
+              {mode === 'full' && !storageError
+                ? 'Analytics cookies are enabled with your permission.'
+                : mode === 'cookieless' && !storageError
+                  ? 'Limited cookieless measurement is on.'
+                  : 'Optional analytics is off.'}
+            </p>
+            <div className="mt-4 flex gap-3">
+              <button type="button" onClick={() => choose(false)} className="flex-1 rounded-md border border-steel px-3 py-2 text-sm font-bold hover:border-neon-blue">
+                Turn off analytics
+              </button>
+              <button type="button" onClick={() => choose(true)} className="flex-1 rounded-md border border-steel px-3 py-2 text-sm font-bold hover:border-neon-blue">
+                Allow analytics cookies
+              </button>
+            </div>
+            {storageError || consent === 'unavailable' ? (
+              <p role="alert" className="mt-2 text-xs text-amber-300">Your preference could not be saved. Optional analytics remains off.</p>
+            ) : null}
+            <p className="mt-2 text-xs text-light-grey">Browser Do Not Track and Global Privacy Control settings always take priority.</p>
+          </section>
+        ) : null}
       </div>
-      {consent === 'unset' || preferencesOpen ? (
-        <section
-          aria-label="Optional analytics preferences"
-          className="fixed bottom-4 left-4 z-[70] max-w-sm rounded-xl border border-steel bg-charcoal p-5 text-foreground shadow-xl max-sm:right-4"
-        >
-          <p className="text-sm font-bold">Help us improve your visit</p>
-          <p className="mt-2 text-xs leading-relaxed text-light-grey">
-            With your permission, Google Analytics measures which pages and booking steps work well.
-            We do not send your form answers, contact or banking details. Optional analytics is off until you accept.
-          </p>
-          <div className="mt-4 flex gap-3">
-            <button type="button" onClick={() => choose(false)} className="flex-1 rounded-md border border-steel px-3 py-2 text-sm font-bold hover:border-neon-blue">
-              No thanks
-            </button>
-            <button type="button" onClick={() => choose(true)} className="flex-1 rounded-md border border-steel px-3 py-2 text-sm font-bold hover:border-neon-blue">
-              Allow analytics
-            </button>
-          </div>
-          {storageError || consent === 'unavailable' ? (
-            <p role="alert" className="mt-2 text-xs text-amber-300">Your preference could not be saved. Optional analytics remains off.</p>
-          ) : null}
-          {consent === 'denied' ? (
-            <p className="mt-2 text-xs text-light-grey">Browser privacy signals are respected even if you select Allow.</p>
-          ) : null}
-        </section>
-      ) : null}
     </>
   )
 }

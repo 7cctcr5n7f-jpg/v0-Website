@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { execFileSync, spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { agentReportWindow, authorizeAgentRequest } from '../lib/agent-api.ts'
-import { analyticsPath, FUNNEL_EVENTS, resolveMeasurementId, validMeasurementId } from '../lib/funnel-events.ts'
+import { analyticsMode, analyticsPath, FUNNEL_EVENTS, resolveMeasurementId, validMeasurementId } from '../lib/funnel-events.ts'
 
 const token = 'a'.repeat(43)
 const key = {
@@ -74,6 +74,14 @@ test('GA4 defaults to TENROUNDS and supports an override or explicit disabling',
   assert.equal(resolveMeasurementId(''), '')
   assert.equal(validMeasurementId(resolveMeasurementId('')), false)
   assert.equal(validMeasurementId(resolveMeasurementId('GTM-TEST12345')), false)
+})
+
+test('new visitors use cookieless mode and full tracking still requires saved permission', () => {
+  assert.equal(analyticsMode('unset'), 'cookieless')
+  assert.equal(analyticsMode('granted'), 'full')
+  for (const consent of ['denied', 'unavailable', 'pending']) {
+    assert.equal(analyticsMode(consent), 'disabled')
+  }
 })
 
 test('analytics only permits exact approved pages, never private pages or URL parameters', () => {
