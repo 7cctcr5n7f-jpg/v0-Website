@@ -16,7 +16,7 @@ import { generateMembershipPdf } from '@/lib/membership-pdf'
 import { sendEmail } from '@/lib/email'
 import { business } from '@/lib/business'
 
-export type SignupState = { ok: boolean; error?: string }
+export type SignupState = { ok: boolean; error?: string; recorded?: boolean }
 
 const UPTIVO_LINK = 'https://uptivo.page.link/XX5n'
 
@@ -257,5 +257,5 @@ The signed membership agreement PDF is attached.`,
   })
 
   revalidatePath('/admin')
-  return { ok: true }
+  return { ok: true, recorded: true }
 }

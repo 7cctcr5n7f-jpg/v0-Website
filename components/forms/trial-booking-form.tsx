@@ -14,6 +14,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import { slotGroupsForDay, formatDateLong, slotToMinutes, parseDateString } from '@/lib/trial-slots'
 import { submitTrialBooking, type BookingState } from '@/app/actions/trial'
+import { trackFunnelEvent, useFunnelMilestones } from '@/lib/analytics'
 
 const AGREEMENTS = [
   {
@@ -92,12 +93,25 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
     allAgreed &&
     !pending
 
+  useFunnelMilestones({
+    trial_form_start: Boolean(fullName || email || phone || date || time || Object.values(agreed).some(Boolean)),
+    trial_details_complete: Boolean(fullName.trim() && email.trim() && phone.trim()),
+    trial_slot_selected: Boolean(date && time),
+    trial_agreements_complete: allAgreed,
+    trial_error: Boolean(state.error),
+    trial_success: state.ok && state.recorded === true,
+  })
+
   if (state.ok) {
     return <SuccessScreen />
   }
 
   return (
-    <form action={formAction} className="rounded-2xl border border-steel bg-card p-6 sm:p-8">
+    <form
+      action={formAction}
+      onSubmit={() => trackFunnelEvent('trial_submit')}
+      className="rounded-2xl border border-steel bg-card p-6 sm:p-8"
+    >
       {/* hidden values submitted to the server action */}
       <input type="hidden" name="fullName" value={fullName} />
       <input type="hidden" name="email" value={email} />
