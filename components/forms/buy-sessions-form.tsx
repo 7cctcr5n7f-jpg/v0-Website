@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import { formatRand } from '@/lib/memberships'
 import { AGREEMENT_SECTIONS, REQUIRED_AGREEMENTS, LEGAL_NOTICE } from '@/lib/membership-agreement'
 import { SignaturePad } from '@/components/forms/signature-pad'
+import { PrivacyNotice } from '@/components/privacy-notice'
 import { startSessionPurchase, type BuyState } from '@/app/actions/buy-sessions'
 
 export type PackSelection = {
@@ -205,6 +206,7 @@ export function BuySessionsForm({ pack }: { pack: PackSelection }) {
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-light-grey" />
           <p className="text-xs leading-relaxed text-light-grey">{LEGAL_NOTICE}</p>
         </div>
+        <PrivacyNotice className="mt-4" />
       </SectionCard>
 
       {/* ── SECTION 3: SIGNATURE ── */}

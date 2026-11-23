@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { CheckCircle2, Send, Loader2 } from 'lucide-react'
+import { PrivacyNotice } from '@/components/privacy-notice'
 
 // Recipient inbox for all contact submissions.
 const CONTACT_EMAIL = 'hello@tenrounds.co.za'
@@ -131,6 +132,8 @@ export function ContactForm({
           />
         </div>
       </div>
+
+      <PrivacyNotice className="mt-4" />
 
       <button
         type="submit"

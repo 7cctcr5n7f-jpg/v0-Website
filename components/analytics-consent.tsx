@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import Script from 'next/script'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   analyticsConsent, analyticsId, consentEvent, consentKey,
@@ -174,35 +175,42 @@ export function AnalyticsConsent() {
           <section
             ref={preferencesPanel}
             id="analytics-preferences"
-            aria-label="Optional analytics preferences"
+            aria-label="Google Analytics preferences"
             tabIndex={-1}
-            className="mx-auto mt-3 max-w-xl scroll-mt-24 rounded-lg border border-steel p-4 text-left text-foreground"
+            className="mx-auto mb-16 mt-3 max-w-xl scroll-mt-24 rounded-lg border border-steel p-4 text-left text-foreground lg:mb-0"
           >
-            <p className="text-sm font-bold">Analytics preferences</p>
+            <p className="text-sm font-bold">Google Analytics preferences</p>
             <p className="mt-2 text-xs leading-relaxed text-light-grey">
               Google Analytics sends limited measurements without analytics cookies unless you allow them.
               Google still receives network and device information. We do not send form answers, contact or banking details.
-              You can turn analytics off completely.
+              You can turn Google Analytics off here.
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-light-grey">
+              These controls apply to Google Analytics; Vercel Web Analytics is separate. Read our{' '}
+              <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-neon-blue underline underline-offset-4 hover:text-foreground">
+                Privacy Policy<span className="sr-only"> (opens in a new tab)</span>
+              </Link>
+              {' '}for details.
             </p>
             <p className="mt-2 text-xs text-light-grey">
               {mode === 'full' && !storageError
-                ? 'Analytics cookies are enabled with your permission.'
+                ? 'Google Analytics cookies are enabled with your permission.'
                 : mode === 'cookieless' && !storageError
                   ? 'Limited cookieless measurement is on.'
-                  : 'Optional analytics is off.'}
+                  : 'Google Analytics is off.'}
             </p>
             <div className="mt-4 flex gap-3">
               <button type="button" onClick={() => choose(false)} className="flex-1 rounded-md border border-steel px-3 py-2 text-sm font-bold hover:border-neon-blue">
-                Turn off analytics
+                Turn off Google Analytics
               </button>
               <button type="button" onClick={() => choose(true)} className="flex-1 rounded-md border border-steel px-3 py-2 text-sm font-bold hover:border-neon-blue">
                 Allow analytics cookies
               </button>
             </div>
             {storageError || consent === 'unavailable' ? (
-              <p role="alert" className="mt-2 text-xs text-amber-300">Your preference could not be saved. Optional analytics remains off.</p>
+              <p role="alert" className="mt-2 text-xs text-amber-300">Your preference could not be saved. Google Analytics remains off.</p>
             ) : null}
-            <p className="mt-2 text-xs text-light-grey">Browser Do Not Track and Global Privacy Control settings always take priority.</p>
+            <p className="mt-2 text-xs text-light-grey">Browser Do Not Track and Global Privacy Control take priority for Google Analytics.</p>
           </section>
         ) : null}
       </div>

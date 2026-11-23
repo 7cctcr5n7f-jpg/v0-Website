@@ -129,6 +129,12 @@ also block tracking. Hydration waits for the real browser preference before
 loading any tag. Tracking never blocks form submission. The footer controls
 appear only when a valid measurement ID is configured.
 
+The public notice at `/privacy-policy` describes the website forms, payment data,
+Google consent modes and the separate Vercel Web Analytics integration. It is
+linked from the footer, analytics settings and data-collection forms. The owner
+should review the policy against actual business practices, provider arrangements
+and retention obligations; publishing it is not a compliance audit.
+
 Only allowlisted public routes and `/signup` are measured. Admin, Operations,
 member pages, payment/receipt pages, arbitrary paths, URL query strings, hashes,
 page titles containing user input and referrer URLs are not sent by this
