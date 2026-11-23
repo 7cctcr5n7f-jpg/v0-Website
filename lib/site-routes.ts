@@ -11,7 +11,6 @@ export const publicSiteRoutes: {
   { path: '/', priority: 1, changeFrequency: 'weekly' },
   { path: '/how-it-works', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/memberships', priority: 0.9, changeFrequency: 'weekly' }, // Pricing
-  { path: '/members', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/gallery', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/corporate-wellness', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
