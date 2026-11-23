@@ -144,9 +144,12 @@ export function SiteFooter() {
             <span className="text-light-grey">Areas we serve:</span>{' '}
             {business.areasServed.join(' · ')} — and surrounding Pretoria East suburbs.
           </p>
-          <p className="mt-4 text-sm text-light-grey">
-            &copy; {new Date().getFullYear()} {business.name}. All rights reserved.
-          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-light-grey">
+            <p>&copy; {new Date().getFullYear()} {business.name}. All rights reserved.</p>
+            <Link href="/privacy-policy" className="underline underline-offset-4 transition-colors hover:text-neon-blue">
+              Privacy Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

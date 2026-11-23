@@ -117,6 +117,8 @@ In the GA4 Web stream:
 There is no automatic banner or acceptance step. **Analytics preferences** is a
 quiet footer control that expands inline only when the visitor opens it. It lets
 visitors turn analytics off completely or explicitly allow analytics cookies.
+Opening the panel scrolls it into view and moves keyboard focus to it; saving a
+choice returns focus to the footer control. Reduced-motion preferences are respected.
 Previously saved choices are respected: a refusal blocks the tag entirely;
 permission enables cookie-based measurement. Without a saved choice, the tag
 uses cookieless measurement, not silently granted storage consent.
@@ -126,6 +128,12 @@ Track/Global Privacy Control, unavailable preference storage and private routes
 also block tracking. Hydration waits for the real browser preference before
 loading any tag. Tracking never blocks form submission. The footer controls
 appear only when a valid measurement ID is configured.
+
+The public notice at `/privacy-policy` describes the website forms, payment data,
+Google consent modes and the separate Vercel Web Analytics integration. It is
+linked from the footer, analytics settings and data-collection forms. The owner
+should review the policy against actual business practices, provider arrangements
+and retention obligations; publishing it is not a compliance audit.
 
 Only allowlisted public routes and `/signup` are measured. Admin, Operations,
 member pages, payment/receipt pages, arbitrary paths, URL query strings, hashes,

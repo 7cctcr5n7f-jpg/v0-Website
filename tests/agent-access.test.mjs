@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import test from 'node:test'
 import { agentReportWindow, authorizeAgentRequest } from '../lib/agent-api.ts'
 import { analyticsMode, analyticsPath, FUNNEL_EVENTS, resolveMeasurementId, validMeasurementId } from '../lib/funnel-events.ts'
+import { publicSiteRoutes } from '../lib/site-routes.ts'
 
 const token = 'a'.repeat(43)
 const key = {
@@ -82,6 +83,14 @@ test('new visitors use cookieless mode and full tracking still requires saved pe
   for (const consent of ['denied', 'unavailable', 'pending']) {
     assert.equal(analyticsMode(consent), 'disabled')
   }
+})
+
+test('privacy policy is discoverable in the shared public route inventory', () => {
+  assert.equal(publicSiteRoutes.filter(route => route.path === '/privacy-policy').length, 1)
+  const paths = publicSiteRoutes.map(route => route.path)
+  assert.equal(new Set(paths).size, paths.length)
+  assert.equal(analyticsPath('/privacy-policy', paths), '/privacy-policy')
+  assert.equal(analyticsPath('/privacy-policy?email=private', paths), null)
 })
 
 test('analytics only permits exact approved pages, never private pages or URL parameters', () => {
