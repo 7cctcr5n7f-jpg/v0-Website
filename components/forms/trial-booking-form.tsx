@@ -137,7 +137,7 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
             Book Your Free Trial
           </h3>
           <p className="mt-1 text-sm text-light-grey">
-            Pick a day and time that suits you. No payment, no obligation.
+            Choose your visit, enter your details and confirm. No payment and no obligation.
           </p>
         </div>
         {/* Google Reviews Badge */}
