@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import { LandingTemplate, type LandingConfig } from '@/components/landing/landing-template'
 
 export const metadata: Metadata = {
-  title: 'Kickboxing Classes Pretoria East',
+  title: 'Kickboxing Fitness Pretoria East | 30-Minute HIIT',
   description:
-    'Looking for kickboxing classes in Pretoria East? TENROUNDS blends boxing-bag work and HIIT into coach-supported 30-minute sessions with no class times. Learn technique, burn fat and have fun in Garsfontein. Free trial available.',
+    'Explore kickboxing-inspired fitness in Pretoria East. TENROUNDS combines coached bag work, striking technique and functional HIIT in 30-minute sessions in Garsfontein. No sparring, no fixed class times and no experience required. Try a session free.',
   alternates: { canonical: '/kickboxing-classes-pretoria-east' },
   openGraph: {
     title: 'Kickboxing Classes Pretoria East | TENROUNDS Garsfontein',
@@ -23,11 +23,11 @@ const config: LandingConfig = {
   heroTitle: 'Kickboxing Classes In',
   heroHighlight: 'Pretoria East',
   heroSubtitle:
-    'TENROUNDS brings the energy of kickboxing and boxing-bag training to Pretoria East — coach-supported 30-minute sessions across our bag stations, with no class times and every move scaled to you.',
+    'Train with kickboxing-inspired bag work as part of a coach-supported 30-minute HIIT circuit. TENROUNDS in Garsfontein welcomes beginners, teaches safe basic technique and scales each round to your fitness level. There is no sparring and no fixed class timetable.',
   heroImage: '/round-boxing-bag.webp',
   heroImageAlt: 'Kickboxing and boxing-bag training at TENROUNDS Pretoria East',
   intro:
-    'There is nothing like the rush of hitting the bag. At TENROUNDS we channel that into a complete workout — combining striking technique, footwork and HIIT conditioning into a 30-minute session that builds fitness, torches calories and is genuinely addictive.',
+    'Kickboxing-inspired training can make exercise feel more engaging, but you do not need to arrive knowing how to strike. A coach introduces the basics, then you move through bag work, strength and conditioning stations in a structured 30-minute session.',
   blocks: [
     {
       type: 'features',
