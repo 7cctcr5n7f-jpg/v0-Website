@@ -135,6 +135,12 @@ linked from the footer, analytics settings and data-collection forms. The owner
 should review the policy against actual business practices, provider arrangements
 and retention obligations; publishing it is not a compliance audit.
 
+The companion `/terms-and-conditions` page is linked from the footer and forms.
+It covers general website/service terms and preserves mandatory consumer rights;
+it does not rewrite the standard agreement or generated PDFs. The existing
+agreement's cancellation charges and liability wording need owner/legal review.
+Both legal pages share a layout and are included in the sitemap and site inventory.
+
 Only allowlisted public routes and `/signup` are measured. Admin, Operations,
 member pages, payment/receipt pages, arbitrary paths, URL query strings, hashes,
 page titles containing user input and referrer URLs are not sent by this

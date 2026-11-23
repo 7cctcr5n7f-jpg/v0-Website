@@ -85,12 +85,15 @@ test('new visitors use cookieless mode and full tracking still requires saved pe
   }
 })
 
-test('privacy policy is discoverable in the shared public route inventory', () => {
-  assert.equal(publicSiteRoutes.filter(route => route.path === '/privacy-policy').length, 1)
+test('legal pages are discoverable in the shared public route inventory', () => {
   const paths = publicSiteRoutes.map(route => route.path)
   assert.equal(new Set(paths).size, paths.length)
-  assert.equal(analyticsPath('/privacy-policy', paths), '/privacy-policy')
-  assert.equal(analyticsPath('/privacy-policy?email=private', paths), null)
+  for (const path of ['/privacy-policy', '/terms-and-conditions']) {
+    assert.equal(paths.filter(candidate => candidate === path).length, 1)
+    assert.equal(analyticsPath(path, paths), path)
+    assert.equal(analyticsPath(`${path}?email=private`, paths), null)
+    assert.equal(analyticsPath(`${path}#private`, paths), null)
+  }
 })
 
 test('analytics only permits exact approved pages, never private pages or URL parameters', () => {

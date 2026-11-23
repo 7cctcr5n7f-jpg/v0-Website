@@ -1,9 +1,6 @@
 import type { Metadata } from 'next'
-import type { ReactNode } from 'react'
-import { PageHero } from '@/components/page-hero'
-import { JsonLd } from '@/components/json-ld'
+import { LegalPage, type LegalSection } from '@/components/legal-page'
 import { business, fullAddress } from '@/lib/business'
-import { breadcrumbSchema } from '@/lib/seo'
 
 export const metadata: Metadata = {
   title: 'Privacy Policy',
@@ -19,7 +16,7 @@ export const metadata: Metadata = {
 
 const linkStyle = 'break-words text-neon-blue underline underline-offset-4 hover:text-foreground'
 
-const sections: { id: string; title: string; content: ReactNode }[] = [
+const sections: LegalSection[] = [
   {
     id: 'who-we-are',
     title: 'Who we are and how to contact us',
@@ -352,49 +349,14 @@ const sections: { id: string; title: string; content: ReactNode }[] = [
 
 export default function PrivacyPolicyPage() {
   return (
-    <main>
-      <JsonLd data={breadcrumbSchema([{ name: 'Home', path: '/' }, { name: 'Privacy Policy', path: '/privacy-policy' }])} />
-      <PageHero
-        compact
-        eyebrow="Your Information"
-        title="Privacy Policy"
-        description="How we handle personal information, the choices available to you, and how to contact us about your privacy."
-      />
-      <div className="mx-auto max-w-7xl px-5 py-12 lg:px-8 lg:py-16">
-        <p className="text-sm text-light-grey">
-          Last updated: <time dateTime="2026-11-23">23 November 2026</time>
-        </p>
-        <p className="mt-4 max-w-3xl leading-relaxed text-light-grey">
-          This policy covers the TENROUNDS website, enquiries, trial bookings, memberships and
-          session-pack purchases. Please read it before supplying personal information.
-        </p>
-        <div className="mt-10 grid items-start gap-10 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-16">
-          <nav aria-label="Privacy policy sections" className="rounded-xl border border-steel bg-card p-5 lg:sticky lg:top-28">
-            <h2 className="font-display text-sm font-bold uppercase tracking-wider">In this policy</h2>
-            <ol className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-1">
-              {sections.map((section, index) => (
-                <li key={section.id}>
-                  <a href={`#${section.id}`} className="text-light-grey transition-colors hover:text-neon-blue">
-                    {index + 1}. {section.title}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <article aria-label="TENROUNDS privacy policy" className="min-w-0 space-y-10">
-            {sections.map((section, index) => (
-              <section key={section.id} id={section.id} aria-labelledby={`${section.id}-heading`} className="scroll-mt-28">
-                <h2 id={`${section.id}-heading`} className="font-display text-xl font-bold uppercase tracking-tight text-foreground sm:text-2xl">
-                  {index + 1}. {section.title}
-                </h2>
-                <div className="mt-4 space-y-4 text-sm leading-7 text-light-grey sm:text-base">
-                  {section.content}
-                </div>
-              </section>
-            ))}
-          </article>
-        </div>
-      </div>
-    </main>
+    <LegalPage
+      title="Privacy Policy"
+      description="How we handle personal information, the choices available to you, and how to contact us about your privacy."
+      eyebrow="Your Information"
+      path="/privacy-policy"
+      updatedAt="2026-11-23"
+      intro={<p>This policy covers the TENROUNDS website, enquiries, trial bookings, memberships and session-pack purchases. Please read it before supplying personal information.</p>}
+      sections={sections}
+    />
   )
 }
