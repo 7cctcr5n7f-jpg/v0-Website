@@ -151,7 +151,7 @@ export function AnalyticsConsent() {
       {mode !== 'disabled' && !storageError && prepared ? (
         <Script
           id="tenrounds-ga4"
-          src={`https://www.googletagmanager.com/gtm.js?id=${analyticsId}`}
+          src={`https://www.googletagmanager.com/gtag/js?id=${analyticsId}`}
           strategy="afterInteractive"
           onReady={() => setLoaded(true)}
           onError={() => console.warn('[analytics] Optional analytics could not load; website forms remain available.')}
