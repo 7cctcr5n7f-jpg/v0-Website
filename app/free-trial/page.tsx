@@ -15,7 +15,7 @@ import { blockedDays as blockedDaysTable } from '@/lib/db/schema'
 export const metadata: Metadata = {
   title: 'Free Trial | Your First 30-Minute Session Is On Us',
   description:
-    'Claim your free TENROUNDS trial in Garsfontein, Pretoria East. Experience a coach-supported 30-minute HIIT boxing workout with real-time heart rate tracking — no experience, no payment, no class times.',
+    'Book your free first TENROUNDS workout in Garsfontein, Pretoria East. Choose an available date and time, share your contact details and arrive for a coach-supported 30-minute HIIT session. No experience or payment required.',
   alternates: { canonical: '/free-trial' },
   openGraph: {
     title: 'Free Trial | TENROUNDS Garsfontein, Pretoria East',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   keywords: ['free gym trial Pretoria East', 'free trial HIIT gym Garsfontein', 'try gym for free Pretoria', 'no commitment gym trial Pretoria East'],
 }
 
-const heroPoints = ['No experience required', 'No class times', 'No pressure to join']
+const heroPoints = ['First session free', '30 minutes with a coach', 'No experience required']
 
 export default async function FreeTrialPage() {
   const blocked = await db.select({ day: blockedDaysTable.day }).from(blockedDaysTable)
@@ -50,9 +50,7 @@ export default async function FreeTrialPage() {
               Your First Session Is <span className="text-neon-blue text-glow">On Us</span>
             </h1>
             <p className="mt-5 max-w-lg text-pretty text-lg leading-relaxed text-light-grey">
-              Experience the workout that&apos;s changing fitness in Pretoria East. Discover why busy
-              professionals, parents and fitness enthusiasts are choosing coach-led 30-minute HIIT
-              boxing workouts that fit into real life.
+              Try a complete 30-minute, coach-supported workout in Garsfontein. A coach welcomes you, explains the ten rounds and guides you through a beginner-friendly session at your own pace.
             </p>
 
             <ul className="mt-8 flex flex-wrap gap-3">
