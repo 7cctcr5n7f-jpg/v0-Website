@@ -1,5 +1,7 @@
 export const FUNNEL_EVENTS = [
   'trial_cta_click',
+  'whatsapp_click',
+  'phone_click',
   'membership_cta_click',
   'trial_form_view',
   'trial_form_start',
