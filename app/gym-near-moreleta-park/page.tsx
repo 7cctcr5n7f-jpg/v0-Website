@@ -3,14 +3,14 @@ import { LandingTemplate, type LandingConfig } from '@/components/landing/landin
 import { testimonials } from '@/lib/content'
 
 export const metadata: Metadata = {
-  title: 'Gym Near Moreleta Park',
+  title: 'HIIT Gym Near Moreleta Park | TENROUNDS Garsfontein',
   description:
-    'Looking for a gym near Moreleta Park? TENROUNDS is the closest premium HIIT gym to Moreleta Park — coach-supported 30-minute workouts, no class times, just minutes away in Garsfontein.',
+    'Looking for a gym near Moreleta Park? TENROUNDS in neighbouring Garsfontein offers coach-supported 30-minute HIIT, boxing-bag and strength workouts with no fixed class times. Book a free first session.',
   alternates: { canonical: '/gym-near-moreleta-park' },
   openGraph: {
     title: 'Gym Near Moreleta Park | TENROUNDS Pretoria East',
     description:
-      'The closest premium HIIT gym to Moreleta Park. Coach-supported 30-minute sessions with no class times. Start your free trial today.',
+      'Coach-supported 30-minute HIIT and boxing fitness in Garsfontein, convenient for Moreleta Park. No fixed class times. Book your free first session.',
     images: [{ url: '/gym-exterior-night.jpg', width: 1200, height: 630, alt: 'Gym near Moreleta Park Pretoria East — TENROUNDS Garsfontein' }],
   },
   twitter: { card: 'summary_large_image', images: ['/gym-exterior-night.jpg'] },
@@ -21,14 +21,14 @@ const config: LandingConfig = {
   slug: 'gym-near-moreleta-park',
   breadcrumb: 'Gym Near Moreleta Park',
   heroEyebrow: 'Gym Near Moreleta Park',
-  heroTitle: 'The Closest Premium HIIT Gym To',
+  heroTitle: '30-Minute HIIT Near',
   heroHighlight: 'Moreleta Park',
   heroSubtitle:
-    'TENROUNDS is just minutes from Moreleta Park in Garsfontein, Pretoria East. Coach-supported 30-minute workouts, no class times, and a short drive that makes consistent training effortless.',
+    'TENROUNDS is based in Garsfontein, a practical option for Moreleta Park residents looking for coach-supported 30-minute HIIT, boxing-bag work and strength training without fixed class times.',
   heroImage: '/gym-exterior-night.jpg',
   heroImageAlt: 'TENROUNDS HIIT gym near Moreleta Park in Garsfontein, Pretoria East',
   intro:
-    'Living in Moreleta Park means you are only a few minutes from a smarter way to train. No long commutes, no wasted hours — just an expertly coached 30-minute workout whenever it suits you.',
+    'If you are based in Moreleta Park, compare your usual gym commute with a focused 30-minute session in nearby Garsfontein. Arrive during opening hours and a coach will guide you through the ten-round circuit.',
   blocks: [
     {
       type: 'features',
@@ -50,8 +50,8 @@ const config: LandingConfig = {
       eyebrow: 'Why Moreleta Park Trains Here',
       title: 'Why Moreleta Park Residents Choose TENROUNDS',
       body: [
-        'Moreleta Park members tell us the same thing: the closer and faster a gym is, the more they actually go. TENROUNDS removes every excuse with a quick drive and a workout that is over in 30 focused minutes.',
-        'Add a real coach to every session and heart-rate tracking that proves your progress, and it is easy to see why Moreleta Park residents make TENROUNDS their training home.',
+        'For residents of Moreleta Park, location and time both matter. TENROUNDS is in nearby Garsfontein, with 30-minute sessions that combine boxing-bag work, functional strength and cardio.',
+        'A coach supports your technique and helps you use the live heart-rate display to understand your effort during each workout.',
       ],
       image: '/coach-support.png',
       imageAlt: 'Coach supporting a member at TENROUNDS near Moreleta Park',

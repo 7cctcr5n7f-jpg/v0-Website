@@ -3,14 +3,14 @@ import { LandingTemplate, type LandingConfig } from '@/components/landing/landin
 import { testimonials } from '@/lib/content'
 
 export const metadata: Metadata = {
-  title: 'Gym Near Woodhill',
+  title: 'HIIT Gym Near Woodhill | TENROUNDS Garsfontein',
   description:
-    'Searching for a gym near Woodhill? TENROUNDS is the closest premium HIIT gym to Woodhill — coach-supported 30-minute workouts, no class times, minutes from Boardwalk and Olympus.',
+    'Searching for a gym near Woodhill? TENROUNDS in Garsfontein offers coach-supported 30-minute HIIT, boxing-bag and strength workouts with no fixed class times. Book a free first session.',
   alternates: { canonical: '/gym-near-woodhill' },
   openGraph: {
     title: 'Gym Near Woodhill | TENROUNDS Pretoria East',
     description:
-      'The closest premium HIIT gym to Woodhill. Coach-supported 30-minute sessions with no class times. Start your free trial today.',
+      'Coach-supported 30-minute HIIT and boxing fitness in Garsfontein, convenient for Woodhill, Boardwalk and Olympus. No fixed class times. Try a session free.',
     images: [{ url: '/gym-stations.png', width: 1200, height: 630, alt: 'Gym near Woodhill Pretoria East — TENROUNDS Garsfontein' }],
   },
   twitter: { card: 'summary_large_image', images: ['/gym-stations.png'] },
@@ -21,14 +21,14 @@ const config: LandingConfig = {
   slug: 'gym-near-woodhill',
   breadcrumb: 'Gym Near Woodhill',
   heroEyebrow: 'Gym Near Woodhill',
-  heroTitle: 'The Closest Premium HIIT Gym To',
+  heroTitle: '30-Minute HIIT Near',
   heroHighlight: 'Woodhill',
   heroSubtitle:
-    'TENROUNDS is just minutes from Woodhill in Garsfontein, Pretoria East. Coach-supported 30-minute workouts, no class times, and a short drive that makes consistent training effortless.',
+    'TENROUNDS is based in Garsfontein, a practical option for Woodhill residents looking for coach-supported 30-minute HIIT, boxing-bag work and strength training without fixed class times.',
   heroImage: '/gym-stations.png',
   heroImageAlt: 'TENROUNDS HIIT gym near Woodhill in Garsfontein, Pretoria East',
   intro:
-    'Living in Woodhill means you are only a few minutes from a smarter way to train. No long commutes, no wasted hours — just an expertly coached 30-minute workout whenever it suits you.',
+    'If you are based in Woodhill, compare your usual gym commute with a focused 30-minute session in Garsfontein. Arrive during opening hours and a coach will guide you through the ten-round circuit.',
   blocks: [
     {
       type: 'features',
@@ -50,8 +50,8 @@ const config: LandingConfig = {
       eyebrow: 'Why Woodhill Trains Here',
       title: 'Why Woodhill Residents Choose TENROUNDS',
       body: [
-        'Woodhill members tell us the same thing: the closer and faster a gym is, the more they actually go. TENROUNDS removes every excuse with a quick drive and a workout that is over in 30 focused minutes.',
-        'Add a real coach to every session and heart-rate tracking that proves your progress, and it is easy to see why Woodhill residents make TENROUNDS their training home.',
+        'For residents of Woodhill, location and time both matter. TENROUNDS is in Garsfontein, with 30-minute sessions that combine boxing-bag work, functional strength and cardio.',
+        'A coach supports your technique and helps you use the live heart-rate display to understand your effort during each workout.',
       ],
       image: '/coach-support.png',
       imageAlt: 'Coach supporting a member at TENROUNDS near Woodhill',

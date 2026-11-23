@@ -136,9 +136,15 @@ export function AnalyticsConsent() {
     function onClick(event: MouseEvent) {
       if (!(event.target instanceof Element)) return
       const anchor = event.target.closest('a[href]')
-      if (!(anchor instanceof HTMLAnchorElement) || anchor.origin !== window.location.origin) return
-      if (anchor.pathname === '/free-trial') trackFunnelEvent('trial_cta_click')
-      if (anchor.pathname === '/signup') trackFunnelEvent('membership_cta_click')
+      if (!(anchor instanceof HTMLAnchorElement)) return
+      if (anchor.origin === window.location.origin) {
+        if (anchor.pathname === '/free-trial') trackFunnelEvent('trial_cta_click')
+        if (anchor.pathname === '/signup') trackFunnelEvent('membership_cta_click')
+      }
+      if (anchor.hostname === 'wa.me' || anchor.hostname.endsWith('.whatsapp.com')) {
+        trackFunnelEvent('whatsapp_click')
+      }
+      if (anchor.protocol === 'tel:') trackFunnelEvent('phone_click')
     }
     document.addEventListener('click', onClick)
     return () => document.removeEventListener('click', onClick)
@@ -151,7 +157,7 @@ export function AnalyticsConsent() {
       {mode !== 'disabled' && !storageError && prepared ? (
         <Script
           id="tenrounds-ga4"
-          src={`https://www.googletagmanager.com/gtm.js?id=${analyticsId}`}
+          src={`https://www.googletagmanager.com/gtag/js?id=${analyticsId}`}
           strategy="afterInteractive"
           onReady={() => setLoaded(true)}
           onError={() => console.warn('[analytics] Optional analytics could not load; website forms remain available.')}

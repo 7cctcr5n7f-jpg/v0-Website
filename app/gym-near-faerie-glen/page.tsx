@@ -3,14 +3,14 @@ import { LandingTemplate, type LandingConfig } from '@/components/landing/landin
 import { testimonials } from '@/lib/content'
 
 export const metadata: Metadata = {
-  title: 'Gym Near Faerie Glen',
+  title: 'HIIT Gym Near Faerie Glen | TENROUNDS Garsfontein',
   description:
-    'Premium fitness for Faerie Glen residents. TENROUNDS delivers coach-supported 30-minute HIIT workouts with no class times, minutes from Faerie Glen in Garsfontein, Pretoria East.',
+    'Looking for a gym near Faerie Glen? TENROUNDS in Garsfontein offers coach-supported 30-minute HIIT, boxing-bag and strength workouts with no fixed class times. Book a free first session.',
   alternates: { canonical: '/gym-near-faerie-glen' },
   openGraph: {
     title: 'Gym Near Faerie Glen | TENROUNDS Pretoria East',
     description:
-      'Premium coach-supported 30-minute HIIT training minutes from Faerie Glen. No class times. Start your free trial today.',
+      'Coach-supported 30-minute HIIT and boxing fitness in Garsfontein, convenient for Faerie Glen. No fixed class times. Try a session free.',
     images: [{ url: '/strength-training.png', width: 1200, height: 630, alt: 'Gym near Faerie Glen — TENROUNDS Garsfontein Pretoria East' }],
   },
   twitter: { card: 'summary_large_image', images: ['/strength-training.png'] },
@@ -28,14 +28,14 @@ const config: LandingConfig = {
   heroImage: '/strength-training.png',
   heroImageAlt: 'TENROUNDS premium HIIT gym near Faerie Glen, Pretoria East',
   intro:
-    'Faerie Glen residents want quality, convenience and results. TENROUNDS delivers all three with expert coaching, a premium facility in nearby Garsfontein, and workouts that respect your time.',
+    'If you are based in Faerie Glen, TENROUNDS offers a focused training option in nearby Garsfontein: a structured 30-minute circuit with boxing-bag work, functional strength and a coach on the floor.',
   blocks: [
     {
       type: 'split',
       eyebrow: 'Why Faerie Glen Trains Here',
       title: 'Why Members From Faerie Glen Train At TENROUNDS',
       body: [
-        'For Faerie Glen residents, TENROUNDS is the boutique alternative to crowded big-box gyms — a premium space in Garsfontein just minutes away, where every session is coached and every minute counts.',
+        'TENROUNDS is located in Garsfontein and welcomes members from across Pretoria East. The workout is designed for people who want a guided session without planning a long gym routine.',
         'No queues, no guesswork, no 90-minute commitments. Just a structured 30-minute workout, real-time heart-rate tracking, and coaches who keep you accountable and progressing.',
       ],
       image: '/coach-support.png',
