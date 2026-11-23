@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import { LandingTemplate, type LandingConfig } from '@/components/landing/landing-template'
 
 export const metadata: Metadata = {
-  title: 'Boxing Gym Pretoria East',
+  title: 'Boxing Fitness Gym Pretoria East | Coach-Led HIIT',
   description:
-    'Searching for a boxing gym in Pretoria East? TENROUNDS in Garsfontein has four dedicated boxing-bag stations, coach-led technique and 30-minute HIIT sessions with no class times. Free trial and free gloves on longer plans.',
+    'Looking for boxing fitness in Pretoria East? Train on four dedicated bag stations with coach-guided technique, strength work and a 30-minute HIIT circuit at TENROUNDS in Garsfontein. No sparring or class times. Try your first session free.',
   alternates: { canonical: '/boxing-gym-pretoria-east' },
   openGraph: {
     title: 'Boxing Gym Pretoria East | TENROUNDS Garsfontein',
@@ -23,11 +23,11 @@ const config: LandingConfig = {
   heroTitle: 'The Boxing Gym For',
   heroHighlight: 'Pretoria East',
   heroSubtitle:
-    'TENROUNDS is the boxing gym Pretoria East trains at — four dedicated bag stations, coach-led technique and 30-minute HIIT conditioning, all with no class times and every round scaled to you.',
+    'Get the energy of boxing without a fight-gym commitment. TENROUNDS combines four dedicated bag stations, coach-guided technique and full-body HIIT in a 30-minute workout. Beginners are welcome, sessions are scaled to your level, and there are no fixed class times.',
   heroImage: '/round-boxing-bag.webp',
   heroImageAlt: 'Boxing-bag stations at the TENROUNDS boxing gym in Pretoria East',
   intro:
-    'Boxing is one of the most complete workouts on earth — it builds power, conditioning, coordination and confidence all at once. At TENROUNDS we put real bag work at the heart of a 30-minute session that anyone can do, guided by coaches every step of the way.',
+    'If you want to hit the bags, improve your conditioning and learn the basics of striking without sparring, TENROUNDS gives you a coached place to start. Every visit combines boxing-style bag work with functional strength and cardio across a structured 30-minute circuit.',
   blocks: [
     {
       type: 'features',
