@@ -146,9 +146,14 @@ export function SiteFooter() {
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-light-grey">
             <p>&copy; {new Date().getFullYear()} {business.name}. All rights reserved.</p>
-            <Link href="/privacy-policy" className="underline underline-offset-4 transition-colors hover:text-neon-blue">
-              Privacy Policy
-            </Link>
+            <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+              <Link href="/privacy-policy" className="underline underline-offset-4 transition-colors hover:text-neon-blue">
+                Privacy Policy
+              </Link>
+              <Link href="/terms-and-conditions" className="underline underline-offset-4 transition-colors hover:text-neon-blue">
+                Terms and Conditions
+              </Link>
+            </nav>
           </div>
         </div>
       </div>

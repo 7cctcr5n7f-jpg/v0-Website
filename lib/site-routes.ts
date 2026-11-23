@@ -16,6 +16,7 @@ export const publicSiteRoutes: {
   { path: '/gallery', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/privacy-policy', priority: 0.2, changeFrequency: 'yearly' },
+  { path: '/terms-and-conditions', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/hiit-gym-garsfontein', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/boxing-fitness-pretoria-east', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/30-minute-workout-pretoria-east', priority: 0.8, changeFrequency: 'monthly' },

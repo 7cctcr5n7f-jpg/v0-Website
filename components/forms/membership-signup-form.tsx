@@ -33,7 +33,7 @@ import { SignaturePad } from '@/components/forms/signature-pad'
 import { submitMembershipSignup, type SignupState } from '@/app/actions/membership'
 import { SuccessScreen } from '@/components/forms/membership-success'
 import { trackFunnelEvent, useFunnelMilestones } from '@/lib/analytics'
-import { PrivacyNotice } from '@/components/privacy-notice'
+import { FormLegalNotice } from '@/components/form-legal-notice'
 
 export type Selection = {
   membershipId: string
@@ -394,7 +394,7 @@ export function MembershipSignupForm({ selection }: { selection: Selection }) {
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-light-grey" />
           <p className="text-xs leading-relaxed text-light-grey">{LEGAL_NOTICE}</p>
         </div>
-        <PrivacyNotice className="mt-4" />
+        <FormLegalNotice className="mt-4" />
       </SectionCard>
 
       {/* ── SECTION 5: DIGITAL SIGNATURE ── */}

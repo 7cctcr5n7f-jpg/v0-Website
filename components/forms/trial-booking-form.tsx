@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 import { slotGroupsForDay, formatDateLong, slotToMinutes, parseDateString } from '@/lib/trial-slots'
 import { submitTrialBooking, type BookingState } from '@/app/actions/trial'
 import { trackFunnelEvent, useFunnelMilestones } from '@/lib/analytics'
-import { PrivacyNotice } from '@/components/privacy-notice'
+import { FormLegalNotice } from '@/components/form-legal-notice'
 
 const AGREEMENTS = [
   {
@@ -258,7 +258,7 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
         </div>
       </div>
 
-      <PrivacyNotice className="mt-5" />
+      <FormLegalNotice className="mt-5" />
 
       {state.error ? (
         <p className="mt-5 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">

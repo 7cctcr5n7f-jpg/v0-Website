@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { CheckCircle2, Send, Loader2 } from 'lucide-react'
-import { PrivacyNotice } from '@/components/privacy-notice'
+import { FormLegalNotice } from '@/components/form-legal-notice'
 
 // Recipient inbox for all contact submissions.
 const CONTACT_EMAIL = 'hello@tenrounds.co.za'
@@ -133,7 +133,7 @@ export function ContactForm({
         </div>
       </div>
 
-      <PrivacyNotice className="mt-4" />
+      <FormLegalNotice className="mt-4" />
 
       <button
         type="submit"
