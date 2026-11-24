@@ -55,13 +55,11 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
     setError('')
     try {
       const currentWindow = monthWindow(0)
-      const previousWindow = monthWindow(1)
-      const [currentResponse, previousResponse] = await Promise.all([
-        fetch('/api/operations/growth-funnel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(currentWindow) }),
-        fetch('/api/operations/growth-funnel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(previousWindow) }),
-      ])
+      const currentResponse = await fetch('/api/operations/growth-funnel', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentWindow),
+      })
       const current = currentResponse.ok ? await currentResponse.json() : null
-      const previous = previousResponse.ok ? await previousResponse.json() : null
       const trialVisitors = current?.trialPage?.visitors ?? fallbackWebsite.trialVisitors
       const trialBookings = current?.bookings ?? fallbackWebsite.trialBookings
       const trialReached = current?.trialsReached ?? fallbackWebsite.trialReached
