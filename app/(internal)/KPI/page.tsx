@@ -5,7 +5,8 @@ import { ArrowDownRight, ArrowUpRight, ArrowRight, BarChart3, CalendarDays, Chec
 import { db } from '@/lib/db'
 import { trialBookings, membershipSignups, sessionPurchases } from '@/lib/db/schema'
 import { isOperationsAuthed } from '@/lib/operations-auth'
-import { OperationsLogin } from '@/components/operations/operations-login'\nimport { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
+import { OperationsLogin } from '@/components/operations/operations-login'
+import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -162,7 +163,8 @@ export default async function KpiPage() {
             <div className="flex items-center gap-2"><BarChart3 size={15} className="text-[#008FC4]"/><p className="text-[10px] font-black uppercase tracking-wider text-[#102A43]">SEO is moving in the right direction</p></div>
             <p className="mt-1.5 text-xs leading-5 text-slate-600">Search clicks are up {clickChange.toFixed(0)}% since September. Social referrals to the trial page fell from 615 in September to 7 in November. Check whether campaigns or links changed.</p>
           </div>
-          <Ga4MiniRefresh />\n          <div className="mt-auto flex items-center justify-between border-t border-[#E9EEF2] pt-3"><span className="text-[10px] font-semibold text-slate-500">Manual refresh only · no background jobs</span><Link href="/operations" className="inline-flex items-center gap-1 text-[10px] font-black text-[#008FC4] hover:underline">Open operations <ArrowRight size={12}/></Link></div>
+          <Ga4MiniRefresh />
+          <div className="mt-auto flex items-center justify-between border-t border-[#E9EEF2] pt-3"><span className="text-[10px] font-semibold text-slate-500">Manual refresh only · no background jobs</span><Link href="/operations" className="inline-flex items-center gap-1 text-[10px] font-black text-[#008FC4] hover:underline">Open operations <ArrowRight size={12}/></Link></div>
         </article>
       </section>
 
