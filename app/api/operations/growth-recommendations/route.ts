@@ -46,6 +46,22 @@ function percent(current: number, previous: number) {
   return Math.round(((current - previous) / previous) * 100)
 }
 const ACTION_VARIANTS: Record<string, Array<{ title: string; action: string }>> = {
+  'seo-canonical': [
+    { title: 'Consolidate duplicate homepage URL signals', action: 'Confirm HTTP permanently redirects to HTTPS, the canonical points to the HTTPS URL, and all sitemap/internal links use the preferred hostname. Check Search Console again after recrawl.' },
+    { title: 'Audit preferred hostname consistency', action: 'Check both www and non-www variants, protocol redirects, canonical tags and sitemap URLs. Select one canonical hostname and ensure every alternate version redirects to it.' },
+    { title: 'Remove alternate homepage URLs from internal links', action: 'Search the site for old HTTP or alternate-hostname links and update them to the canonical HTTPS homepage. Re-submit the sitemap after validating redirects.' },
+  ],
+  'seo-page-ctr': [
+    { title: 'Rewrite the title and description for the highest-impression page', action: 'Make the page title specific to the service and Pretoria East. Use the description to explain the 30-minute workout and why the free trial is worth clicking. Compare page-level CTR after the update.' },
+    { title: 'Align the landing page headline with its search snippet', action: 'Ensure the page H1 and first screen deliver exactly what the title and description promise. Add concise answers to the questions searchers are likely to have, then measure CTR and engagement.' },
+    { title: 'Add stronger local proof to the search landing page', action: 'Add accurate location details, coach-supported session information and genuine customer proof to the high-impression page. Keep title and meta copy distinct from other service pages.' },
+  ],
+  'seo-query-intent': [
+    { title: 'Improve the landing page for the selected high-intent query', action: 'Match the page title, opening copy and FAQs to the exact query intent. Make the free-trial next step prominent and compare clicks and CTR for that query.' },
+    { title: 'Add a useful answer for the selected search query', action: 'Add a short, original section that answers the selected query directly. Avoid keyword stuffing. Link the answer to the relevant service page and free-trial booking.' },
+    { title: 'Strengthen the query-to-trial journey', action: 'Check whether the page ranking for this query offers a clear next step. Add one contextual free-trial CTA and track trial-page visits from the organic landing page.' },
+  ],
+
   'seo-reach': [
     { title: 'Recover search visibility on pages losing impressions', action: 'Open Search Console and compare page/query pairs against the previous period. Pick the three pages with the largest impression losses, refresh their local service detail and add internal links from relevant pages. Recheck impressions next review.' },
     { title: 'Build content around proven local search demand', action: 'Use Search Console queries with rising impressions but weak clicks to choose one focused Pretoria East topic. Add a genuinely useful section to the most relevant page before creating a new page. Measure impressions and clicks for that query group.' },
