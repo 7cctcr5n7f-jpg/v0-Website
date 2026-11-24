@@ -42,6 +42,20 @@ function toDateString(d: Date) {
 
 const initialState: BookingState = { ok: false }
 
+type CampaignAttribution = {
+  utmSource: string
+  utmMedium: string
+  utmCampaign: string
+  utmContent: string
+  utmTerm: string
+  landingPage: string
+  referrer: string
+}
+
+const emptyAttribution: CampaignAttribution = {
+  utmSource: '', utmMedium: '', utmCampaign: '', utmContent: '', utmTerm: '', landingPage: '', referrer: '',
+}
+
 export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] }) {
   const [state, formAction, pending] = useActionState(submitTrialBooking, initialState)
 
@@ -51,6 +65,35 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [time, setTime] = useState<string>('')
   const [agreed, setAgreed] = useState<Record<string, boolean>>({})
+  const [attribution, setAttribution] = useState<CampaignAttribution>(emptyAttribution)
+
+  useEffect(() => {
+    try {
+      const key = 'tenrounds-first-touch-attribution'
+      const stored = localStorage.getItem(key)
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<CampaignAttribution>
+        setAttribution({ ...emptyAttribution, ...parsed })
+        return
+      }
+      const params = new URLSearchParams(window.location.search)
+      const captured: CampaignAttribution = {
+        utmSource: params.get('utm_source') || '',
+        utmMedium: params.get('utm_medium') || '',
+        utmCampaign: params.get('utm_campaign') || '',
+        utmContent: params.get('utm_content') || '',
+        utmTerm: params.get('utm_term') || '',
+        landingPage: window.location.pathname,
+        referrer: (() => {
+          try { const url = new URL(document.referrer); return url.origin + url.pathname } catch { return '' }
+        })(),
+      }
+      localStorage.setItem(key, JSON.stringify(captured))
+      setAttribution(captured)
+    } catch {
+      // Attribution is optional. A storage restriction must never block a trial booking.
+    }
+  }, [])
 
   const today = useMemo(() => {
     const t = new Date()
@@ -120,6 +163,13 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
       <input type="hidden" name="appointmentDate" value={date ? toDateString(date) : ''} />
       <input type="hidden" name="appointmentTime" value={time} />
       <input type="hidden" name="agreementsAccepted" value={allAgreed ? 'true' : 'false'} />
+      <input type="hidden" name="utmSource" value={attribution.utmSource} />
+      <input type="hidden" name="utmMedium" value={attribution.utmMedium} />
+      <input type="hidden" name="utmCampaign" value={attribution.utmCampaign} />
+      <input type="hidden" name="utmContent" value={attribution.utmContent} />
+      <input type="hidden" name="utmTerm" value={attribution.utmTerm} />
+      <input type="hidden" name="landingPage" value={attribution.landingPage} />
+      <input type="hidden" name="referrer" value={attribution.referrer} />
       {/* Honeypot — hidden from real users, bots fill it in and get silently blocked */}
       <input
         type="text"
