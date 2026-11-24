@@ -36,6 +36,15 @@ export async function submitTrialBooking(
   const appointmentDate = String(formData.get('appointmentDate') ?? '').trim()
   const appointmentTime = String(formData.get('appointmentTime') ?? '').trim()
   const agreementsAccepted = formData.get('agreementsAccepted') === 'true'
+  const attribution = {
+    utmSource: String(formData.get('utmSource') ?? '').slice(0, 200),
+    utmMedium: String(formData.get('utmMedium') ?? '').slice(0, 200),
+    utmCampaign: String(formData.get('utmCampaign') ?? '').slice(0, 200),
+    utmContent: String(formData.get('utmContent') ?? '').slice(0, 200),
+    utmTerm: String(formData.get('utmTerm') ?? '').slice(0, 200),
+    landingPage: String(formData.get('landingPage') ?? '').slice(0, 500),
+    referrer: String(formData.get('referrer') ?? '').slice(0, 1000),
+  }
 
   // Server-side validation (don't trust the client).
   if (!fullName || !email || !phone || !appointmentDate || !appointmentTime) {
@@ -108,6 +117,7 @@ export async function submitTrialBooking(
       appointmentDate,
       appointmentTime,
       agreementsAccepted,
+      ...attribution,
     })
   } catch (err) {
     console.error('[v0] Failed to save trial booking:', err)

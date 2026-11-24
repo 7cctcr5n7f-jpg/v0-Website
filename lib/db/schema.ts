@@ -79,6 +79,13 @@ export const trialBookings = pgTable('trial_bookings', {
   appointmentTime: text('appointment_time').notNull(),
   agreementsAccepted: boolean('agreements_accepted').notNull().default(false),
   manuallyConverted: boolean('manually_converted').notNull().default(false),
+  utmSource: text('utm_source').notNull().default(''),
+  utmMedium: text('utm_medium').notNull().default(''),
+  utmCampaign: text('utm_campaign').notNull().default(''),
+  utmContent: text('utm_content').notNull().default(''),
+  utmTerm: text('utm_term').notNull().default(''),
+  landingPage: text('landing_page').notNull().default(''),
+  referrer: text('referrer').notNull().default(''),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 

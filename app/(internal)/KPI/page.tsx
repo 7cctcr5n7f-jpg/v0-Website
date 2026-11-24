@@ -8,6 +8,7 @@ import { isOperationsAuthed } from '@/lib/operations-auth'
 import { OperationsLogin } from '@/components/operations/operations-login'
 import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
 import { FullGrowthFunnel } from '@/components/operations/full-growth-funnel'
+import { GrowthRecommendations } from '@/components/operations/growth-recommendations'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -78,7 +79,7 @@ export default async function KpiPage() {
   const positionChange = monthly[0].position - monthly[2].position
   const nowLabel = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
 
-  return <main className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:h-screen lg:overflow-hidden lg:px-7 lg:py-4">
+  return <main className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:min-h-screen lg:overflow-y-auto lg:px-7 lg:py-4">
     <div className="mx-auto flex min-h-full w-full min-w-0 max-w-[1600px] flex-col gap-3">
       <header className="flex h-11 shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
@@ -103,7 +104,7 @@ export default async function KpiPage() {
           <StatPill label="Trial bookings" value={currentMonthBookings} note="Nov · 1–24"/>
           <StatPill label="Matched members" value={current.converted} note="After trial"/>
           <StatPill label="Matured conversion" value={`${current.conversionRate}%`} note={`${current.eligible} eligible`} accent/>
-          <StatPill label="Trial-page visitors" value={current.trialVisitors} note="Vercel · 1–23"/>
+          <StatPill label="Trial-page visitors · snapshot" value={current.trialVisitors} note="Vercel · 1–23"/>
         </div>
       </section>
 
@@ -152,21 +153,34 @@ export default async function KpiPage() {
         </article>
       </section>
 
-      <section className="grid shrink-0 gap-3 lg:grid-cols-[1.1fr_.9fr]">
+      <section className="grid shrink-0 gap-3">
         <article className="rounded-[20px] border border-[#E0E8EE] bg-white px-5 py-3.5">
-          <div className="flex items-center justify-between gap-2"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">04 / Momentum</p><h3 className="text-sm font-black">Trial-page visitors and bookings, side by side.</h3></div><span className="text-[9px] font-semibold text-slate-400">Vercel Analytics · /free-trial · 1st–23rd</span></div>
-          <div className="mt-3 grid grid-cols-3 divide-x divide-[#E7EDF1]">
-            {monthly.map((m,i)=><div key={m.key} className={`px-3 first:pl-0 last:pr-0 ${i===2?'text-[#008FC4]':''}`}><p className="text-[9px] font-bold uppercase text-slate-400">{m.full}</p><div className="mt-1 flex items-center gap-2"><span className="text-xl font-black tabular-nums">{m.trialVisitors}</span><span className="text-[9px] font-semibold text-slate-400">visitors</span><span className="ml-auto text-[10px] font-black">{m.bookings} bookings</span></div></div>)}
-          </div>
-        </article>
-        <article className="rounded-[20px] border border-[#E0E8EE] bg-white px-5 py-3.5">
-          <div className="flex items-center justify-between"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">05 / Recent activity</p><h3 className="text-sm font-black">Latest trial bookings</h3></div><Link href="/operations" className="text-[10px] font-black text-[#008FC4]">View all →</Link></div>
-          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+          <div className="flex items-center justify-between"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">04 / Recent activity</p><h3 className="text-sm font-black">Latest trial bookings</h3></div><Link href="/operations" className="text-[10px] font-black text-[#008FC4]">View all →</Link></div>
+          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
             {latestTrials.slice(0,4).map(({booking,conversion})=><div key={booking.id} className="flex min-w-0 items-center gap-2"><span className={`size-2 shrink-0 rounded-full ${conversion.status==='converted'?'bg-emerald-500':conversion.status==='upcoming'?'bg-sky-500':'bg-amber-400'}`}/><div className="min-w-0"><p className="truncate text-[10px] font-bold">{booking.fullName}</p><p className="text-[9px] text-slate-400">{booking.appointmentDate} · {conversion.status==='converted'?'Converted':conversion.status==='upcoming'?'Upcoming':'Awaiting conversion'}</p></div></div>)}
           </div>
         </article>
       </section>
-      <footer className="flex shrink-0 items-center justify-between pb-1 text-[9px] text-slate-400"><span>TENROUNDS Growth Cockpit · One-page owner view</span><span>Bookings: TENROUNDS DB · Search: Search Console · Visitors: Vercel snapshot · GA4 API credentials pending</span></footer>
+      <GrowthRecommendations
+        seo={{
+          clicks: current.clicks,
+          previousClicks: monthly[1].clicks,
+          impressions: current.impressions,
+          previousImpressions: monthly[1].impressions,
+          ctr: current.ctr,
+          previousCtr: monthly[1].ctr,
+          position: current.position,
+          previousPosition: monthly[1].position,
+        }}
+        fallbackWebsite={{
+          trialVisitors: current.trialVisitors,
+          trialBookings: 18,
+          trialReached: 13,
+          members: 1,
+        }}
+      />
+
+      <footer className="flex shrink-0 items-center justify-between pb-1 text-[9px] text-slate-400"><span>TENROUNDS Growth Cockpit · One-page owner view</span><span>Bookings: TENROUNDS DB · Search: Search Console · Visitors: live Vercel refresh · legacy snapshot labelled separately</span></footer>
     </div>
   </main>
 }
