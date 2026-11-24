@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Activity, Check, ChevronDown, Lightbulb, RefreshCw, Search, Target, X } from 'lucide-react'
 
 type Metrics = {
+  searchDetail?: { pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>; queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }> }
   seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
   website: { trialVisitors: number; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
 }
@@ -55,11 +56,23 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
     setError('')
     try {
       const currentWindow = monthWindow(0)
-      const currentResponse = await fetch('/api/operations/growth-funnel', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentWindow),
-      })
+      const searchEnd = new Date()
+      searchEnd.setDate(searchEnd.getDate() - 3)
+      const searchStart = new Date(searchEnd)
+      searchStart.setDate(searchStart.getDate() - 27)
+      const asDate = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(value)
+      const [currentResponse, searchResponse] = await Promise.all([
+        fetch('/api/operations/growth-funnel', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentWindow),
+        }),
+        fetch('/api/operations/search-console', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: asDate(searchStart), endDate: asDate(searchEnd) }),
+        }),
+      ])
       const current = currentResponse.ok ? await currentResponse.json() : null
+      const searchDetail = searchResponse.ok ? await searchResponse.json() : null
       const trialVisitors = current?.trialPage?.visitors ?? fallbackWebsite.trialVisitors
       const trialBookings = current?.bookings ?? fallbackWebsite.trialBookings
       const trialReached = current?.trialsReached ?? fallbackWebsite.trialReached
@@ -70,6 +83,7 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
       const trialToBookingRate = trialVisitors > 0 ? trialBookings / trialVisitors * 100 : 0
       const memberRate = trialReached > 0 ? members / trialReached * 100 : null
       const nextMetrics: Metrics = {
+        ...(searchDetail ? { searchDetail: { pages: searchDetail.pages || [], queries: searchDetail.queries || [] } } : {}),
         seo,
         website: { trialVisitors, trialBookings, trialToBookingRate, campaignAttributedBookings: attributed, websiteVisitors, websiteToTrialRate, trialReached, members, memberRate },
       }
@@ -81,7 +95,7 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
       if (!response.ok) throw new Error(body.error || 'Could not generate recommendations.')
       setItems(body.history || body.recommendations || [])
       setMetrics(nextMetrics)
-      setSourceNote(current ? 'Google Search Console snapshots · live Vercel traffic · TENROUNDS booking database' : 'Google Search Console snapshots · Vercel trial-page snapshot · TENROUNDS booking database. Live visitor API unavailable, so website-wide rates are withheld.')
+      setSourceNote(current ? (searchDetail ? 'Live Search Console page/query detail · Vercel Web Analytics · TENROUNDS booking database' : 'Search Console monthly snapshots · Vercel Web Analytics · TENROUNDS booking database. Page/query detail unavailable until Search Console API credentials are connected.') : 'Search Console snapshots · Vercel trial-page snapshot · TENROUNDS booking database. Live visitor API unavailable, so website-wide rates are withheld.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not review growth performance.')
     } finally { setLoading(false) }
