@@ -9,6 +9,7 @@ import { OperationsLogin } from '@/components/operations/operations-login'
 import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
 import { FullGrowthFunnel } from '@/components/operations/full-growth-funnel'
 import { GrowthRecommendations } from '@/components/operations/growth-recommendations'
+import { SearchConsoleDetails } from '@/components/operations/search-console-details'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -161,6 +162,8 @@ export default async function KpiPage() {
           </div>
         </article>
       </section>
+      <SearchConsoleDetails />
+
       <GrowthRecommendations
         seo={{
           clicks: current.clicks,
@@ -174,9 +177,9 @@ export default async function KpiPage() {
         }}
         fallbackWebsite={{
           trialVisitors: current.trialVisitors,
-          trialBookings: 18,
-          trialReached: 13,
-          members: 1,
+          trialBookings: currentMonthBookings,
+          trialReached: current.eligible,
+          members: current.converted,
         }}
       />
 
