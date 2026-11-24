@@ -140,10 +140,10 @@ export default async function KpiPage() {
             <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">03 / What needs attention</p><h2 className="mt-1 text-lg font-black tracking-tight">Owner's radar</h2><p className="text-[11px] text-slate-500">The next best moves, not another report</p></div>
             <span className="rounded-xl bg-[#FFF6D9] p-2 text-[#9B7300]"><Compass size={17}/></span>
           </div>
-          <div className="mt-4 rounded-2xl border border-amber-200 bg-[#FFFAEA] p-3.5">
-            <div className="flex items-center gap-2"><CircleAlert size={15} className="text-amber-700"/><p className="text-[10px] font-black uppercase tracking-wider text-amber-900">Tracking setup incomplete</p></div>
-            <p className="mt-1.5 text-xs font-semibold leading-5 text-amber-950">GA4 is connected in Supermetrics, but standard reporting has not returned /free-trial page views or trial_* events. I found and corrected a report-query bug that omitted the filtered dimensions.</p>
-            <p className="mt-2 text-[10px] font-bold text-amber-800">Vercel Analytics independently recorded 61 unique trial-page visitors in November.</p>
+          <div className="mt-4 rounded-2xl border border-[#CDE8F3] bg-[#F0FAFE] p-3.5">
+            <div className="flex items-center gap-2"><BarChart3 size={15} className="text-[#008FC4]"/><p className="text-[10px] font-black uppercase tracking-wider text-[#075477]">Analytics · owner-triggered checks</p></div>
+            <p className="mt-1.5 text-xs font-semibold leading-5 text-[#17344C]">GA4 reporting is available through the live report below. Use its Refresh button to retrieve this month's visitors, trial CTA clicks, form views and successful booking events. New tests may appear in Realtime before standard reports finish processing.</p>
+            <p className="mt-2 text-[10px] font-bold text-[#075477]">Website and /free-trial traffic in the customer journey panel comes separately from Vercel Web Analytics.</p>
           </div>
           <div className="mt-3 rounded-2xl border border-[#DDE8EF] bg-[#F7FAFC] p-3.5">
             <div className="flex items-center gap-2"><BarChart3 size={15} className="text-[#008FC4]"/><p className="text-[10px] font-black uppercase tracking-wider text-[#102A43]">SEO is moving in the right direction</p></div>
