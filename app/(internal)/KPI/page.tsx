@@ -8,6 +8,7 @@ import { isOperationsAuthed } from '@/lib/operations-auth'
 import { OperationsLogin } from '@/components/operations/operations-login'
 import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
 import { FullGrowthFunnel } from '@/components/operations/full-growth-funnel'
+import { GrowthRecommendations } from '@/components/operations/growth-recommendations'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -160,6 +161,25 @@ export default async function KpiPage() {
           </div>
         </article>
       </section>
+      <GrowthRecommendations
+        seo={{
+          clicks: current.clicks,
+          previousClicks: monthly[1].clicks,
+          impressions: current.impressions,
+          previousImpressions: monthly[1].impressions,
+          ctr: current.ctr,
+          previousCtr: monthly[1].ctr,
+          position: current.position,
+          previousPosition: monthly[1].position,
+        }}
+        fallbackWebsite={{
+          trialVisitors: current.trialVisitors,
+          trialBookings: 18,
+          trialReached: 13,
+          members: 1,
+        }}
+      />
+
       <footer className="flex shrink-0 items-center justify-between pb-1 text-[9px] text-slate-400"><span>TENROUNDS Growth Cockpit · One-page owner view</span><span>Bookings: TENROUNDS DB · Search: Search Console · Visitors: live Vercel refresh · legacy snapshot labelled separately</span></footer>
     </div>
   </main>
