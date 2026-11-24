@@ -3,7 +3,7 @@ import { desc } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { trialBookings, membershipSignups, sessionPurchases } from '@/lib/db/schema'
 import { isOperationsAuthed } from '@/lib/operations-auth'
-import { buildSignupEmailIndex, getTrialConversion, ymdInJohannesburg, normalizeEmail } from '@/lib/trial-conversion'
+import { buildSignupEmailIndex, buildSessionPurchaseEmailIndex, getTrialConversion, ymdInJohannesburg, normalizeEmail } from '@/lib/trial-conversion'
 
 export const dynamic = 'force-dynamic'
 
