@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { desc } from 'drizzle-orm'
 import Link from 'next/link'
+import { ArrowDownRight, ArrowUpRight, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Compass, Search, Settings2, Sparkles, Users, Zap } from 'lucide-react'
 import { db } from '@/lib/db'
 import { trialBookings, membershipSignups, sessionPurchases } from '@/lib/db/schema'
 import { isOperationsAuthed } from '@/lib/operations-auth'
 import { OperationsLogin } from '@/components/operations/operations-login'
-import { Ga4TrialFunnel } from '@/components/operations/ga4-trial-funnel'
+import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -20,21 +21,26 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const MONTHS = [
-  { key: '2026-09', label: 'September', seo: { clicks: 165, impressions: 5148, ctr: 3.21, position: 12.75 } },
-  { key: '2026-10', label: 'October', seo: { clicks: 176, impressions: 4905, ctr: 3.59, position: 10.39 } },
-  { key: '2026-11', label: 'November', seo: { clicks: 202, impressions: 4592, ctr: 4.40, position: 9.06 } },
+  { key: '2026-09', label: 'Sep', full: 'September', clicks: 165, impressions: 5148, ctr: 3.21, position: 12.75, trialVisitors: 723, trialPageViews: 759 },
+  { key: '2026-10', label: 'Oct', full: 'October', clicks: 176, impressions: 4905, ctr: 3.59, position: 10.39, trialVisitors: 55, trialPageViews: 69 },
+  { key: '2026-11', label: 'Nov', full: 'November', clicks: 202, impressions: 4592, ctr: 4.40, position: 9.06, trialVisitors: 61, trialPageViews: 76 },
 ]
 
 function monthKey(value: Date | string) {
-  const date = new Date(value)
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit' }).format(date).slice(0, 7)
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit' }).format(new Date(value)).slice(0, 7)
 }
-function Bar({ label, value, max, suffix = '' }: { label: string; value: number; max: number; suffix?: string }) {
-  return <div className="grid grid-cols-[86px_1fr_64px] items-center gap-3">
-    <span className="text-xs font-semibold text-slate-500">{label}</span>
-    <div className="h-3 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#00AEEF]" style={{ width: `${Math.max(2, (value / max) * 100)}%` }} /></div>
-    <span className="text-right text-xs font-extrabold tabular-nums text-[#102A43]">{value.toLocaleString('en-ZA')}{suffix}</span>
+function localDate(value: Date | string) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) }
+function pct(value: number) { return `${value > 0 ? '+' : ''}${value.toFixed(1)}%` }
+
+function StatPill({ label, value, note, accent = false }: { label: string; value: string | number; note: string; accent?: boolean }) {
+  return <div className={`rounded-2xl border p-4 ${accent ? 'border-[#00AEEF]/30 bg-[#00AEEF] text-[#06283D]' : 'border-white/10 bg-white/[.075] text-white'}`}>
+    <p className={`text-[9px] font-black uppercase tracking-[.16em] ${accent ? 'text-[#06324A]/75' : 'text-slate-300'}`}>{label}</p>
+    <div className="mt-2 flex items-end justify-between gap-2"><span className="text-[34px] font-black leading-none tracking-[-.05em] tabular-nums">{value}</span><span className={`pb-1 text-[10px] font-semibold ${accent ? 'text-[#06324A]/75' : 'text-slate-300'}`}>{note}</span></div>
   </div>
+}
+
+function TrendMark({ positive = true }: { positive?: boolean }) {
+  return positive ? <ArrowUpRight size={15} className="text-emerald-600" /> : <ArrowDownRight size={15} className="text-amber-600" />
 }
 
 export default async function KpiPage() {
@@ -53,113 +59,131 @@ export default async function KpiPage() {
     booking,
     conversion: getTrialConversion(booking, signupIndex, purchaseIndex, today),
   }))
-
   const monthly = MONTHS.map(month => {
-    const monthTrials = cohort.filter(row => monthKey(row.booking.createdAt) === month.key)
+    const monthTrials = cohort.filter(row => monthKey(row.booking.createdAt) === month.key && localDate(row.booking.createdAt) <= month.key + '-23')
     const monthSignups = allSignups.filter(row => monthKey(row.createdAt) === month.key)
     const converted = monthTrials.filter(row => row.conversion.status === 'converted').length
-    const completed = monthTrials.filter(row => row.conversion.status !== 'upcoming')
-    return {
-      ...month,
-      bookings: monthTrials.length,
-      signups: monthSignups.length,
-      converted,
-      eligible: completed.length,
-      conversionRate: completed.length ? Math.round((converted / completed.length) * 100) : 0,
-    }
+    const eligible = monthTrials.filter(row => row.conversion.status !== 'upcoming').length
+    return { ...month, bookings: monthTrials.length, signups: monthSignups.length, converted, eligible, conversionRate: eligible ? Math.round(converted / eligible * 100) : 0 }
   })
-
   const current = monthly[2]
-  const previous = monthly[1]
-  const latestTrials = allTrials.slice(0, 6)
-  const maxClicks = Math.max(...monthly.map(m => m.seo.clicks))
+  const currentMonthBookings = cohort.filter(row => monthKey(row.booking.createdAt) === '2026-11').length
+  const latestTrials = cohort.slice(0, 4)
+  const allConverted = cohort.filter(row => row.conversion.status === 'converted').length
+  const allEligible = cohort.filter(row => row.conversion.status !== 'upcoming').length
+  const allRate = allEligible ? Math.round(allConverted / allEligible * 100) : 0
+  const clickChange = ((monthly[2].clicks - monthly[0].clicks) / monthly[0].clicks) * 100
+  const positionChange = monthly[0].position - monthly[2].position
   const nowLabel = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
 
-  return <main className="min-h-screen bg-[#F5F8FB] text-[#102A43] selection:bg-[#B8E8FA]">
-    <div className="mx-auto max-w-[1440px] px-4 py-7 sm:px-7 lg:px-10">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DDE7EE] pb-6">
+  return <main className="min-h-screen bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:h-screen lg:overflow-hidden lg:px-7 lg:py-4">
+    <div className="mx-auto flex min-h-full max-w-[1600px] flex-col gap-3">
+      <header className="flex h-11 shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#102A43] text-lg font-black text-white shadow-lg shadow-slate-300">10<span className="text-[#00AEEF]">.</span></div>
-          <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-[#008FC4]">TENROUNDS / OWNER VIEW</p><p className="text-sm font-semibold text-slate-500">Growth Cockpit</p></div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#102A43] text-sm font-black text-white">10<span className="text-[#00AEEF]">.</span></div>
+          <div className="leading-tight"><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">TENROUNDS</p><p className="text-xs font-bold text-slate-500">OWNER COCKPIT <span className="px-1 text-slate-300">/</span> GROWTH</p></div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500">Data through {nowLabel}</span>
-          <Link href="/operations" className="rounded-xl bg-[#102A43] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#17496B]">Operations ↗</Link>
+          <span className="hidden items-center gap-1.5 rounded-full border border-[#DDE6ED] bg-white px-3 py-2 text-[10px] font-bold text-slate-500 sm:flex"><span className="size-1.5 rounded-full bg-emerald-500" /> Database live</span>
+          <span className="rounded-full bg-white px-3 py-2 text-[10px] font-semibold text-slate-500">Updated {nowLabel}</span>
+          <Link href="/operations" className="inline-flex items-center gap-2 rounded-xl bg-[#102A43] px-3.5 py-2.5 text-[11px] font-extrabold text-white transition hover:bg-[#17496B]"><Settings2 size={13}/> Operations</Link>
         </div>
       </header>
 
-      <section className="relative mt-8 overflow-hidden rounded-[36px] bg-[radial-gradient(circle_at_78%_12%,rgba(0,174,239,.28),transparent_28%),radial-gradient(circle_at_100%_100%,rgba(255,227,110,.09),transparent_28%),linear-gradient(125deg,#081B2D_0%,#102A43_52%,#17496B_100%)] p-7 text-white shadow-[0_28px_75px_rgba(16,42,67,.2)] sm:p-11">
-        <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[.045]" />
-        <div className="absolute -bottom-44 right-44 h-80 w-80 rounded-full border-[36px] border-[#00AEEF]/10" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
-          <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[.18em] text-[#FFE36E]"><span className="h-1.5 w-1.5 rounded-full bg-[#FFE36E]" /> The business at a glance</span>
-            <h1 className="mt-5 max-w-2xl text-4xl font-black leading-[1.02] tracking-[-.045em] sm:text-6xl">Turn attention<br/><span className="text-[#00AEEF]">into trials.</span><br/>Turn trials into members.</h1>
-            <p className="mt-5 max-w-xl text-sm leading-6 text-slate-300">One clear view of website demand, trial bookings and the people who go on to become members. No vanity metrics. No mystery maths.</p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/[.08] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-300">November trial bookings</p><p className="mt-3 text-4xl font-black">{current.bookings}</p><p className="mt-1 text-xs text-slate-300">From existing booking records</p></div>
-            <div className="rounded-2xl border border-white/10 bg-white/[.08] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Matched conversions</p><p className="mt-3 text-4xl font-black text-[#FFE36E]">{current.converted}</p><p className="mt-1 text-xs text-slate-300">After the booked trial date</p></div>
-            <div className="col-span-2 rounded-2xl bg-[#00AEEF] p-4 text-[#062B42]"><div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-wider">November conversion rate</p><p className="mt-2 text-4xl font-black">{current.conversionRate}%</p></div><p className="max-w-[180px] text-right text-xs font-semibold leading-5">Of trial bookings with a date that has passed</p></div></div>
-          </div>
+      <section className="relative grid shrink-0 gap-5 overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_80%_5%,rgba(0,174,239,.26),transparent_27%),linear-gradient(115deg,#081B2D,#102A43_60%,#17496B)] p-5 text-white shadow-[0_18px_50px_rgba(16,42,67,.15)] sm:p-6 lg:min-h-[190px] lg:grid-cols-[1.1fr_1fr] lg:items-center">
+        <div className="pointer-events-none absolute -right-10 -top-28 size-72 rounded-full border-[38px] border-white/[.045]" />
+        <div className="relative">
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.08] px-3 py-1.5 text-[9px] font-black uppercase tracking-[.19em] text-[#FFE36E]"><Sparkles size={11}/> The business, in one view</div>
+          <h1 className="mt-3 text-3xl font-black leading-[.98] tracking-[-.05em] sm:text-4xl">Turn attention into <span className="text-[#00B5EF]">trials.</span><br/>Turn trials into members.</h1>
+          <p className="mt-2 max-w-xl text-xs leading-5 text-slate-300">One screen for discovery, trial demand and member conversion. The sources are labelled so you can tell verified outcomes from analytics snapshots.</p>
+        </div>
+        <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-2.5">
+          <StatPill label="Trial bookings" value={currentMonthBookings} note="Nov · 1–24"/>
+          <StatPill label="Matched members" value={current.converted} note="After trial"/>
+          <StatPill label="Matured conversion" value={`${current.conversionRate}%`} note={`${current.eligible} eligible`} accent/>
+          <StatPill label="Trial-page visitors" value={current.trialVisitors} note="Vercel · 1–23"/>
         </div>
       </section>
 
-      <section className="mt-11">
-        <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">01 / Month-on-month performance</p><h2 className="mt-2 text-3xl font-black tracking-[-.04em] sm:text-[38px]">Are we actually improving?</h2><p className="mt-1 text-sm text-slate-500">Three-month view. Each month uses the same 1st–23rd comparison window.</p></div><span className="rounded-full bg-white px-3 py-2 text-[10px] font-bold text-slate-500 shadow-sm">September → October → November</span></div>
-        <div className="mt-6 grid gap-5 lg:grid-cols-3">
-          {monthly.map((m, i) => <article key={m.key} className={`rounded-[28px] border border-[#E5EDF2] p-6 shadow-[0_14px_38px_rgba(16,42,67,.06)] transition duration-200 hover:-translate-y-1 ${i === 2 ? 'border-[#00AEEF]/40 bg-[#EAF8FD]' : 'border-white bg-white'}`}>
-            <div className="flex items-center justify-between"><h3 className="text-lg font-black">{m.label}</h3>{i === 2 ? <span className="rounded-full bg-[#102A43] px-2.5 py-1 text-[10px] font-bold text-white">MONTH TO DATE</span> : <span className="text-[10px] font-semibold text-slate-400">1ST–23RD</span>}</div>
-            <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Search clicks</p><p className="mt-1 text-3xl font-black">{m.seo.clicks}</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Impressions</p><p className="mt-1 text-3xl font-black">{m.seo.impressions.toLocaleString('en-ZA')}</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Click-through rate</p><p className="mt-1 text-2xl font-extrabold">{m.seo.ctr.toFixed(2)}%</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Avg. Google position</p><p className="mt-1 text-2xl font-extrabold">{m.seo.position.toFixed(1)}</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trial bookings</p><p className="mt-1 text-2xl font-extrabold">{m.bookings}</p></div>
-              <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Matched conversions</p><p className="mt-1 text-2xl font-extrabold text-[#008FC4]">{m.converted}</p></div>
-            </div>
-            <div className="mt-5 border-t border-slate-200/80 pt-4"><div className="flex justify-between text-xs"><span className="font-semibold text-slate-500">Trial conversion</span><span className="font-black">{m.conversionRate}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-[#00AEEF]" style={{ width: `${m.conversionRate}%` }} /></div></div>
-          </article>)}
-        </div>
-        <div className="mt-5 rounded-[26px] border border-[#E2EAF0] bg-white p-6 shadow-[0_12px_34px_rgba(16,42,67,.05)]">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-extrabold">Google organic clicks</h3><p className="text-xs text-slate-500">Same 1st–23rd day window for each month, so the comparison is fair.</p></div><span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Search Console</span></div>
-          <div className="mt-5 space-y-4">{monthly.map(m => <Bar key={m.key} label={m.label} value={m.seo.clicks} max={maxClicks} />)}</div>
-          <p className="mt-4 text-xs leading-5 text-slate-500">Clicks rose from 165 in September to 176 in October and 202 in November. Average position improved from 12.75 to 10.39 to 9.06. Impressions eased, while CTR improved. This is a positive organic-search trend, not proof that website sessions or memberships rose.</p>
-        </div>
-      </section>
-
-      <Ga4TrialFunnel />
-
-      <section className="mt-10 grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
-        <div className="rounded-[24px] bg-white p-6 shadow-sm sm:p-7">
-          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">03 / Trial-to-member journey</p><h2 className="mt-2 text-2xl font-black">From first visit to first membership</h2><p className="mt-2 text-sm leading-6 text-slate-500">A booking is treated as attended. A conversion is counted when the same email has a membership signup or qualifying paid session purchase after the booked trial appointment.</p>
-          <div className="mt-6 grid grid-cols-3 gap-2">
-            <div className="rounded-2xl bg-[#102A43] p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Booked</p><p className="mt-2 text-3xl font-black">{allTrials.length}</p><p className="mt-1 text-[10px] text-slate-300">All-time</p></div>
-            <div className="rounded-2xl bg-[#EAF8FD] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Converted</p><p className="mt-2 text-3xl font-black">{cohort.filter(x => x.conversion.status === 'converted').length}</p><p className="mt-1 text-[10px] text-slate-500">Matched after trial</p></div>
-            <div className="rounded-2xl bg-[#FFF7D6] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Not converted</p><p className="mt-2 text-3xl font-black">{cohort.filter(x => x.conversion.status === 'not_converted').length}</p><p className="mt-1 text-[10px] text-slate-500">Trial date passed</p></div>
+      <section className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[1.05fr_1.05fr_.9fr]">
+        <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#E0E8EE] bg-white p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
+          <div className="flex items-start justify-between gap-3">
+            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">01 / Get discovered</p><h2 className="mt-1 text-lg font-black tracking-tight">Search demand</h2><p className="text-[11px] text-slate-500">Google organic · matching 23-day windows</p></div>
+            <span className="rounded-xl bg-[#EAF8FD] p-2 text-[#008FC4]"><Search size={17}/></span>
           </div>
-          <div className="mt-6"><div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-extrabold">Latest trial bookings</h3><Link href="/operations" className="text-xs font-bold text-[#008FC4] hover:underline">Open Operations ↗</Link></div>
-            <div className="divide-y divide-slate-100">{latestTrials.map(b => {
-              const result = cohort.find(x => x.booking.id === b.id)?.conversion
-              return <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 py-3"><div><p className="text-sm font-bold">{b.fullName}</p><p className="text-xs text-slate-400">{b.email} · {b.appointmentDate}</p></div><span className={`rounded-full px-3 py-1.5 text-[10px] font-bold ${result?.status === 'converted' ? 'bg-emerald-50 text-emerald-700' : result?.status === 'upcoming' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'}`}>{result?.status === 'converted' ? 'Converted' : result?.status === 'upcoming' ? 'Upcoming' : 'Not converted yet'}</span></div>
-            })}</div>
+          <div className="mt-5 flex items-end justify-between gap-3">
+            <div><p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Clicks this month</p><p className="mt-1 text-4xl font-black tracking-[-.05em] tabular-nums">{current.clicks}</p></div>
+            <div className="rounded-xl bg-emerald-50 px-3 py-2 text-right"><p className="flex items-center justify-end gap-1 text-sm font-black text-emerald-700"><TrendMark/>{pct(clickChange)}</p><p className="text-[9px] font-semibold text-emerald-700/70">vs September</p></div>
           </div>
-        </div>
-        <div className="rounded-[28px] bg-[linear-gradient(145deg,#102A43,#143B59)] p-6 text-white shadow-[0_16px_40px_rgba(16,42,67,.14)] sm:p-8">
-          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#FFE36E]">04 / Measurement health</p><h2 className="mt-2 text-2xl font-black">Know what is being measured.</h2>
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.07] p-4"><div className="flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 Measurement ID</span><span className="text-sm font-black">G-3R4THL02Y6</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">Trial funnel events</span><span className="text-sm font-black">Verified</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 sessions · November 1–23</span><span className="text-sm font-black text-[#FFE36E]">6</span></div><p className="mt-3 text-xs text-slate-400">Page views, CTA clicks, form steps and trial_success have been verified in GA4 Realtime.</p></div>
-          <p className="mt-4 text-sm leading-6 text-slate-300">Tag Assistant confirmed the live measurement ID. Your test booking generated trial_cta_click, trial_submit and trial_success in GA4 Realtime. The dashboard requests reporting data only when you manually refresh it.</p>
-          <div className="mt-5 rounded-xl bg-[#FFE36E] p-4 text-[#102A43]"><p className="text-xs font-black uppercase tracking-wider">Action required</p><p className="mt-1 text-sm font-semibold leading-5">Run the GA4 funnel refresh above. If it still reports missing credentials, check that the Preview variables contain values and that this exact branch was redeployed after saving them.</p></div>
-        </div>
+          <div className="mt-4 space-y-3">
+            {monthly.map((m,i)=><div key={m.key} className="grid grid-cols-[30px_1fr_35px] items-center gap-2">
+              <span className="text-[10px] font-bold text-slate-400">{m.label}</span>
+              <div className="h-3 overflow-hidden rounded-full bg-[#EDF2F6]"><div className={`h-full rounded-full ${i===2?'bg-[#00AEEF]':'bg-[#9CB8C9]'}`} style={{width:`${m.clicks/220*100}%`}}/></div>
+              <span className="text-right text-xs font-black tabular-nums">{m.clicks}</span>
+            </div>)}
+          </div>
+          <div className="mt-auto grid grid-cols-3 gap-2 border-t border-[#E9EEF2] pt-4">
+            <div><p className="text-[9px] font-bold uppercase text-slate-400">CTR</p><p className="mt-1 text-lg font-black">{current.ctr.toFixed(2)}%</p><p className="text-[9px] text-emerald-700">↑ from 3.21%</p></div>
+            <div><p className="text-[9px] font-bold uppercase text-slate-400">Avg. position</p><p className="mt-1 text-lg font-black">{current.position.toFixed(1)}</p><p className="text-[9px] text-emerald-700">↑ {positionChange.toFixed(1)} places</p></div>
+            <div><p className="text-[9px] font-bold uppercase text-slate-400">Impressions</p><p className="mt-1 text-lg font-black">{(current.impressions/1000).toFixed(1)}k</p><p className="text-[9px] text-slate-400">Search visibility</p></div>
+          </div>
+        </article>
+
+        <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#D8E9F0] bg-[linear-gradient(155deg,#F8FCFE,#EAF7FB)] p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
+          <div className="flex items-start justify-between gap-3">
+            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">02 / Turn interest into revenue</p><h2 className="mt-1 text-lg font-black tracking-tight">Trial conversion engine</h2><p className="text-[11px] text-slate-500">Vercel visitor data + email-matched booking outcomes</p></div>
+            <span className="rounded-xl bg-white p-2 text-[#008FC4]"><Zap size={17}/></span>
+          </div>
+          <div className="mt-5 rounded-2xl bg-[#102A43] p-4 text-white">
+            <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.15em] text-slate-300">Free-trial page visitors · Nov 1–23</span><span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-[#FFE36E]">VERCEL ANALYTICS</span></div>
+            <div className="mt-2 flex items-end justify-between"><span className="text-4xl font-black tracking-[-.05em]">{current.trialVisitors}</span><span className="pb-1 text-[10px] text-slate-300">{current.trialPageViews} page views · checked 24 Nov</span></div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#00B5EF]" style={{width:`${Math.max(current.conversionRate,2)}%`}}/></div>
+            <div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-slate-300">Matured trial cohort</span><strong className="text-[#FFE36E]">{current.conversionRate}% converted</strong></div>
+          </div>
+          <div className="mt-3 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-1.5">
+            <div className="rounded-xl border border-[#DDEAF0] bg-white p-3"><Users size={14} className="text-[#008FC4]"/><p className="mt-2 text-2xl font-black">{current.bookings}</p><p className="text-[9px] font-bold text-slate-500">Booked</p></div>
+            <ArrowRight size={14} className="text-[#8DA6B6]"/>
+            <div className="rounded-xl border border-[#DDEAF0] bg-white p-3"><CalendarDays size={14} className="text-[#008FC4]"/><p className="mt-2 text-2xl font-black">{current.eligible}</p><p className="text-[9px] font-bold text-slate-500">Trial date passed</p></div>
+            <ArrowRight size={14} className="text-[#8DA6B6]"/>
+            <div className="rounded-xl border border-[#B8E6F4] bg-white p-3"><CheckCircle2 size={14} className="text-emerald-600"/><p className="mt-2 text-2xl font-black text-[#008FC4]">{current.converted}</p><p className="text-[9px] font-bold text-slate-500">Converted</p></div>
+          </div>
+          <div className="mt-auto flex items-center justify-between border-t border-[#DDEAF0] pt-3 text-[10px]"><span className="text-slate-500">All-time: {allTrials.length} trials · {allConverted} matched conversions</span><span className="font-black text-[#102A43]">{allRate}% matured</span></div>
+        </article>
+
+        <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#E0E8EE] bg-white p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
+          <div className="flex items-start justify-between gap-3">
+            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">03 / What needs attention</p><h2 className="mt-1 text-lg font-black tracking-tight">Owner's radar</h2><p className="text-[11px] text-slate-500">The next best moves, not another report</p></div>
+            <span className="rounded-xl bg-[#FFF6D9] p-2 text-[#9B7300]"><Compass size={17}/></span>
+          </div>
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-[#FFFAEA] p-3.5">
+            <div className="flex items-center gap-2"><CircleAlert size={15} className="text-amber-700"/><p className="text-[10px] font-black uppercase tracking-wider text-amber-900">Tracking setup incomplete</p></div>
+            <p className="mt-1.5 text-xs font-semibold leading-5 text-amber-950">GA4 is connected in Supermetrics, but standard reporting has not returned /free-trial page views or trial_* events. I found and corrected a report-query bug that omitted the filtered dimensions.</p>
+            <p className="mt-2 text-[10px] font-bold text-amber-800">Vercel Analytics independently recorded 61 unique trial-page visitors in November.</p>
+          </div>
+          <div className="mt-3 rounded-2xl border border-[#DDE8EF] bg-[#F7FAFC] p-3.5">
+            <div className="flex items-center gap-2"><BarChart3 size={15} className="text-[#008FC4]"/><p className="text-[10px] font-black uppercase tracking-wider text-[#102A43]">SEO is moving in the right direction</p></div>
+            <p className="mt-1.5 text-xs leading-5 text-slate-600">Search clicks are up {clickChange.toFixed(0)}% since September. Social referrals to the trial page fell from 615 in September to 7 in November. Check whether campaigns or links changed.</p>
+          </div>
+          <Ga4MiniRefresh />
+          <div className="mt-auto flex items-center justify-between border-t border-[#E9EEF2] pt-3"><span className="text-[10px] font-semibold text-slate-500">Manual refresh only · no background jobs</span><Link href="/operations" className="inline-flex items-center gap-1 text-[10px] font-black text-[#008FC4] hover:underline">Open operations <ArrowRight size={12}/></Link></div>
+        </article>
       </section>
 
-      <section className="mt-10 grid gap-5 md:grid-cols-3">
-        <article className="rounded-[26px] border border-[#E4ECF2] bg-white p-6 shadow-[0_12px_32px_rgba(16,42,67,.05)]"><p className="text-[10px] font-black uppercase tracking-[.18em] text-[#008FC4]">SEO</p><h3 className="mt-2 text-lg font-black">More searchers are choosing us</h3><p className="mt-2 text-sm leading-6 text-slate-500">Clicks and average ranking position improved across the three comparable 23-day windows. Next, focus on the queries and pages that bring qualified local prospects.</p></article>
-        <article className="rounded-[22px] border border-slate-200 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.18em] text-[#008FC4]">Conversion</p><h3 className="mt-2 text-lg font-black">Follow the booking email</h3><p className="mt-2 text-sm leading-6 text-slate-500">Use the booking email to identify the subsequent membership signup or qualifying paid pack. No attendance admin and no duplicate records.</p></article>
-        <article className="rounded-[22px] border border-slate-200 bg-white p-5"><p className="text-[10px] font-black uppercase tracking-[.18em] text-[#008FC4]">Paid marketing</p><h3 className="mt-2 text-lg font-black">Connect cost to outcomes</h3><p className="mt-2 text-sm leading-6 text-slate-500">Google Ads currently returns no campaign rows. Meta history currently stops in June. We'll show cost per trial and member only once the correct active accounts are confirmed.</p></article>
+      <section className="grid shrink-0 gap-3 lg:grid-cols-[1.1fr_.9fr]">
+        <article className="rounded-[20px] border border-[#E0E8EE] bg-white px-5 py-3.5">
+          <div className="flex items-center justify-between gap-2"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">04 / Momentum</p><h3 className="text-sm font-black">Trial-page visitors and bookings, side by side.</h3></div><span className="text-[9px] font-semibold text-slate-400">Vercel Analytics · /free-trial · 1st–23rd</span></div>
+          <div className="mt-3 grid grid-cols-3 divide-x divide-[#E7EDF1]">
+            {monthly.map((m,i)=><div key={m.key} className={`px-3 first:pl-0 last:pr-0 ${i===2?'text-[#008FC4]':''}`}><p className="text-[9px] font-bold uppercase text-slate-400">{m.full}</p><div className="mt-1 flex items-center gap-2"><span className="text-xl font-black tabular-nums">{m.trialVisitors}</span><span className="text-[9px] font-semibold text-slate-400">visitors</span><span className="ml-auto text-[10px] font-black">{m.bookings} bookings</span></div></div>)}
+          </div>
+        </article>
+        <article className="rounded-[20px] border border-[#E0E8EE] bg-white px-5 py-3.5">
+          <div className="flex items-center justify-between"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">05 / Recent activity</p><h3 className="text-sm font-black">Latest trial bookings</h3></div><Link href="/operations" className="text-[10px] font-black text-[#008FC4]">View all →</Link></div>
+          <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2">
+            {latestTrials.slice(0,4).map(({booking,conversion})=><div key={booking.id} className="flex min-w-0 items-center gap-2"><span className={`size-2 shrink-0 rounded-full ${conversion.status==='converted'?'bg-emerald-500':conversion.status==='upcoming'?'bg-sky-500':'bg-amber-400'}`}/><div className="min-w-0"><p className="truncate text-[10px] font-bold">{booking.fullName}</p><p className="text-[9px] text-slate-400">{booking.appointmentDate} · {conversion.status==='converted'?'Converted':conversion.status==='upcoming'?'Upcoming':'Awaiting conversion'}</p></div></div>)}
+          </div>
+        </article>
       </section>
-
-      <footer className="flex flex-wrap justify-between gap-3 py-8 text-[11px] text-slate-400"><span>TENROUNDS Growth Cockpit · Owner-led reporting · Manual refresh</span><span>SEO data: Search Console · 1st–23rd of each month · Checked 24 Nov 2026</span></footer>
+      <footer className="flex shrink-0 items-center justify-between pb-1 text-[9px] text-slate-400"><span>TENROUNDS Growth Cockpit · One-page owner view</span><span>Bookings: TENROUNDS DB · Search: Search Console · Visitors: Vercel snapshot · GA4 API credentials pending</span></footer>
     </div>
   </main>
 }
