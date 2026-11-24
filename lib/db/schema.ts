@@ -1,0 +1,315 @@
+import { boolean, integer, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
+
+export const specials = pgTable('specials', {
+  id: serial('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description').notNull().default(''),
+  badge: text('badge').notNull().default(''),
+  ctaLabel: text('cta_label').notNull().default(''),
+  ctaHref: text('cta_href').notNull().default(''),
+  imageUrl: text('image_url').notNull().default(''),
+  showPopup: boolean('show_popup').notNull().default(true),
+  showInline: boolean('show_inline').notNull().default(true),
+  showBar: boolean('show_bar').notNull().default(false),
+  // Optional membership discount: percent off applied to the selected memberships
+  discountPercent: integer('discount_percent').notNull().default(0),
+  // Comma-separated membership IDs the discount applies to (see lib/memberships.ts)
+  discountMembershipIds: text('discount_membership_ids').notNull().default(''),
+  // Which kind of special this is: 'membership' (shown inline above the finder) or
+  // 'sessions' (shown above the session-pack prices and discounts session packs).
+  kind: text('kind').notNull().default('membership'),
+  // For session specials: comma-separated pack quantities the discount applies to (e.g. "1,10,20,30")
+  sessionPackQuantities: text('session_pack_quantities').notNull().default(''),
+  // For session specials: bonus sessions per pack as "qty:bonus" pairs (e.g. "30:6,20:4")
+  sessionPackBonuses: text('session_pack_bonuses').notNull().default(''),
+  // For session specials: 'percent' (off) or 'amount' (rand off)
+  sessionDiscountType: text('session_discount_type').notNull().default('percent'),
+  // For session specials: the discount value (percent or rand depending on sessionDiscountType)
+  sessionDiscountValue: integer('session_discount_value').notNull().default(0),
+  active: boolean('active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  startsAt: timestamp('starts_at', { withTimezone: true }),
+  endsAt: timestamp('ends_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const chowWinners = pgTable('chow_winners', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  label: text('label').notNull().default('CHOW Winner'),
+  period: text('period').notNull().default(''),
+  achievement: text('achievement').notNull().default(''),
+  // The winner's score for the week's challenge (e.g. "221")
+  score: text('score').notNull().default(''),
+  quote: text('quote').notNull().default(''),
+  imageUrl: text('image_url').notNull().default(''),
+  active: boolean('active').notNull().default(true),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Single key/value rows for editable site copy (e.g. the weekly CHOW challenge)
+export const settings = pgTable('settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Weekly session-milestone celebration (100/200/300/400/500 sessions) shown on the members page
+export const sessionMilestones = pgTable('session_milestones', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  sessions: integer('sessions').notNull().default(0),
+  imageUrl: text('image_url').notNull().default(''),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Native free-trial bookings submitted from /free-trial
+export const trialBookings = pgTable('trial_bookings', {
+  id: serial('id').primaryKey(),
+  fullName: text('full_name').notNull(),
+  email: text('email').notNull(),
+  phone: text('phone').notNull(),
+  // Booking date stored as an ISO date string (YYYY-MM-DD) and time as "HH:mm"
+  // — portable across any Postgres provider, no timezone surprises.
+  appointmentDate: text('appointment_date').notNull(),
+  appointmentTime: text('appointment_time').notNull(),
+  agreementsAccepted: boolean('agreements_accepted').notNull().default(false),
+  manuallyConverted: boolean('manually_converted').notNull().default(false),
+  utmSource: text('utm_source').notNull().default(''),
+  utmMedium: text('utm_medium').notNull().default(''),
+  utmCampaign: text('utm_campaign').notNull().default(''),
+  utmContent: text('utm_content').notNull().default(''),
+  utmTerm: text('utm_term').notNull().default(''),
+  landingPage: text('landing_page').notNull().default(''),
+  referrer: text('referrer').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Days the studio is closed / unavailable for trials (e.g. public holidays).
+// Stored as 'YYYY-MM-DD' text to match appointmentDate and avoid TZ surprises.
+export const blockedDays = pgTable('blocked_days', {
+  id: serial('id').primaryKey(),
+  day: text('day').notNull().unique(),
+  reason: text('reason').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Native membership signups submitted from /signup
+export const membershipSignups = pgTable('membership_signups', {
+  id: serial('id').primaryKey(),
+  // ── Selected membership ──
+  membershipId: text('membership_id').notNull().default(''),
+  membershipType: text('membership_type').notNull().default(''), // access tier name (e.g. "Anytime Access")
+  accessType: text('access_type').notNull().default(''), // membership name (e.g. "Unlimited")
+  contractLength: integer('contract_length').notNull().default(12), // months
+  monthlyFee: integer('monthly_fee').notNull().default(0),
+  totalContractValue: integer('total_contract_value').notNull().default(0),
+  // ── Member details ──
+  firstName: text('first_name').notNull(),
+  surname: text('surname').notNull(),
+  email: text('email').notNull(),
+  contactNumber: text('contact_number').notNull(),
+  idNumber: text('id_number').notNull(),
+  emergencyContactName: text('emergency_contact_name').notNull().default(''),
+  emergencyContactNumber: text('emergency_contact_number').notNull().default(''),
+  // ── Payment details ──
+  payerType: text('payer_type').notNull().default('member'), // 'member' | 'other'
+  accountHolderName: text('account_holder_name').notNull().default(''),
+  accountHolderId: text('account_holder_id').notNull().default(''),
+  accountHolderContact: text('account_holder_contact').notNull().default(''),
+  paymentMethod: text('payment_method').notNull().default('debit'), // 'debit' | 'cash'
+  debitOrderDate: text('debit_order_date').notNull().default(''), // '1st' | 'last'
+  bankAccountType: text('bank_account_type').notNull().default(''), // 'cheque' | 'savings'
+  bankName: text('bank_name').notNull().default(''),
+  branchName: text('branch_name').notNull().default(''),
+  branchCode: text('branch_code').notNull().default(''),
+  accountNumber: text('account_number').notNull().default(''),
+  bankAccountHolder: text('bank_account_holder').notNull().default(''),
+  // ── Agreements ──
+  mandateAccepted: boolean('mandate_accepted').notNull().default(false),
+  agreeTerms: boolean('agree_terms').notNull().default(false),
+  agreeCancellation: boolean('agree_cancellation').notNull().default(false),
+  agreeHealth: boolean('agree_health').notNull().default(false),
+  agreePrivacy: boolean('agree_privacy').notNull().default(false),
+  // ── Signature (PNG data URL) ──
+  signature: text('signature').notNull().default(''),
+  // ── Workflow ──
+  status: text('status').notNull().default('New'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Online session-pack purchases submitted from /buy-sessions (paid via PayFast)
+export const sessionPurchases = pgTable('session_purchases', {
+  id: serial('id').primaryKey(),
+  // ── Purchased pack ──
+  packQuantity: integer('pack_quantity').notNull().default(0), // paid sessions in the pack (e.g. 30)
+  bonusSessions: integer('bonus_sessions').notNull().default(0), // free bonus sessions from a special
+  totalSessions: integer('total_sessions').notNull().default(0), // packQuantity + bonusSessions
+  unitLabel: text('unit_label').notNull().default(''), // e.g. "30 Pack" / "Single Session"
+  baseAmount: integer('base_amount').notNull().default(0), // full price before any special
+  amount: integer('amount').notNull().default(0), // amount actually charged (Rand)
+  specialId: integer('special_id'), // applied sessions special, if any
+  specialTitle: text('special_title').notNull().default(''),
+  // ── Member details ──
+  firstName: text('first_name').notNull(),
+  surname: text('surname').notNull(),
+  email: text('email').notNull(),
+  contactNumber: text('contact_number').notNull(),
+  idNumber: text('id_number').notNull(),
+  emergencyContactName: text('emergency_contact_name').notNull().default(''),
+  emergencyContactNumber: text('emergency_contact_number').notNull().default(''),
+  // ── Agreements ──
+  agreeTerms: boolean('agree_terms').notNull().default(false),
+  agreeCancellation: boolean('agree_cancellation').notNull().default(false),
+  agreeHealth: boolean('agree_health').notNull().default(false),
+  agreePrivacy: boolean('agree_privacy').notNull().default(false),
+  // ── Signature (PNG data URL) ──
+  signature: text('signature').notNull().default(''),
+  // ── Payment / workflow ──
+  paymentStatus: text('payment_status').notNull().default('Pending'), // 'Pending' | 'Paid' | 'Failed' | 'Cancelled'
+  pfPaymentId: text('pf_payment_id').notNull().default(''), // PayFast payment id from ITN
+  status: text('status').notNull().default('New'),
+  confirmationSent: boolean('confirmation_sent').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  paidAt: timestamp('paid_at', { withTimezone: true }),
+})
+
+// Gallery categories — managed in the admin Gallery tab
+export const galleryCategories = pgTable('gallery_categories', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Gallery photos — each belongs to a category; deleted when the category is deleted
+export const galleryPhotos = pgTable('gallery_photos', {
+  id: serial('id').primaryKey(),
+  categoryId: integer('category_id').notNull().references(() => galleryCategories.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  alt: text('alt').notNull().default(''),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// WhatsApp comms settings — key/value store
+export const whatsappSettings = pgTable('whatsapp_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Tracks which reminder types have been sent per booking (prevents duplicates)
+export const whatsappReminderLog = pgTable('whatsapp_reminder_log', {
+  id: serial('id').primaryKey(),
+  bookingId: integer('booking_id').notNull(),
+  reminderType: text('reminder_type').notNull(), // 'day_before' | 'same_day'
+  sentAt: timestamp('sent_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// ─── Operations / Staff ──────────────────────────────────────────────────────
+
+// Staff members (trainers) — simple name + phone
+export const staff = pgTable('staff', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  phone: text('phone').notNull().default(''),
+  // Emoji / glyph shown before the trainer's name on the roster ('♀' renders as the pink female sign)
+  icon: text('icon').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Shift configuration (default paid hours per shift type)
+export const shiftSettings = pgTable('shift_settings', {
+  id: serial('id').primaryKey(),
+  shiftType: text('shift_type').notNull().unique(), // 'morning' | 'afternoon' | 'saturday'
+  label: text('label').notNull().default(''),
+  startTime: text('start_time').notNull().default(''),
+  endTime: text('end_time').notNull().default(''),
+  defaultHours: text('default_hours').notNull().default(''), // stored as text to support decimals e.g. "4.5"
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Weekly shift roster assignments
+// Each row = one trainer assigned to a particular shift on a particular date
+export const shiftAssignments = pgTable('shift_assignments', {
+  id: serial('id').primaryKey(),
+  // ISO date string YYYY-MM-DD
+  shiftDate: text('shift_date').notNull(),
+  // 'morning' | 'afternoon'
+  shiftType: text('shift_type').notNull(),
+  staffId: integer('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  // Overridden hours for this specific assignment (defaults to shift default)
+  hours: text('hours').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Notes on trial bookings (trainer notes added via Operations Dashboard)
+export const trialBookingNotes = pgTable('trial_booking_notes', {
+  id: serial('id').primaryKey(),
+  bookingId: integer('booking_id').notNull().references(() => trialBookings.id, { onDelete: 'cascade' }),
+  note: text('note').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Water credit ledger — current balance per member (identified by name, no user account)
+export const waterCredits = pgTable('water_credits', {
+  id: serial('id').primaryKey(),
+  memberName: text('member_name').notNull(),
+  balance: integer('balance').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Full audit log for water credit transactions
+export const waterAuditLog = pgTable('water_audit_log', {
+  id: serial('id').primaryKey(),
+  creditId: integer('credit_id').notNull().references(() => waterCredits.id, { onDelete: 'cascade' }),
+  delta: integer('delta').notNull(), // positive = credit added, negative = credit used
+  note: text('note').notNull().default(''),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Stock items tracked on the Operations dashboard (current level vs target/max level)
+export const stockItems = pgTable('stock_items', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  currentQty: integer('current_qty').notNull().default(0),
+  maxQty: integer('max_qty').notNull().default(0),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Stock-take confirmations — the most recent row is "last confirmed by {staff} on {date}"
+export const stockConfirmations = pgTable('stock_confirmations', {
+  id: serial('id').primaryKey(),
+  staffName: text('staff_name').notNull(),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type Special = typeof specials.$inferSelect
+export type ChowWinner = typeof chowWinners.$inferSelect
+export type SettingRow = typeof settings.$inferSelect
+export type SessionMilestone = typeof sessionMilestones.$inferSelect
+export type TrialBooking = typeof trialBookings.$inferSelect
+export type BlockedDay = typeof blockedDays.$inferSelect
+export type MembershipSignup = typeof membershipSignups.$inferSelect
+export type SessionPurchase = typeof sessionPurchases.$inferSelect
+export type GalleryCategory = typeof galleryCategories.$inferSelect
+export type GalleryPhoto = typeof galleryPhotos.$inferSelect
+export type WhatsappSetting = typeof whatsappSettings.$inferSelect
+
+// Operations types
+export type Staff = typeof staff.$inferSelect
+export type ShiftSetting = typeof shiftSettings.$inferSelect
+export type ShiftAssignment = typeof shiftAssignments.$inferSelect
+export type TrialBookingNote = typeof trialBookingNotes.$inferSelect
+export type WaterCredit = typeof waterCredits.$inferSelect
+export type WaterAuditLog = typeof waterAuditLog.$inferSelect
+export type StockItem = typeof stockItems.$inferSelect
+export type StockConfirmation = typeof stockConfirmations.$inferSelect
