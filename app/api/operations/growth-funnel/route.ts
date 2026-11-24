@@ -80,6 +80,16 @@ export async function POST(request: Request) {
       .filter(row => row.conversion.status === 'converted' && (row.conversion.source === 'membership' || row.booking.manuallyConverted))
       .map(row => normalizeEmail(row.booking.email) || `manual-${row.booking.id}`))
     const members = convertedEmails.size
+    const campaignAttributedBookings = cohort.filter(row => Boolean(row.utmSource || row.utmMedium || row.utmCampaign)).length
+    const campaignBreakdown = Object.values(cohort.reduce<Record<string, { source: string; medium: string; campaign: string; bookings: number; members: number }>>((acc, row) => {
+      if (!row.utmSource && !row.utmMedium && !row.utmCampaign) return acc
+      const key = [row.utmSource || 'unknown', row.utmMedium || 'unknown', row.utmCampaign || 'untagged'].join('|')
+      if (!acc[key]) acc[key] = { source: row.utmSource || 'unknown', medium: row.utmMedium || 'unknown', campaign: row.utmCampaign || 'untagged', bookings: 0, members: 0 }
+      acc[key].bookings += 1
+      const converted = conversions.find(item => item.booking.id === row.id)?.conversion.status === 'converted'
+      if (converted) acc[key].members += 1
+      return acc
+    }, {}))
     const rate = (numerator: number, denominator: number) => denominator > 0 ? Math.round((numerator / denominator) * 1000) / 10 : 0
     return NextResponse.json({
       dateRange: { startDate, endDate },
@@ -87,6 +97,7 @@ export async function POST(request: Request) {
       website: { visitors: website.visitors, pageviews: website.pageviews, daily: websiteDaily },
       trialPage: { visitors: trialPage.visitors, pageviews: trialPage.pageviews, daily: trialPageDaily },
       bookings: cohort.length, trialsReached, members,
+      campaigns: { attributedBookings: campaignAttributedBookings, unattributedBookings: cohort.length - campaignAttributedBookings, breakdown: campaignBreakdown },
       rates: {
         websiteToTrialPage: rate(trialPage.visitors, website.visitors),
         trialPageToBooking: rate(cohort.length, trialPage.visitors),
