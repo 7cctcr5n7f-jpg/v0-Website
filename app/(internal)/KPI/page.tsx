@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { and, gte, lt, desc } from 'drizzle-orm'
+import { desc } from 'drizzle-orm'
 import Link from 'next/link'
 import { db } from '@/lib/db'
 import { trialBookings, membershipSignups, sessionPurchases } from '@/lib/db/schema'
 import { isOperationsAuthed } from '@/lib/operations-auth'
 import { OperationsLogin } from '@/components/operations/operations-login'
+import { Ga4TrialFunnel } from '@/components/operations/ga4-trial-funnel'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -27,9 +28,6 @@ const MONTHS = [
 function monthKey(value: Date | string) {
   const date = new Date(value)
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit' }).format(date).slice(0, 7)
-}
-function money(value: number) {
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value)
 }
 function Bar({ label, value, max, suffix = '' }: { label: string; value: number; max: number; suffix?: string }) {
   return <div className="grid grid-cols-[86px_1fr_64px] items-center gap-3">
@@ -68,7 +66,6 @@ export default async function KpiPage() {
       converted,
       eligible: completed.length,
       conversionRate: completed.length ? Math.round((converted / completed.length) * 100) : 0,
-      feeValue: monthSignups.reduce((sum, row) => sum + (row.monthlyFee || 0), 0),
     }
   })
 
@@ -131,9 +128,11 @@ export default async function KpiPage() {
         </div>
       </section>
 
+      <Ga4TrialFunnel />
+
       <section className="mt-8 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
         <div className="rounded-[24px] bg-white p-6 shadow-sm sm:p-7">
-          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">02 / Trial-to-member journey</p><h2 className="mt-2 text-2xl font-black">The people behind the numbers</h2><p className="mt-2 text-sm leading-6 text-slate-500">A booking is treated as attended. A conversion is counted when the same email has a membership signup or qualifying paid session purchase after the booked trial appointment.</p>
+          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">03 / Trial-to-member journey</p><h2 className="mt-2 text-2xl font-black">The people behind the numbers</h2><p className="mt-2 text-sm leading-6 text-slate-500">A booking is treated as attended. A conversion is counted when the same email has a membership signup or qualifying paid session purchase after the booked trial appointment.</p>
           <div className="mt-6 grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-[#102A43] p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Booked</p><p className="mt-2 text-3xl font-black">{allTrials.length}</p><p className="mt-1 text-[10px] text-slate-300">All-time</p></div>
             <div className="rounded-2xl bg-[#EAF8FD] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Converted</p><p className="mt-2 text-3xl font-black">{cohort.filter(x => x.conversion.status === 'converted').length}</p><p className="mt-1 text-[10px] text-slate-500">Matched after trial</p></div>
@@ -147,10 +146,10 @@ export default async function KpiPage() {
           </div>
         </div>
         <div className="rounded-[24px] bg-[#102A43] p-6 text-white shadow-sm sm:p-7">
-          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#FFE36E]">03 / Website analytics health</p><h2 className="mt-2 text-2xl font-black">We need to fix the measuring tape.</h2>
-          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.07] p-4"><div className="flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 sessions · September</span><span className="text-sm font-black">No data</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 sessions · October</span><span className="text-sm font-black">No data</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 sessions · November 1–23</span><span className="text-sm font-black text-[#FFE36E]">6</span></div><p className="mt-3 text-xs text-slate-400">November also shows 4 users and 12 page views in the connected GA4 property.</p></div>
-          <p className="mt-4 text-sm leading-6 text-slate-300">The GA4 connection works, but the data does not look like real website traffic. Only standard events appear. We have not seen trial CTA or completed-booking events in the September–November report.</p>
-          <div className="mt-5 rounded-xl bg-[#FFE36E] p-4 text-[#102A43]"><p className="text-xs font-black uppercase tracking-wider">Action required</p><p className="mt-1 text-sm font-semibold leading-5">Test the live site with Tag Assistant and GA4 Realtime after accepting analytics preferences. Confirm that page_view, trial_cta_click and trial_success arrive in property 338885680.</p></div>
+          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#FFE36E]">04 / Analytics health</p><h2 className="mt-2 text-2xl font-black">Tracking is now verified.</h2>
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.07] p-4"><div className="flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 Measurement ID</span><span className="text-sm font-black">G-3R4THL02Y6</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">Trial funnel events</span><span className="text-sm font-black">Verified</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 sessions · November 1–23</span><span className="text-sm font-black text-[#FFE36E]">6</span></div><p className="mt-3 text-xs text-slate-400">Page views, CTA clicks, form steps and trial_success have been verified in GA4 Realtime.</p></div>
+          <p className="mt-4 text-sm leading-6 text-slate-300">Tag Assistant confirmed the live measurement ID. GA4 Realtime recorded trial_cta_click, trial_submit and trial_success from the test booking. The new funnel panel retrieves landing-page and conversion metrics only when you press Refresh.</p>
+          <div className="mt-5 rounded-xl bg-[#FFE36E] p-4 text-[#102A43]"><p className="text-xs font-black uppercase tracking-wider">Action required</p><p className="mt-1 text-sm font-semibold leading-5">The dashboard's private reporting connection needs a Google service account. Add GA4_SERVICE_ACCOUNT_EMAIL and GA4_SERVICE_ACCOUNT_PRIVATE_KEY to Vercel, then grant that service account Viewer access to GA4 property 338885680.</p></div>
         </div>
       </section>
 
