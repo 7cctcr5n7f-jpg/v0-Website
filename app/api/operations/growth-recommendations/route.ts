@@ -69,16 +69,6 @@ function candidate(metrics: Metrics) {
 
   return [search, web]
 }
-function nextVariant(store: Store, baseId: string, date: string) {
-  const matching = store.recommendations.filter(item => item.baseId === baseId)
-  const todayItem = matching.find(item => item.createdDate === date && item.status !== 'dismissed')
-  if (todayItem) return todayItem
-  const open = matching.find(item => item.status === 'open')
-  if (open) return open
-  const count = matching.length + 1
-  return null
-}
-
 export async function GET() {
   if (!(await isOperationsAuthed())) return NextResponse.json({ error: 'Please sign in to Operations again.' }, { status: 401 })
   return NextResponse.json({ ...(await readStore()), today: today() })
