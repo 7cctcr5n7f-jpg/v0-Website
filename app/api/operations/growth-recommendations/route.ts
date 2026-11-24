@@ -8,7 +8,9 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const KEY = 'growth_recommendation_history_v1'
+type SearchDetail = { pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>; queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }> }
 type Metrics = {
+  searchDetail?: SearchDetail
   seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
   website: { trialVisitors: number; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
 }
@@ -93,8 +95,20 @@ function candidate(metrics: Metrics) {
   const position = metrics.seo.position
   const trialRate = metrics.website.trialToBookingRate
   const memberRate = metrics.website.memberRate
+  const pages = metrics.searchDetail?.pages || []
+  const queries = metrics.searchDetail?.queries || []
+  const httpHome = pages.find(row => { try { const url = new URL(row.page); return url.protocol === 'http:' && url.pathname === '/' } catch { return false } })
+  const httpsHome = pages.find(row => { try { const url = new URL(row.page); return url.protocol === 'https:' && url.pathname === '/' } catch { return false } })
+  const weakPage = pages.filter(row => row.impressions >= 100 && row.position >= 3 && row.position <= 15 && row.ctr < 0.025).sort((a, b) => b.impressions - a.impressions)[0]
+  const weakQuery = queries.filter(row => row.impressions >= 25 && row.position <= 15 && row.ctr < 0.08 && !/(tenrounds|10 rounds)/i.test(row.query)).sort((a, b) => b.impressions - a.impressions)[0]
 
-  const search = seoImpressionChange <= -5
+  const search = httpHome && httpsHome
+    ? { baseId: 'seo-canonical', area: 'search' as const, title: 'Consolidate HTTP and HTTPS search signals', insight: `Search Console reports both ${httpHome.clicks} clicks from the HTTP homepage and ${httpsHome.clicks} from the HTTPS homepage. Search signals are split across two URL variants.`, action: 'Verify that every HTTP homepage request redirects permanently (301) to the HTTPS homepage. Ensure the HTTPS page has a self-referencing canonical, and that the sitemap and internal links use HTTPS only. Recheck the two URL variants in Search Console after Google recrawls.', kpi: 'Clicks consolidated on the HTTPS homepage', metricKey: 'seo.clicks', direction: 'up' as const }
+    : weakPage
+      ? { baseId: 'seo-page-ctr', area: 'search' as const, title: 'Improve the search result for a high-impression page', insight: `${weakPage.page} earned ${weakPage.impressions.toLocaleString()} impressions but only ${(weakPage.ctr * 100).toFixed(2)}% CTR at average position ${weakPage.position.toFixed(1)}.`, action: `Review the title tag and meta description for ${weakPage.page}. Make the page's Pretoria East relevance, exact service and 30-minute workout benefit clearer. Ensure the search snippet promise matches the page's first screen, then measure CTR and clicks for this URL.`, kpi: 'Page-level organic CTR', metricKey: 'seo.ctr', direction: 'up' as const }
+      : weakQuery
+        ? { baseId: 'seo-query-intent', area: 'search' as const, title: 'Capture more clicks for a high-intent search', insight: `“${weakQuery.query}” generated ${weakQuery.impressions} impressions, ${weakQuery.clicks} clicks and ${(weakQuery.ctr * 100).toFixed(1)}% CTR at position ${weakQuery.position.toFixed(1)}.`, action: `Check which TENROUNDS page is ranking for “${weakQuery.query}”. Improve its title and description to answer that search intent directly, add useful supporting content and make the free-trial next step clear. Track this exact query in the next review.`, kpi: 'Clicks for the selected search query', metricKey: 'seo.clicks', direction: 'up' as const }
+        : seoImpressionChange <= -5
     ? { baseId: 'seo-reach', area: 'search' as const, title: 'Recover search visibility without sacrificing rankings', insight: `Impressions are ${Math.abs(seoImpressionChange)}% lower than the previous comparable window, while clicks are ${seoClickChange >= 0 ? 'still growing' : 'also declining'}.`, action: 'Review the pages and queries losing impressions in Search Console. Refresh the most relevant page with clearer local intent, stronger service detail and links from related pages. Recheck impressions and clicks in the next review.', kpi: 'Search impressions', metricKey: 'seo.impressions', direction: 'up' as const }
     : ctr < 5
       ? { baseId: 'seo-ctr', area: 'search' as const, title: 'Win more clicks from the rankings you already have', insight: `Organic CTR is ${ctr.toFixed(2)}%. There is room to earn more clicks from existing search visibility.`, action: 'Review the highest-impression queries and pages. Rewrite title tags and meta descriptions to make the Pretoria East location, 30-minute workout and free-trial offer clearer. Change only a small group first, then compare CTR.', kpi: 'Organic CTR', metricKey: 'seo.ctr', direction: 'up' as const }
