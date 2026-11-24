@@ -42,7 +42,7 @@ export function GrowthStudio() {
 
   useEffect(() => {
     fetch('/api/growth-studio/state', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
-      if (data?.state) setHub({ ...starter, ...data.state })
+      if (data?.state) setHub({ campaigns: data.state.campaigns ?? starter.campaigns, posts: data.state.posts ?? starter.posts, activeCampaignId: data.state.activeCampaignId ?? starter.activeCampaignId })
     }).catch(() => undefined)
   }, [])
 
