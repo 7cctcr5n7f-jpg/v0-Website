@@ -18,7 +18,7 @@ async function accessToken() {
   const email = process.env.GSC_SERVICE_ACCOUNT_EMAIL || process.env.GA4_SERVICE_ACCOUNT_EMAIL
   const key = (process.env.GSC_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GA4_SERVICE_ACCOUNT_PRIVATE_KEY)?.replace(/\\n/g, '\n')
   if (!email?.trim() || !key?.trim()) {
-    throw new Error('Search Console credentials are not configured. Add GSC_SERVICE_ACCOUNT_EMAIL and GSC_SERVICE_ACCOUNT_PRIVATE_KEY in Vercel, then grant that service account access to the Search Console property.')
+    throw new Error('Google service-account credentials are not configured. The Search Console API can reuse GA4_SERVICE_ACCOUNT_EMAIL and GA4_SERVICE_ACCOUNT_PRIVATE_KEY; add GSC_SERVICE_ACCOUNT_EMAIL and GSC_SERVICE_ACCOUNT_PRIVATE_KEY only if you want a separate account. Grant the chosen service account access to the Search Console property.')
   }
   const now = Math.floor(Date.now() / 1000)
   const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
