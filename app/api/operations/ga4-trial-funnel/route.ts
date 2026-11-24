@@ -115,12 +115,12 @@ export async function POST(request: Request) {
 
   try {
     const accessToken = await getAccessToken()
-    const landingFilter = exactFilter('landingPage', '/free-trial')
+    const trialPageFilter = exactFilter('pagePath', '/free-trial')
     const [landing, booked, cta, form] = await Promise.all([
-      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'sessions', 'screenPageViews'], landingFilter),
-      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'eventCount'], andFilter(landingFilter, exactFilter('eventName', 'trial_success'))),
-      runReport(accessToken, { startDate, endDate }, ['eventCount'], andFilter(landingFilter, exactFilter('eventName', 'trial_cta_click'))),
-      runReport(accessToken, { startDate, endDate }, ['eventCount'], andFilter(landingFilter, exactFilter('eventName', 'trial_form_view'))),
+      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'sessions', 'screenPageViews'], trialPageFilter),
+      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'eventCount'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_success'))),
+      runReport(accessToken, { startDate, endDate }, ['eventCount'], exactFilter('eventName', 'trial_cta_click')),
+      runReport(accessToken, { startDate, endDate }, ['eventCount'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_form_view'))),
     ])
 
     const visitors = landing[0] || 0
