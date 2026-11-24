@@ -6,7 +6,7 @@ import { Activity, Check, ChevronDown, Lightbulb, RefreshCw, Search, Target, X }
 type Metrics = {
   searchDetail?: { pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>; queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }> }
   seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
-  website: { trialVisitors: number; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
+  website: { trialVisitors: number; trialPageViews: number | null; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websitePageViews: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
 }
 type Recommendation = {
   id: string; baseId: string; area: 'search' | 'website'; title: string; insight: string; action: string
@@ -79,13 +79,15 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
       const members = current?.members ?? fallbackWebsite.members
       const attributed = current?.campaigns?.attributedBookings ?? 0
       const websiteVisitors = typeof current?.website?.visitors === 'number' ? current.website.visitors : null
-      const websiteToTrialRate = websiteVisitors && websiteVisitors > 0 ? trialVisitors / websiteVisitors * 100 : null
-      const trialToBookingRate = trialVisitors > 0 ? trialBookings / trialVisitors * 100 : 0
+      const websitePageViews = typeof current?.website?.pageviews === 'number' ? current.website.pageviews : null
+      const trialPageViews = typeof current?.trialPage?.pageviews === 'number' ? current.trialPage.pageviews : null
+      const websiteToTrialRate = websitePageViews && websitePageViews > 0 && trialPageViews !== null ? trialPageViews / websitePageViews * 100 : null
+      const trialToBookingRate = trialPageViews && trialPageViews > 0 ? trialBookings / trialPageViews * 100 : 0
       const memberRate = trialReached > 0 ? members / trialReached * 100 : null
       const nextMetrics: Metrics = {
         ...(searchDetail ? { searchDetail: { pages: searchDetail.pages || [], queries: searchDetail.queries || [] } } : {}),
         seo,
-        website: { trialVisitors, trialBookings, trialToBookingRate, campaignAttributedBookings: attributed, websiteVisitors, websiteToTrialRate, trialReached, members, memberRate },
+        website: { trialVisitors, trialPageViews, trialBookings, trialToBookingRate, campaignAttributedBookings: attributed, websiteVisitors, websitePageViews, websiteToTrialRate, trialReached, members, memberRate },
       }
       const response = await fetch('/api/operations/growth-recommendations', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
