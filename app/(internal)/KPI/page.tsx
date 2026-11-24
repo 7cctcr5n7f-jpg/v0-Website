@@ -9,6 +9,7 @@ import { OperationsLogin } from '@/components/operations/operations-login'
 import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
 import { FullGrowthFunnel } from '@/components/operations/full-growth-funnel'
 import { GrowthRecommendations } from '@/components/operations/growth-recommendations'
+import { SearchConsoleDetails } from '@/components/operations/search-console-details'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
@@ -111,7 +112,7 @@ export default async function KpiPage() {
       <section className="grid min-h-0 min-w-0 flex-1 gap-3 xl:grid-cols-[1fr_1.08fr_.95fr]">
         <article className="flex min-w-0 min-h-[290px] flex-col rounded-[24px] border border-[#E0E8EE] bg-white p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
           <div className="flex items-start justify-between gap-3">
-            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">01 / Get discovered</p><h2 className="mt-1 text-lg font-black tracking-tight">Search demand</h2><p className="text-[11px] text-slate-500">Google organic · matching 23-day windows</p></div>
+            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">01 / Get discovered</p><h2 className="mt-1 text-lg font-black tracking-tight">Search demand</h2><p className="text-[11px] text-slate-500">Google organic · 23-day snapshots</p></div>
             <span className="rounded-xl bg-[#EAF8FD] p-2 text-[#008FC4]"><Search size={17}/></span>
           </div>
           <div className="mt-5 flex items-end justify-between gap-3">
@@ -161,6 +162,8 @@ export default async function KpiPage() {
           </div>
         </article>
       </section>
+      <SearchConsoleDetails />
+
       <GrowthRecommendations
         seo={{
           clicks: current.clicks,
@@ -174,9 +177,9 @@ export default async function KpiPage() {
         }}
         fallbackWebsite={{
           trialVisitors: current.trialVisitors,
-          trialBookings: 18,
-          trialReached: 13,
-          members: 1,
+          trialBookings: currentMonthBookings,
+          trialReached: current.eligible,
+          members: current.converted,
         }}
       />
 

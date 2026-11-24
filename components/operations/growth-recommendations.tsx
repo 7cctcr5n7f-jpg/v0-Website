@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import { Activity, Check, ChevronDown, Lightbulb, RefreshCw, Search, Target, X } from 'lucide-react'
 
 type Metrics = {
-  seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
-  website: { trialVisitors: number; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
+  searchDetail?: { pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>; queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }> }
+  seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number; httpsHomeClicks?: number | null; httpHomeClicks?: number | null; targetPageCtr?: number | null; targetQueryClicks?: number | null }
+  website: { trialVisitors: number; trialPageViews: number | null; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websitePageViews: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
 }
 type Recommendation = {
   id: string; baseId: string; area: 'search' | 'website'; title: string; insight: string; action: string
@@ -55,23 +56,50 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
     setError('')
     try {
       const currentWindow = monthWindow(0)
-      const currentResponse = await fetch('/api/operations/growth-funnel', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentWindow),
-      })
+      const searchEnd = new Date()
+      searchEnd.setDate(searchEnd.getDate() - 3)
+      const searchStart = new Date(searchEnd)
+      searchStart.setDate(searchStart.getDate() - 27)
+      const asDate = (value: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(value)
+      const [currentResponse, searchResponse] = await Promise.all([
+        fetch('/api/operations/growth-funnel', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentWindow),
+        }),
+        fetch('/api/operations/search-console', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: asDate(searchStart), endDate: asDate(searchEnd) }),
+        }),
+      ])
       const current = currentResponse.ok ? await currentResponse.json() : null
+      const searchDetail = searchResponse.ok ? await searchResponse.json() : null
       const trialVisitors = current?.trialPage?.visitors ?? fallbackWebsite.trialVisitors
       const trialBookings = current?.bookings ?? fallbackWebsite.trialBookings
       const trialReached = current?.trialsReached ?? fallbackWebsite.trialReached
       const members = current?.members ?? fallbackWebsite.members
       const attributed = current?.campaigns?.attributedBookings ?? 0
       const websiteVisitors = typeof current?.website?.visitors === 'number' ? current.website.visitors : null
-      const websiteToTrialRate = websiteVisitors && websiteVisitors > 0 ? trialVisitors / websiteVisitors * 100 : null
-      const trialToBookingRate = trialVisitors > 0 ? trialBookings / trialVisitors * 100 : 0
+      const websitePageViews = typeof current?.website?.pageviews === 'number' ? current.website.pageviews : null
+      const trialPageViews = typeof current?.trialPage?.pageviews === 'number' ? current.trialPage.pageviews : null
+      const websiteToTrialRate = websitePageViews && websitePageViews > 0 && trialPageViews !== null ? trialPageViews / websitePageViews * 100 : null
+      const trialToBookingRate = trialPageViews && trialPageViews > 0 ? trialBookings / trialPageViews * 100 : 0
       const memberRate = trialReached > 0 ? members / trialReached * 100 : null
+      const searchPages = searchDetail?.pages || []
+      const searchQueries = searchDetail?.queries || []
+      const httpsHome = searchPages.find((row: { page: string }) => { try { const url = new URL(row.page); return url.protocol === 'https:' && url.pathname === '/' } catch { return false } })
+      const httpHome = searchPages.find((row: { page: string }) => { try { const url = new URL(row.page); return url.protocol === 'http:' && url.pathname === '/' } catch { return false } })
+      const targetPage = searchPages.filter((row: { impressions: number; position: number; ctr: number }) => row.impressions >= 100 && row.position >= 3 && row.position <= 15 && row.ctr < 0.025).sort((a: { impressions: number }, b: { impressions: number }) => b.impressions - a.impressions)[0]
+      const targetQuery = searchQueries.filter((row: { query: string; impressions: number; position: number; ctr: number }) => row.impressions >= 25 && row.position <= 15 && row.ctr < 0.08 && !/(tenrounds|10 rounds)/i.test(row.query)).sort((a: { impressions: number }, b: { impressions: number }) => b.impressions - a.impressions)[0]
       const nextMetrics: Metrics = {
-        seo,
-        website: { trialVisitors, trialBookings, trialToBookingRate, campaignAttributedBookings: attributed, websiteVisitors, websiteToTrialRate, trialReached, members, memberRate },
+        ...(searchDetail ? { searchDetail: { pages: searchPages, queries: searchQueries } } : {}),
+        seo: {
+          ...seo,
+          httpsHomeClicks: typeof httpsHome?.clicks === 'number' ? httpsHome.clicks : null,
+          httpHomeClicks: typeof httpHome?.clicks === 'number' ? httpHome.clicks : null,
+          targetPageCtr: typeof targetPage?.ctr === 'number' ? targetPage.ctr : null,
+          targetQueryClicks: typeof targetQuery?.clicks === 'number' ? targetQuery.clicks : null,
+        },
+        website: { trialVisitors, trialPageViews, trialBookings, trialToBookingRate, campaignAttributedBookings: attributed, websiteVisitors, websitePageViews, websiteToTrialRate, trialReached, members, memberRate },
       }
       const response = await fetch('/api/operations/growth-recommendations', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -81,7 +109,7 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
       if (!response.ok) throw new Error(body.error || 'Could not generate recommendations.')
       setItems(body.history || body.recommendations || [])
       setMetrics(nextMetrics)
-      setSourceNote(current ? 'Google Search Console snapshots · live Vercel traffic · TENROUNDS booking database' : 'Google Search Console snapshots · Vercel trial-page snapshot · TENROUNDS booking database. Live visitor API unavailable, so website-wide rates are withheld.')
+      setSourceNote(current ? (searchDetail ? 'Live Search Console page/query detail · Vercel Web Analytics · TENROUNDS booking database' : 'Search Console monthly snapshots · Vercel Web Analytics · TENROUNDS booking database. Page/query detail unavailable until Search Console API credentials are connected.') : 'Search Console snapshots · Vercel trial-page snapshot · TENROUNDS booking database. Live visitor API unavailable, so website-wide rates are withheld.')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not review growth performance.')
     } finally { setLoading(false) }

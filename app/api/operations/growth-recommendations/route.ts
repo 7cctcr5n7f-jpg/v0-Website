@@ -8,9 +8,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const KEY = 'growth_recommendation_history_v1'
+type SearchDetail = { pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>; queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }> }
 type Metrics = {
-  seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
-  website: { trialVisitors: number; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
+  searchDetail?: SearchDetail
+  seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number; httpsHomeClicks?: number | null; httpHomeClicks?: number | null; targetPageCtr?: number | null; targetQueryClicks?: number | null }
+  website: { trialVisitors: number; trialPageViews?: number | null; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websitePageViews?: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
 }
 type Recommendation = {
   id: string; baseId: string; area: 'search' | 'website'; title: string; insight: string; action: string
@@ -44,6 +46,22 @@ function percent(current: number, previous: number) {
   return Math.round(((current - previous) / previous) * 100)
 }
 const ACTION_VARIANTS: Record<string, Array<{ title: string; action: string }>> = {
+  'seo-canonical': [
+    { title: 'Consolidate duplicate homepage URL signals', action: 'Confirm HTTP permanently redirects to HTTPS, the canonical points to the HTTPS URL, and all sitemap/internal links use the preferred hostname. Check Search Console again after recrawl.' },
+    { title: 'Audit preferred hostname consistency', action: 'Check both www and non-www variants, protocol redirects, canonical tags and sitemap URLs. Select one canonical hostname and ensure every alternate version redirects to it.' },
+    { title: 'Remove alternate homepage URLs from internal links', action: 'Search the site for old HTTP or alternate-hostname links and update them to the canonical HTTPS homepage. Re-submit the sitemap after validating redirects.' },
+  ],
+  'seo-page-ctr': [
+    { title: 'Rewrite the title and description for the highest-impression page', action: 'Make the page title specific to the service and Pretoria East. Use the description to explain the 30-minute workout and why the free trial is worth clicking. Compare page-level CTR after the update.' },
+    { title: 'Align the landing page headline with its search snippet', action: 'Ensure the page H1 and first screen deliver exactly what the title and description promise. Add concise answers to the questions searchers are likely to have, then measure CTR and engagement.' },
+    { title: 'Add stronger local proof to the search landing page', action: 'Add accurate location details, coach-supported session information and genuine customer proof to the high-impression page. Keep title and meta copy distinct from other service pages.' },
+  ],
+  'seo-query-intent': [
+    { title: 'Improve the landing page for the selected high-intent query', action: 'Match the page title, opening copy and FAQs to the exact query intent. Make the free-trial next step prominent and compare clicks and CTR for that query.' },
+    { title: 'Add a useful answer for the selected search query', action: 'Add a short, original section that answers the selected query directly. Avoid keyword stuffing. Link the answer to the relevant service page and free-trial booking.' },
+    { title: 'Strengthen the query-to-trial journey', action: 'Check whether the page ranking for this query offers a clear next step. Add one contextual free-trial CTA and track trial-page visits from the organic landing page.' },
+  ],
+
   'seo-reach': [
     { title: 'Recover search visibility on pages losing impressions', action: 'Open Search Console and compare page/query pairs against the previous period. Pick the three pages with the largest impression losses, refresh their local service detail and add internal links from relevant pages. Recheck impressions next review.' },
     { title: 'Build content around proven local search demand', action: 'Use Search Console queries with rising impressions but weak clicks to choose one focused Pretoria East topic. Add a genuinely useful section to the most relevant page before creating a new page. Measure impressions and clicks for that query group.' },
@@ -93,8 +111,20 @@ function candidate(metrics: Metrics) {
   const position = metrics.seo.position
   const trialRate = metrics.website.trialToBookingRate
   const memberRate = metrics.website.memberRate
+  const pages = metrics.searchDetail?.pages || []
+  const queries = metrics.searchDetail?.queries || []
+  const httpHome = pages.find(row => { try { const url = new URL(row.page); return url.protocol === 'http:' && url.pathname === '/' } catch { return false } })
+  const httpsHome = pages.find(row => { try { const url = new URL(row.page); return url.protocol === 'https:' && url.pathname === '/' } catch { return false } })
+  const weakPage = pages.filter(row => row.impressions >= 100 && row.position >= 3 && row.position <= 15 && row.ctr < 0.025).sort((a, b) => b.impressions - a.impressions)[0]
+  const weakQuery = queries.filter(row => row.impressions >= 25 && row.position <= 15 && row.ctr < 0.08 && !/(tenrounds|10 rounds)/i.test(row.query)).sort((a, b) => b.impressions - a.impressions)[0]
 
-  const search = seoImpressionChange <= -5
+  const search = httpHome && httpsHome
+    ? { baseId: 'seo-canonical', area: 'search' as const, title: 'Consolidate HTTP and HTTPS search signals', insight: `Search Console reports both ${httpHome.clicks} clicks from the HTTP homepage and ${httpsHome.clicks} from the HTTPS homepage. Search signals are split across two URL variants.`, action: 'Verify that every HTTP homepage request redirects permanently (301) to the HTTPS homepage. Ensure the HTTPS page has a self-referencing canonical, and that the sitemap and internal links use HTTPS only. Recheck the two URL variants in Search Console after Google recrawls.', kpi: 'Clicks consolidated on the HTTPS homepage', metricKey: 'seo.httpsHomeClicks', direction: 'up' as const }
+    : weakPage
+      ? { baseId: 'seo-page-ctr', area: 'search' as const, title: 'Improve the search result for a high-impression page', insight: `${weakPage.page} earned ${weakPage.impressions.toLocaleString()} impressions but only ${(weakPage.ctr * 100).toFixed(2)}% CTR at average position ${weakPage.position.toFixed(1)}.`, action: `Review the title tag and meta description for ${weakPage.page}. Make the page's Pretoria East relevance, exact service and 30-minute workout benefit clearer. Ensure the search snippet promise matches the page's first screen, then measure CTR and clicks for this URL.`, kpi: 'Page-level organic CTR', metricKey: 'seo.targetPageCtr', direction: 'up' as const }
+      : weakQuery
+        ? { baseId: 'seo-query-intent', area: 'search' as const, title: 'Capture more clicks for a high-intent search', insight: `“${weakQuery.query}” generated ${weakQuery.impressions} impressions, ${weakQuery.clicks} clicks and ${(weakQuery.ctr * 100).toFixed(1)}% CTR at position ${weakQuery.position.toFixed(1)}.`, action: `Check which TENROUNDS page is ranking for “${weakQuery.query}”. Improve its title and description to answer that search intent directly, add useful supporting content and make the free-trial next step clear. Track this exact query in the next review.`, kpi: 'Clicks for the selected search query', metricKey: 'seo.targetQueryClicks', direction: 'up' as const }
+        : seoImpressionChange <= -5
     ? { baseId: 'seo-reach', area: 'search' as const, title: 'Recover search visibility without sacrificing rankings', insight: `Impressions are ${Math.abs(seoImpressionChange)}% lower than the previous comparable window, while clicks are ${seoClickChange >= 0 ? 'still growing' : 'also declining'}.`, action: 'Review the pages and queries losing impressions in Search Console. Refresh the most relevant page with clearer local intent, stronger service detail and links from related pages. Recheck impressions and clicks in the next review.', kpi: 'Search impressions', metricKey: 'seo.impressions', direction: 'up' as const }
     : ctr < 5
       ? { baseId: 'seo-ctr', area: 'search' as const, title: 'Win more clicks from the rankings you already have', insight: `Organic CTR is ${ctr.toFixed(2)}%. There is room to earn more clicks from existing search visibility.`, action: 'Review the highest-impression queries and pages. Rewrite title tags and meta descriptions to make the Pretoria East location, 30-minute workout and free-trial offer clearer. Change only a small group first, then compare CTR.', kpi: 'Organic CTR', metricKey: 'seo.ctr', direction: 'up' as const }
@@ -103,12 +133,12 @@ function candidate(metrics: Metrics) {
         : { baseId: 'seo-scale', area: 'search' as const, title: 'Scale the search topics already attracting clicks', insight: `Clicks are ${seoClickChange >= 0 ? 'up' : 'down'} ${Math.abs(seoClickChange)}% against the previous comparison window.`, action: 'Use Search Console query and landing-page reports to identify the strongest local-intent topics. Expand the best-performing topic into a useful supporting page and link it to the free-trial journey.', kpi: 'Organic clicks', metricKey: 'seo.clicks', direction: 'up' as const }
 
   const web = trialRate > 0 && trialRate < 35
-    ? { baseId: 'web-booking', area: 'website' as const, title: 'Turn more free-trial visitors into bookings', insight: `${metrics.website.trialVisitors} trial-page visitors produced ${metrics.website.trialBookings} bookings, a ${trialRate.toFixed(1)}% page-to-booking rate in the available snapshot.`, action: 'Run a focused trial-page conversion test: make the booking action visible above the fold, shorten the explanatory copy before the form and repeat the “no payment, no obligation” reassurance beside the CTA. Change one element at a time and compare the next reporting window.', kpi: 'Trial-page → booking rate', metricKey: 'website.trialToBookingRate', direction: 'up' as const }
+    ? { baseId: 'web-booking', area: 'website' as const, title: 'Turn more free-trial page views into bookings', insight: `${metrics.website.trialPageViews ?? metrics.website.trialVisitors} trial-page views produced ${metrics.website.trialBookings} bookings, a ${trialRate.toFixed(1)}% booking yield per page view in the available reporting window.`, action: 'Run a focused trial-page conversion test: make the booking action visible above the fold, shorten the explanatory copy before the form and repeat the “no payment, no obligation” reassurance beside the CTA. Change one element at a time and compare the next reporting window.', kpi: 'Trial-page views → bookings (yield)', metricKey: 'website.trialToBookingRate', direction: 'up' as const }
     : memberRate !== null && memberRate < 20
       ? { baseId: 'web-member', area: 'website' as const, title: 'Improve the hand-off from trial to membership', insight: `The current matured trial-to-member rate is ${memberRate.toFixed(1)}%.`, action: 'Introduce a consistent same-day follow-up: coach feedback, one clear membership recommendation and a direct signup link. Compare matured trial cohorts, not bookings whose appointment dates have not passed.', kpi: 'Matured trial → member rate', metricKey: 'website.memberRate', direction: 'up' as const }
       : metrics.website.campaignAttributedBookings === 0
         ? { baseId: 'web-campaign', area: 'website' as const, title: 'Make every campaign measurable', insight: 'No trial bookings in the available booking cohort are attributed to a tagged campaign yet. UTM capture is now being added to new trial bookings; older bookings will remain unattributed.', action: 'Use consistent UTM links for every paid and social campaign. Set utm_source, utm_medium, utm_campaign and utm_content, then compare campaign-attributed bookings and eventual member signups before increasing spend.', kpi: 'Campaign-attributed trial bookings', metricKey: 'website.campaignAttributedBookings', direction: 'up' as const }
-        : { baseId: 'web-discovery', area: 'website' as const, title: 'Send more visitors into the free-trial journey', insight: metrics.website.websiteToTrialRate === null ? 'Website-wide visitor data is not available yet, so the top-of-site-to-trial-page rate cannot be measured reliably.' : `Only ${metrics.website.websiteToTrialRate.toFixed(1)}% of website visitors reached the trial page.`, action: 'Place a consistent free-trial CTA in the homepage hero and primary navigation, and add contextual trial links to How It Works and Pricing. Measure website visitors → trial-page visitors using the same analytics source.', kpi: 'Website → trial-page rate', metricKey: 'website.websiteToTrialRate', direction: 'up' as const }
+        : { baseId: 'web-discovery', area: 'website' as const, title: 'Send more visitors into the free-trial journey', insight: metrics.website.websiteToTrialRate === null ? 'Website pageview data is not available yet, so the share of page views reaching the trial page cannot be measured reliably.' : `The trial page accounted for ${metrics.website.websiteToTrialRate.toFixed(1)}% of website page views.`, action: 'Place a consistent free-trial CTA in the homepage hero and primary navigation, and add contextual trial links to How It Works and Pricing. Measure website page views → trial-page page views using the same analytics source.', kpi: 'Share of website page views on the trial page', metricKey: 'website.websiteToTrialRate', direction: 'up' as const }
 
   return [search, web]
 }

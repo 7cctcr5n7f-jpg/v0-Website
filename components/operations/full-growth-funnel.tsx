@@ -74,7 +74,7 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
   const previous = history[history.length - 2]
   const selected = history[selectedMonth]
   const metrics = [
-    { label: 'Website visitors', key: 'websiteVisitors', icon: Globe2, values: history.map(row => row.website.visitors), current: latest?.website.visitors, note: 'Unique visitors across the website' },
+    { label: 'Website visitors', key: 'websiteVisitors', icon: Globe2, values: history.map(row => row.website.visitors), current: latest?.website.visitors, note: 'Vercel daily visitor IDs; repeat visitors can count on different days' },
     { label: 'Free-trial page visitors', key: 'trialVisitors', icon: MousePointer2, values: history.map(row => row.trialPage.visitors), current: latest?.trialPage.visitors, note: 'Unique visitors to /free-trial' },
     { label: 'Booked a free trial', key: 'bookings', icon: CalendarCheck, values: history.map(row => row.bookings), current: latest?.bookings, note: 'Confirmed booking records' },
     { label: 'Trial date reached', key: 'trialsReached', icon: Dumbbell, values: history.map(row => row.trialsReached), current: latest?.trialsReached, note: 'Scheduled appointment date passed' },
@@ -148,7 +148,7 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
           <div className="mt-2 rounded-xl border border-[#CFE5EF] bg-white/85 p-3">
             <div className="flex items-center justify-between gap-2">
               <div><p className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-[#007FAE]"><CalendarDays size={11}/> Daily traffic drill-down</p><p className="text-[10px] font-bold text-[#17344C]">{selected?.label} · {selected?.dateRange.startDate} to {selected?.dateRange.endDate}</p></div>
-              <span className="text-[9px] text-slate-400">Visitors per day</span>
+              <span className="text-[9px] text-slate-400">Daily visitor counts</span>
             </div>
             {selected && selected.website.daily.length ? <div className="mt-3">
               <div className="flex h-[76px] items-end gap-[3px]">
@@ -180,7 +180,7 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
           </div>
         </>
       )}
-      <p className="mt-auto border-t border-[#D8E8EF] pt-2 text-[9px] leading-3 text-slate-400">“Trial date reached” uses the scheduled appointment date, not confirmed attendance. Daily bars show unique visitors by day, not summed monthly unique users. No attendance field is collected.</p>
+      <p className="mt-auto border-t border-[#D8E8EF] pt-2 text-[9px] leading-3 text-slate-400">“Trial date reached” uses the scheduled appointment date, not confirmed attendance. Vercel visitor IDs reset daily, so monthly totals can count the same person on different days. Daily bars show each day's visitor count. No attendance field is collected.</p>
     </article>
   )
 }

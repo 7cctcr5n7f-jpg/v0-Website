@@ -56,7 +56,7 @@ export async function POST(request: Request) {
   let body: { startDate?: string; endDate?: string }
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid date range.' }, { status: 400 }) }
   const { startDate, endDate } = body
-  if (!startDate || !endDate || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(endDate) || startDate > endDate) {
+  if (!startDate || !endDate || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(startDate) || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(endDate) || startDate > endDate) {
     return NextResponse.json({ error: 'Choose a valid reporting window.' }, { status: 400 })
   }
   const token = process.env.VERCEL_ANALYTICS_TOKEN
