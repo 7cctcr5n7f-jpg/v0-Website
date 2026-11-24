@@ -19,7 +19,7 @@ import {
 } from '@/lib/trial-conversion'
 
 export const metadata: Metadata = {
-  title: 'TENROUNDS | Growth Cockpit',
+  title: 'TENROUNDS | Analysis Cockpit',
   robots: { index: false, follow: false },
 }
 export const dynamic = 'force-dynamic'
@@ -93,6 +93,11 @@ export default async function KpiPage() {
           <Link href="/operations" className="inline-flex items-center gap-2 rounded-xl bg-[#102A43] px-3.5 py-2.5 text-[11px] font-extrabold text-white transition hover:bg-[#17496B]"><Settings2 size={13}/> Operations</Link>
         </div>
       </header>
+
+      <nav className="grid grid-cols-2 gap-2 rounded-xl border border-[#DDE6ED] bg-white p-1.5 shadow-sm">
+        <Link href="/KPI" className="flex items-center gap-3 rounded-lg bg-[#0878EF] px-4 py-3 text-white"><span className="text-lg">▥</span><span><strong className="block text-sm font-black">Analysis Cockpit</strong><small className="text-[10px] text-white/80">Performance, website, SEO & conversions</small></span></Link>
+        <Link href="/growth-studio" className="flex items-center gap-3 rounded-lg px-4 py-3 text-[#102A43] transition hover:bg-[#EEF6FC]"><span className="text-lg text-[#0878EF]">↗</span><span><strong className="block text-sm font-black">Growth Studio</strong><small className="text-[10px] text-slate-500">Strategy, campaigns, content & growth</small></span></Link>
+      </nav>
 
       <section className="relative grid min-w-0 shrink-0 gap-5 overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_80%_5%,rgba(0,174,239,.26),transparent_27%),linear-gradient(115deg,#081B2D,#102A43_60%,#17496B)] p-5 text-white shadow-[0_18px_50px_rgba(16,42,67,.15)] sm:p-6 lg:min-h-[190px] lg:grid-cols-[1.1fr_1fr] lg:items-center">
         <div className="pointer-events-none absolute -right-10 -top-28 size-72 rounded-full border-[38px] border-white/[.045]" />
