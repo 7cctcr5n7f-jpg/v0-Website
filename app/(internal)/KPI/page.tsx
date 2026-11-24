@@ -75,9 +75,9 @@ export default async function KpiPage() {
   const maxClicks = Math.max(...monthly.map(m => m.seo.clicks))
   const nowLabel = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
 
-  return <main className="min-h-screen bg-[#F4F7FA] text-[#102A43]">
-    <div className="mx-auto max-w-[1480px] px-4 py-5 sm:px-7 lg:px-10">
-      <header className="flex flex-wrap items-center justify-between gap-4">
+  return <main className="min-h-screen bg-[#F5F8FB] text-[#102A43] selection:bg-[#B8E8FA]">
+    <div className="mx-auto max-w-[1360px] px-4 py-6 sm:px-7 lg:px-10">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E3EAF0] pb-5">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#102A43] text-lg font-black text-white shadow-lg shadow-slate-300">10<span className="text-[#00AEEF]">.</span></div>
           <div><p className="text-[10px] font-black uppercase tracking-[.22em] text-[#008FC4]">TENROUNDS / OWNER VIEW</p><p className="text-sm font-semibold text-slate-500">Growth Cockpit</p></div>
@@ -88,7 +88,7 @@ export default async function KpiPage() {
         </div>
       </header>
 
-      <section className="relative mt-7 overflow-hidden rounded-[30px] bg-[#102A43] p-7 text-white shadow-xl shadow-slate-300/50 sm:p-10">
+      <section className="relative mt-8 overflow-hidden rounded-[36px] bg-[radial-gradient(circle_at_82%_10%,rgba(0,174,239,.24),transparent_30%),linear-gradient(125deg,#0B2035_0%,#102A43_52%,#153D5B_100%)] p-7 text-white shadow-[0_24px_70px_rgba(16,42,67,.18)] sm:p-10">
         <div className="absolute -right-16 -top-24 h-80 w-80 rounded-full border-[48px] border-white/[.045]" />
         <div className="absolute -bottom-44 right-44 h-80 w-80 rounded-full border-[36px] border-[#00AEEF]/10" />
         <div className="relative grid gap-8 lg:grid-cols-[1.2fr_.8fr] lg:items-end">
@@ -130,9 +130,9 @@ export default async function KpiPage() {
 
       <Ga4TrialFunnel />
 
-      <section className="mt-8 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
+      <section className="mt-8 grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
         <div className="rounded-[24px] bg-white p-6 shadow-sm sm:p-7">
-          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">03 / Trial-to-member journey</p><h2 className="mt-2 text-2xl font-black">The people behind the numbers</h2><p className="mt-2 text-sm leading-6 text-slate-500">A booking is treated as attended. A conversion is counted when the same email has a membership signup or qualifying paid session purchase after the booked trial appointment.</p>
+          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">03 / Trial-to-member journey</p><h2 className="mt-2 text-2xl font-black">From first visit to first membership</h2><p className="mt-2 text-sm leading-6 text-slate-500">A booking is treated as attended. A conversion is counted when the same email has a membership signup or qualifying paid session purchase after the booked trial appointment.</p>
           <div className="mt-6 grid grid-cols-3 gap-2">
             <div className="rounded-2xl bg-[#102A43] p-4 text-white"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-300">Booked</p><p className="mt-2 text-3xl font-black">{allTrials.length}</p><p className="mt-1 text-[10px] text-slate-300">All-time</p></div>
             <div className="rounded-2xl bg-[#EAF8FD] p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Converted</p><p className="mt-2 text-3xl font-black">{cohort.filter(x => x.conversion.status === 'converted').length}</p><p className="mt-1 text-[10px] text-slate-500">Matched after trial</p></div>
@@ -145,11 +145,11 @@ export default async function KpiPage() {
             })}</div>
           </div>
         </div>
-        <div className="rounded-[24px] bg-[#102A43] p-6 text-white shadow-sm sm:p-7">
-          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#FFE36E]">04 / Analytics health</p><h2 className="mt-2 text-2xl font-black">Tracking is now verified.</h2>
+        <div className="rounded-[28px] bg-[linear-gradient(145deg,#102A43,#143B59)] p-6 text-white shadow-[0_16px_40px_rgba(16,42,67,.14)] sm:p-8">
+          <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#FFE36E]">04 / Measurement health</p><h2 className="mt-2 text-2xl font-black">Know what is being measured.</h2>
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[.07] p-4"><div className="flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 Measurement ID</span><span className="text-sm font-black">G-3R4THL02Y6</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">Trial funnel events</span><span className="text-sm font-black">Verified</span></div><div className="mt-3 flex items-center justify-between"><span className="text-xs font-bold text-slate-300">GA4 sessions · November 1–23</span><span className="text-sm font-black text-[#FFE36E]">6</span></div><p className="mt-3 text-xs text-slate-400">Page views, CTA clicks, form steps and trial_success have been verified in GA4 Realtime.</p></div>
-          <p className="mt-4 text-sm leading-6 text-slate-300">Tag Assistant confirmed the live measurement ID. GA4 Realtime recorded trial_cta_click, trial_submit and trial_success from the test booking. The new funnel panel retrieves landing-page and conversion metrics only when you press Refresh.</p>
-          <div className="mt-5 rounded-xl bg-[#FFE36E] p-4 text-[#102A43]"><p className="text-xs font-black uppercase tracking-wider">Action required</p><p className="mt-1 text-sm font-semibold leading-5">The dashboard's private reporting connection needs a Google service account. Add GA4_SERVICE_ACCOUNT_EMAIL and GA4_SERVICE_ACCOUNT_PRIVATE_KEY to Vercel, then grant that service account Viewer access to GA4 property 338885680.</p></div>
+          <p className="mt-4 text-sm leading-6 text-slate-300">Tag Assistant confirmed the live measurement ID. Your test booking generated trial_cta_click, trial_submit and trial_success in GA4 Realtime. The dashboard requests reporting data only when you manually refresh it.</p>
+          <div className="mt-5 rounded-xl bg-[#FFE36E] p-4 text-[#102A43]"><p className="text-xs font-black uppercase tracking-wider">Action required</p><p className="mt-1 text-sm font-semibold leading-5">Run the GA4 funnel refresh above. If it still reports missing credentials, check that the Preview variables contain values and that this exact branch was redeployed after saving them.</p></div>
         </div>
       </section>
 
