@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Activity, ArrowDownRight, ArrowUpRight, Check, ChevronDown, Clock3, Lightbulb, RefreshCw, Search, Target, TrendingUp, X } from 'lucide-react'
+import { Activity, Check, ChevronDown, Lightbulb, RefreshCw, Search, Target, X } from 'lucide-react'
 
 type Metrics = {
   seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
