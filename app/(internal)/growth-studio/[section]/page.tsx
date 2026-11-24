@@ -6,7 +6,7 @@ import { GrowthStudioSection } from '@/components/growth-studio/growth-studio-se
 export const metadata: Metadata = { title: 'TENROUNDS | Growth Studio', robots: { index: false, follow: false } }
 export const dynamic = 'force-dynamic'
 
-const allowed = new Set(['strategy', 'campaigns', 'calendar', 'creative', 'performance', 'assets'])
+const allowed = new Set(['strategy', 'campaigns', 'calendar', 'creative', 'performance', 'assets', 'reviews'])
 
 export default async function GrowthStudioSectionPage({ params }: { params: Promise<{ section: string }> }) {
   if (!(await isOperationsAuthed())) return <OperationsLogin />
