@@ -55,6 +55,10 @@ export function Hero() {
               View Memberships
             </Link>
           </div>
+
+          <p className="mt-4 text-sm font-medium text-light-grey">
+            Your first session is FREE. No payment. No obligation.
+          </p>
         </div>
       </div>
 
