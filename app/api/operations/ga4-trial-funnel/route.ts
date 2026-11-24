@@ -80,6 +80,7 @@ async function runReport(accessToken: string, dateRange: DateRange, metricNames:
     },
     body: JSON.stringify({
       dateRanges: [{ startDate: dateRange.startDate, endDate: dateRange.endDate }],
+      dimensions: dimensionNames.map(name => ({ name })),
       metrics: metricNames.map(name => ({ name })),
       dimensionFilter: dimensionFilters,
       keepEmptyRows: true,
