@@ -20,9 +20,9 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic'
 
 const MONTHS = [
-  { key: '2026-09', label: 'Sep', full: 'September', clicks: 165, impressions: 5148, ctr: 3.21, position: 12.75 },
-  { key: '2026-10', label: 'Oct', full: 'October', clicks: 176, impressions: 4905, ctr: 3.59, position: 10.39 },
-  { key: '2026-11', label: 'Nov', full: 'November', clicks: 202, impressions: 4592, ctr: 4.40, position: 9.06 },
+  { key: '2026-09', label: 'Sep', full: 'September', clicks: 165, impressions: 5148, ctr: 3.21, position: 12.75, trialVisitors: 723, trialPageViews: 759 },
+  { key: '2026-10', label: 'Oct', full: 'October', clicks: 176, impressions: 4905, ctr: 3.59, position: 10.39, trialVisitors: 55, trialPageViews: 69 },
+  { key: '2026-11', label: 'Nov', full: 'November', clicks: 202, impressions: 4592, ctr: 4.40, position: 9.06, trialVisitors: 61, trialPageViews: 76 },
 ]
 
 function monthKey(value: Date | string) {
@@ -98,7 +98,7 @@ export default async function KpiPage() {
           <StatPill label="Trial bookings" value={current.bookings} note="Nov · 1–24"/>
           <StatPill label="Matched members" value={current.converted} note="After trial"/>
           <StatPill label="Matured conversion" value={`${current.conversionRate}%`} note={`${current.eligible} eligible`} accent/>
-          <StatPill label="Organic clicks" value={current.clicks} note="Nov · 1–23"/>
+          <StatPill label="Trial-page visitors" value={current.trialVisitors} note="Vercel · 1–23"/>
         </div>
       </section>
 
