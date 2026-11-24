@@ -5,7 +5,7 @@ import { Navbar } from './navbar'
 import { SiteFooter } from './site-footer'
 import { WhatsAppFloat } from './whatsapp-float'
 
-const INTERNAL_PREFIXES = ['/operations', '/admin', '/KPI']
+const INTERNAL_PREFIXES = ['/operations', '/admin', '/KPI', '/growth-studio']
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
