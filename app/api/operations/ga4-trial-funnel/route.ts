@@ -10,7 +10,8 @@ const GA4_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly'
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID || '338885680'
 
 type DateRange = { startDate: string; endDate: string }
-type MetricName = 'activeUsers' | 'sessions' | 'screenPageViews' | 'eventCount'\ntype DimensionName = 'pagePath' | 'eventName'
+type MetricName = 'activeUsers' | 'sessions' | 'screenPageViews' | 'eventCount'
+type DimensionName = 'pagePath' | 'eventName'
 
 function base64Url(value: string | Buffer) {
   return Buffer.from(value).toString('base64url')
