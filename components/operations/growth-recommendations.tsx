@@ -5,7 +5,7 @@ import { Activity, Check, ChevronDown, Lightbulb, RefreshCw, Search, Target, X }
 
 type Metrics = {
   searchDetail?: { pages: Array<{ page: string; clicks: number; impressions: number; ctr: number; position: number }>; queries: Array<{ query: string; clicks: number; impressions: number; ctr: number; position: number }> }
-  seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number }
+  seo: { clicks: number; previousClicks: number; impressions: number; previousImpressions: number; ctr: number; previousCtr: number; position: number; previousPosition: number; httpsHomeClicks?: number | null; httpHomeClicks?: number | null; targetPageCtr?: number | null; targetQueryClicks?: number | null }
   website: { trialVisitors: number; trialPageViews: number | null; trialBookings: number; trialToBookingRate: number; campaignAttributedBookings: number; websiteVisitors: number | null; websitePageViews: number | null; websiteToTrialRate: number | null; trialReached: number; members: number; memberRate: number | null }
 }
 type Recommendation = {
@@ -84,9 +84,21 @@ export function GrowthRecommendations({ seo, fallbackWebsite }: Props) {
       const websiteToTrialRate = websitePageViews && websitePageViews > 0 && trialPageViews !== null ? trialPageViews / websitePageViews * 100 : null
       const trialToBookingRate = trialPageViews && trialPageViews > 0 ? trialBookings / trialPageViews * 100 : 0
       const memberRate = trialReached > 0 ? members / trialReached * 100 : null
+      const searchPages = searchDetail?.pages || []
+      const searchQueries = searchDetail?.queries || []
+      const httpsHome = searchPages.find((row: { page: string }) => { try { const url = new URL(row.page); return url.protocol === 'https:' && url.pathname === '/' } catch { return false } })
+      const httpHome = searchPages.find((row: { page: string }) => { try { const url = new URL(row.page); return url.protocol === 'http:' && url.pathname === '/' } catch { return false } })
+      const targetPage = searchPages.filter((row: { impressions: number; position: number; ctr: number }) => row.impressions >= 100 && row.position >= 3 && row.position <= 15 && row.ctr < 0.025).sort((a: { impressions: number }, b: { impressions: number }) => b.impressions - a.impressions)[0]
+      const targetQuery = searchQueries.filter((row: { query: string; impressions: number; position: number; ctr: number }) => row.impressions >= 25 && row.position <= 15 && row.ctr < 0.08 && !/(tenrounds|10 rounds)/i.test(row.query)).sort((a: { impressions: number }, b: { impressions: number }) => b.impressions - a.impressions)[0]
       const nextMetrics: Metrics = {
-        ...(searchDetail ? { searchDetail: { pages: searchDetail.pages || [], queries: searchDetail.queries || [] } } : {}),
-        seo,
+        ...(searchDetail ? { searchDetail: { pages: searchPages, queries: searchQueries } } : {}),
+        seo: {
+          ...seo,
+          httpsHomeClicks: typeof httpsHome?.clicks === 'number' ? httpsHome.clicks : null,
+          httpHomeClicks: typeof httpHome?.clicks === 'number' ? httpHome.clicks : null,
+          targetPageCtr: typeof targetPage?.ctr === 'number' ? targetPage.ctr : null,
+          targetQueryClicks: typeof targetQuery?.clicks === 'number' ? targetQuery.clicks : null,
+        },
         website: { trialVisitors, trialPageViews, trialBookings, trialToBookingRate, campaignAttributedBookings: attributed, websiteVisitors, websitePageViews, websiteToTrialRate, trialReached, members, memberRate },
       }
       const response = await fetch('/api/operations/growth-recommendations', {
