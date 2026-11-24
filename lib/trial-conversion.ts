@@ -31,8 +31,19 @@ export function isPaidSessionPurchase(purchase: SessionPurchase): boolean {
 }
 
 export function isQualifyingSessionPurchase(purchase: SessionPurchase): boolean {
-  if (purchase.paymentStatus === 'Failed' || purchase.paymentStatus === 'Cancelled') return false
+  // A pending checkout is not a conversion. Only a confirmed paid pack counts.
+  if (!isPaidSessionPurchase(purchase)) return false
   return purchase.packQuantity >= 30 || purchase.totalSessions >= 30
+}
+
+function trialAppointmentAt(booking: TrialBooking): Date {
+  // TENROUNDS operates in South Africa (UTC+02:00 year-round).
+  return new Date(`${booking.appointmentDate}T${booking.appointmentTime}:00+02:00`)
+}
+
+function occurredAfterTrial(booking: TrialBooking, occurredAt: Date): boolean {
+  const appointmentAt = trialAppointmentAt(booking)
+  return !Number.isNaN(appointmentAt.getTime()) && occurredAt.getTime() >= appointmentAt.getTime()
 }
 
 // Map normalised email -> most recent membership signup for that email.
@@ -97,7 +108,10 @@ export function getTrialConversion(
     return { status: 'converted', signup: null, sessionPurchase: null, source: 'membership', packageLabel: 'Manual' }
   }
   const key = normalizeEmail(booking.email)
-  const signup = signupIndex.get(key) ?? null
+  const indexedSignup = signupIndex.get(key) ?? null
+  const signup = indexedSignup && occurredAfterTrial(booking, new Date(indexedSignup.createdAt))
+    ? indexedSignup
+    : null
   if (signup) {
     return {
       status: 'converted',
@@ -107,7 +121,10 @@ export function getTrialConversion(
       packageLabel: membershipPackageLabel(signup),
     }
   }
-  const sessionPurchase = sessionPurchaseIndex.get(key) ?? null
+  const indexedSessionPurchase = sessionPurchaseIndex.get(key) ?? null
+  const sessionPurchase = indexedSessionPurchase && occurredAfterTrial(booking, sessionPurchaseOccurredAt(indexedSessionPurchase))
+    ? indexedSessionPurchase
+    : null
   if (sessionPurchase) {
     return {
       status: 'converted',
