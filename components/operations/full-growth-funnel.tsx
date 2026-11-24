@@ -12,6 +12,7 @@ type Funnel = {
   bookings: number
   trialsReached: number
   members: number
+  campaigns?: { attributedBookings: number; unattributedBookings: number; breakdown: Array<{ source: string; medium: string; campaign: string; bookings: number; members: number }> }
   rates: { websiteToTrialPage: number; trialPageToBooking: number; bookingToTrialReached: number; trialReachedToMember: number; websiteToMember: number }
   notes: { trialReached: string }
 }
@@ -164,6 +165,10 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
               <div className="mt-1 flex items-center justify-between text-[8px] text-slate-400"><span>{selected.website.daily[0]?.date.slice(8)}</span><span>{selected.website.daily[Math.floor(selected.website.daily.length/2)]?.date.slice(8)}</span><span>{selected.website.daily[selected.website.daily.length-1]?.date.slice(8)}</span></div>
               <div className="mt-2 flex flex-wrap gap-3 text-[9px] font-semibold text-slate-500"><span className="flex items-center gap-1"><i className="size-2 rounded-sm bg-[#9CB8C9]"/> Website visitors</span><span className="flex items-center gap-1"><i className="size-2 rounded-sm bg-[#00AEEF]"/> Trial-page visitors</span></div>
             </div> : <p className="mt-2 text-[10px] text-slate-500">No daily visit rows were returned for this month.</p>}
+            {selected?.campaigns ? <div className="mt-2 border-t border-slate-100 pt-2">
+              <div className="flex items-center justify-between gap-2"><p className="text-[9px] font-black uppercase tracking-wider text-[#007FAE]">Campaign attribution</p><p className="text-[9px] font-semibold text-slate-500">{selected.campaigns.attributedBookings} tagged · {selected.campaigns.unattributedBookings} untagged bookings</p></div>
+              {selected.campaigns.breakdown.length ? <div className="mt-1.5 space-y-1">{selected.campaigns.breakdown.slice(0,3).map((campaign) => <div key={campaign.source + campaign.medium + campaign.campaign} className="flex items-center justify-between gap-2 text-[9px]"><span className="min-w-0 truncate font-semibold text-slate-600">{campaign.source} / {campaign.medium} · {campaign.campaign}</span><span className="shrink-0 font-black text-[#102A43]">{campaign.bookings} bookings · {campaign.members} members</span></div>)}</div> : <p className="mt-1 text-[9px] leading-4 text-slate-500">No tagged trial bookings in this period yet. New bookings will capture first-touch campaign UTMs.</p>}
+            </div> : null}
             <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2">
               <div><p className="text-[9px] text-slate-400">Website → trial page</p><p className="text-sm font-black text-[#102A43]">{selected?.rates.websiteToTrialPage.toFixed(1) ?? '0.0'}%</p></div>
               <div><p className="text-[9px] text-slate-400">Website → member</p><p className="text-sm font-black text-[#102A43]">{selected?.rates.websiteToMember.toFixed(2) ?? '0.00'}%</p></div>
