@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, Archivo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { SpecialsGlobal } from '@/components/specials/specials-global'
 import { JsonLd } from '@/components/json-ld'
@@ -8,14 +7,6 @@ import { AnalyticsConsent } from '@/components/analytics-consent'
 import { localBusinessSchema, websiteSchema } from '@/lib/seo'
 import { business } from '@/lib/business'
 import './globals.css'
-
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
-const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' })
-const archivo = Archivo({
-  subsets: ['latin'],
-  variable: '--font-archivo',
-  weight: ['600', '700', '800', '900'],
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL(business.url),
@@ -75,9 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background">
-      <body
-        className={`${geist.variable} ${geistMono.variable} ${archivo.variable} font-sans antialiased`}
-      >
+      <body className="font-sans antialiased">
         <JsonLd data={[localBusinessSchema(), websiteSchema()]} />
         <SpecialsGlobal />
         <SiteShell>
