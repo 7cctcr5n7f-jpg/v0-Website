@@ -60,3 +60,12 @@ Give concise progress summaries, explain technical changes in plain language, di
 - Review workflow: retrieve available review text and metadata from Google Business Profile if a supported, authenticated source permits; categorise reviews by themes; select one review at a time; create content concepts, quote graphics, carousels, Reel scripts and captions. Preserve exact wording for direct quotes, do not fabricate or materially embellish reviews, and link/attribute to the original review where possible.
 - Google Business Profile reporting connection in Supermetrics does not automatically prove review-text retrieval capability. Verify the available source/API and permissions before promising automatic review import. If unavailable, offer a one-time export/manual import and then manage the review library in Growth Studio.
 - Canva is the creative production workspace. Use original media and CI to produce editable assets. Do not imply Drive-to-Canva automatic video analysis or publishing unless the relevant capability is verified.
+
+
+## Website Google reviews source audit (2026-11-24)
+- Audited `components/testimonials-section.tsx`: homepage renders `testimonials` imported as `defaultTestimonials` from `@/lib/content`; it does not fetch Google reviews at runtime.
+- Audited `lib/content.ts`: currently contains four manually hard-coded testimonial records (quote, name, detail), labelled as Google reviews.
+- Audited `components/google-reviews-badge.tsx`: rating is hard-coded as `4.8`; review URL is `https://g.page/r/CeLY1IcSU2QsEAE/review`. The rating is not a live Google feed.
+- Thus the website currently displays a selected static set, not the full 30-50 review collection and not a live synchronisation.
+- Keep the existing four quotes as seeded entries in the future review library, but do not represent them as a complete or automatically synced Google review dataset.
+- Next step: acquire the full review corpus through a user-provided export or supported authenticated Google Business Profile API access. Do not scrape Google search result HTML or claim Supermetrics reporting provides full review text unless verified.
