@@ -34,3 +34,38 @@
 .growth-chatgpt-principles span{display:flex;align-items:center;gap:4px;font-size:8px;font-weight:800;color:#496176}
 .growth-chatgpt-principles svg{color:#15945a}
 @media(max-width:900px){.growth-chatgpt-panel{grid-column:1/-1;min-height:280px}}
+
+
+/* Persistent TENROUNDS Project Memory */
+.project-memory-shell{margin:18px 24px 28px;padding:22px;background:#f5f8fb;border:1px solid #dce6ee;border-radius:12px;color:#102a43}
+.project-memory-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.project-memory-eyebrow{display:flex;align-items:center;gap:7px;color:#0878ef;font-size:9px;font-weight:950;letter-spacing:.13em}
+.project-memory-heading h2{display:flex;align-items:center;gap:9px;font-size:22px;font-weight:950;letter-spacing:-.03em;margin-top:8px}
+.project-memory-heading h2 svg{color:#0878ef}
+.project-memory-heading p{font-size:11px;color:#64788a;margin-top:5px;max-width:680px;line-height:1.5}
+.project-memory-count{white-space:nowrap;background:#e7eef5;border-radius:20px;padding:7px 11px;font-size:10px;font-weight:900}
+.project-memory-callout{display:flex;align-items:flex-start;gap:9px;margin:16px 0;padding:11px 13px;background:#fff;border:1px solid #dce6ee;border-radius:8px;font-size:10px;line-height:1.5;color:#4b6276}
+.project-memory-callout svg{flex-shrink:0;color:#15945a}
+.project-memory-create,.project-memory-group{background:#fff;border:1px solid #dfe7ee;border-radius:9px;padding:14px;margin-top:12px}
+.project-memory-create h3,.project-memory-group>h3{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:950;margin-bottom:11px}
+.project-memory-create h3 svg{color:#0878ef}
+.project-memory-form{display:grid;grid-template-columns:170px minmax(180px,1fr);gap:8px}
+.project-memory-form select,.project-memory-form input,.project-memory-form textarea,.project-memory-record input,.project-memory-record textarea{width:100%;min-width:0;border:1px solid #d8e2ea;border-radius:6px;background:#fff;padding:9px 10px;font:inherit;font-size:10px;color:#243c50;outline:none}
+.project-memory-form textarea{grid-column:1/-1;min-height:75px;resize:vertical;line-height:1.5}
+.project-memory-form button,.project-memory-record-foot button{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:max-content;border:0;border-radius:6px;background:#0878ef;color:white;padding:9px 12px;font-size:10px;font-weight:900}
+.project-memory-form button:disabled,.project-memory-record-foot button:disabled{opacity:.55}
+.project-memory-records{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.project-memory-group>h3{justify-content:space-between;text-transform:uppercase;letter-spacing:.08em;color:#476075;font-size:9px}
+.project-memory-group>h3 span{background:#edf3f7;border-radius:12px;padding:3px 7px}
+.project-memory-record{border-top:1px solid #edf1f4;padding:10px 0}
+.project-memory-record-head{display:flex;align-items:center;gap:8px}
+.project-memory-record-head input{font-weight:900;border-color:transparent;padding-left:0}
+.project-memory-record-head>span{flex-shrink:0;font-size:8px;color:#168447;background:#e8f7ed;border-radius:12px;padding:4px 7px}
+.project-memory-record textarea{min-height:82px;resize:vertical;line-height:1.5;margin-top:5px}
+.project-memory-record-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}
+.project-memory-record-foot small{font-size:8px;color:#8292a0}
+.project-memory-record-foot button{padding:6px 9px;font-size:9px}
+.project-memory-empty{font-size:10px;color:#8292a0;padding:12px}
+.project-memory-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;font-size:9px;color:#718497}
+.project-memory-footer>span:last-child{display:flex;align-items:center;gap:5px;color:#168447;font-weight:800}
+@media(max-width:760px){.project-memory-shell{margin:14px 10px;padding:14px}.project-memory-records{grid-template-columns:1fr}.project-memory-form{grid-template-columns:1fr}.project-memory-form textarea{grid-column:auto}.project-memory-heading{flex-direction:column}.project-memory-footer{align-items:flex-start;flex-direction:column}}
