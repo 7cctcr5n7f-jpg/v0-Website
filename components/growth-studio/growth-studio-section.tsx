@@ -78,10 +78,81 @@ export function GrowthStudioSection({ section }: { section: string }) {
         <p className="mt-4 text-xs text-slate-500">{reviewsNotice}</p>
         <p className="mt-3 text-[10px] leading-5 text-slate-400">Coverage note: Supermetrics currently returns six individual review records although the lifetime total is 33. The missing 27 have not been invented or substituted. Review dates and exact text reflect the returned source records.</p>
       </Panel>}
-      {section === 'assets' && <Panel title="TENROUNDS brand identity & asset library"><p className="mb-4 text-sm text-slate-500">Upload the official CI document first. Add logos, approved photography, campaign templates and brand references. Supported: PDF, DOCX, PPTX, XLSX, PNG, JPG, WEBP and SVG. Maximum 20 MB per file.</p><div className="rounded-xl border-2 border-dashed border-[#A9C5D8] bg-[#F7FBFE] p-5"><div className="flex items-center gap-3"><UploadCloud className="text-[#0878EF]" size={25}/><div><h3 className="font-black">Upload brand CI or creative asset</h3><p className="text-xs text-slate-500">Start with the latest Corporate Identity / Brand Guidelines document.</p></div></div><input className="mt-4 block w-full text-xs" type="file" accept=".pdf,.docx,.pptx,.xlsx,.png,.jpg,.jpeg,.webp,.svg" onChange={e=>setFile(e.target.files?.[0]??null)}/><div className="mt-3 flex flex-wrap items-center gap-3"><button onClick={upload} disabled={busy||!file} className="rounded-lg bg-[#0878EF] px-4 py-3 text-xs font-black text-white disabled:opacity-40">{busy?'Uploading…':'Upload to brand library'}</button>{file&&<span className="text-xs text-slate-500">{file.name} · {(file.size/1024/1024).toFixed(1)} MB</span>}</div></div><p className="mt-3 text-xs text-slate-500">{notice}</p><div className="mt-5"><h3 className="mb-3 font-black">Uploaded brand assets ({assets.length})</h3>{assets.length?<div className="grid gap-2 md:grid-cols-2">{assets.map(asset=><a key={asset.pathname} href={asset.url} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3 text-xs hover:border-[#0878EF]"><span className="min-w-0 truncate font-bold">{asset.pathname.split('/').pop()}</span><span className="shrink-0 text-slate-400">{(asset.size/1024).toFixed(0)} KB ↗</span></a>)}</div>:<Empty>{notice || 'No files uploaded yet.'}</Empty>}</div></Panel>}
+      {section === 'assets' && <DriveAssetLibrary />}
       <div className="mt-5 flex items-center gap-2 text-[10px] text-slate-400"><CheckCircle2 size={13}/> Owner-only workspace · approval before publishing · no autonomous agents</div>
     </div>
   </main>
 }
 function Panel({title,children}:{title:string;children:React.ReactNode}){return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"><h2 className="mb-4 text-xl font-black">{title}</h2>{children}</section>}
 function Empty({children}:{children:React.ReactNode}){return <p className="rounded-xl bg-slate-50 p-4 text-xs text-slate-500">{children}</p>}
+
+
+type DriveAsset = { id: string; name: string; mimeType: string; url: string; category: string; addedAt: string; iconUrl?: string; sizeBytes?: number }
+const DRIVE_CATEGORIES = ['01 - Brand Identity', '02 - Original Video', '03 - Photography', '04 - Campaign Material', '05 - Approved Creative']
+function DriveAssetLibrary() {
+  const [assets, setAssets] = useState<DriveAsset[]>([])
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const [filter, setFilter] = useState('All assets')
+  useEffect(() => { fetch('/api/growth-studio/drive-assets', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => setAssets(d.assets ?? [])).catch(() => setMessage('Could not load your saved Drive library.')) }, [])
+  const connect = async () => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID
+    if (!apiKey || !clientId) { setMessage('Google Drive credentials are missing from this Vercel deployment.'); return }
+    setBusy(true); setMessage('Opening secure Google Drive connection…')
+    try {
+      const load = (src: string) => new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector('script[src="' + src + '"]')
+        if (existing) { resolve(); return }
+        const script = document.createElement('script'); script.src = src; script.async = true; script.defer = true
+        script.onload = () => resolve(); script.onerror = () => reject(new Error('Could not load Google sign-in.')); document.head.appendChild(script)
+      })
+      await load('https://accounts.google.com/gsi/client')
+      await load('https://apis.google.com/js/api.js')
+      const w = window as any
+      await new Promise<void>((resolve, reject) => w.gapi.load('picker', { callback: resolve, onerror: () => reject(new Error('Google Picker failed to load.')) }))
+      const token = await new Promise<string>((resolve, reject) => {
+        const tokenClient = w.google.accounts.oauth2.initTokenClient({ client_id: clientId, scope: 'https://www.googleapis.com/auth/drive.file', callback: (response: any) => response.access_token ? resolve(response.access_token) : reject(new Error(response.error_description || 'Google sign-in was not completed.')) })
+        tokenClient.requestAccessToken({ prompt: 'consent' })
+      })
+      await new Promise<void>((resolve, reject) => {
+        const picker = new w.google.picker.PickerBuilder()
+          .setDeveloperKey(apiKey).setAppId('867819328339').setOAuthToken(token).setOrigin(window.location.origin)
+          .addView(new w.google.picker.DocsView(w.google.picker.ViewId.DOCS).setIncludeFolders(false))
+          .enableFeature(w.google.picker.Feature.MULTISELECT_ENABLED)
+          .setCallback(async (data: any) => {
+            if (data.action === w.google.picker.Action.PICKED) {
+              const selected = (data.docs || []).map((doc: any) => ({ id: doc.id, name: doc.name, mimeType: doc.mimeType || 'application/octet-stream', iconUrl: doc.iconUrl, sizeBytes: doc.sizeBytes, category: DRIVE_CATEGORIES[0] }))
+              try {
+                const response = await fetch('/api/growth-studio/drive-assets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assets: selected }) })
+                const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not save selected files.')
+                setAssets(result.assets ?? []); setMessage(selected.length + ' file(s) added to your TENROUNDS library.')
+              } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save files.') }
+              resolve()
+            } else if (data.action === w.google.picker.Action.CANCEL) resolve()
+          }).build()
+        picker.setVisible(true)
+      })
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Google Drive connection failed.') }
+    finally { setBusy(false) }
+  }
+  const updateCategory = async (id: string, category: string) => {
+    const response = await fetch('/api/growth-studio/drive-assets', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, category }) })
+    const data = await response.json(); if (response.ok) setAssets(data.assets ?? []); else setMessage(data.error || 'Could not update category.')
+  }
+  const remove = async (id: string) => {
+    const response = await fetch('/api/growth-studio/drive-assets', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    const data = await response.json(); if (response.ok) setAssets(data.assets ?? []); else setMessage(data.error || 'Could not remove asset.')
+  }
+  const visible = filter === 'All assets' ? assets : assets.filter(asset => asset.category === filter)
+  return <Panel title="TENROUNDS · Google Drive asset library">
+    <div className="rounded-2xl border border-[#C9DCEB] bg-[#F5FAFE] p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4"><div><h3 className="font-black">Your private Google Drive</h3><p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600">Browse your Drive, open folders and select multiple files. Only the files you select are added here. Your originals stay in Google Drive.</p></div><button onClick={connect} disabled={busy} className="rounded-xl bg-[#0878EF] px-5 py-3 text-xs font-black text-white disabled:opacity-50">{busy ? 'Connecting…' : '＋ Add files from Google Drive'}</button></div>
+      <p className="mt-3 text-[11px] text-slate-500">Permission: Google Drive file access only (drive.file). No background sync or access to unselected files.</p>
+    </div>
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-black">Selected assets ({assets.length})</h3><p className="text-xs text-slate-500">Organise each selected file into the TENROUNDS library.</p></div><select aria-label="Filter assets by category" value={filter} onChange={e=>setFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"><option>All assets</option>{DRIVE_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select></div>
+    {visible.length ? <div className="mt-3 grid gap-3 md:grid-cols-2">{visible.map(asset=><article key={asset.id} className="rounded-xl border border-slate-200 bg-white p-4"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#EAF4FF] text-[#0878EF]">↗</div><div className="min-w-0 flex-1"><a href={asset.url} target="_blank" rel="noreferrer" className="break-words text-sm font-bold text-[#0878EF] hover:underline">{asset.name}</a><p className="mt-1 truncate text-[10px] text-slate-400">{asset.mimeType}</p></div></div><div className="mt-3 flex items-center gap-2"><select aria-label={'Category for '+asset.name} value={asset.category} onChange={e=>updateCategory(asset.id,e.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-[10px] font-semibold">{DRIVE_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select><button onClick={()=>remove(asset.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-bold text-slate-500">Remove</button></div></article>)}</div> : <Empty>{assets.length ? 'No assets in this category.' : 'No Drive files selected yet. Choose Add files from Google Drive to get started.'}</Empty>}
+    <p className="mt-4 text-xs text-slate-500">{message}</p>
+    <p className="mt-3 text-[10px] leading-5 text-slate-400">Folder browsing is supported in the Picker. With Google’s restricted file-by-file permission, selecting a folder does not automatically import all its contents or future additions. Select the files you want to use.</p>
+  </Panel>
+}
