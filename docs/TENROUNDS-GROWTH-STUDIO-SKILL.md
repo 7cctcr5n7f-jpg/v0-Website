@@ -79,3 +79,14 @@ Give concise progress summaries, explain technical changes in plain language, di
 - The Maps URL contains the listing's Maps data identifier `0x1e955de4d5300001:0x2c64531287d4d8e2`; it is a listing link, not a direct export/API endpoint. Browser-based automated access to its reviews was not verified in this session.
 - Growth Studio should contain a separate Google Reviews library, distinct from the curated website testimonials. The user expects the Maps listing to expose the full review collection.
 - Next: investigate supported Google Business Profile API access using the correct business listing/account permissions or obtain a review export. Do not assume the existing Supermetrics GBP reporting connector exposes full review text. Do not scrape Google Maps HTML.
+
+
+## Google Reviews library initial import (2026-11-24)
+- Supermetrics Google Business Profile account selected: TENROUNDS (not NextStage).
+- Lifetime totals query returned 33 reviews and 4.8 average rating.
+- Review report query returned six individual review records only, even after querying three date ranges separately from 2025-05-24 through 2026-11-24. 27 review records remain unavailable in current Supermetrics retrieval.
+- Review API route: `/api/growth-studio/reviews`, persistent Neon settings key `tenrounds_google_reviews_v1`, owner-only. First GET seeds the six records and subsequent GET reads saved statuses. POST persists usage status changes.
+- Growth Studio page: `/growth-studio/reviews`; nav entry added to sidebar and top tabs. Features include original text, reviewer, date, rating, reply where present, topic tags and usage statuses (unused/planned/created/published).
+- Preserve exact source wording. One 5-star record (Joseph De Gouveia, 2026-09-07) has no written comment and must not be used as a written testimonial.
+- Google Business Profile API Basic Access application was declined. The re-verification warning shown in the application relates to another business profile; user confirms TENROUNDS itself is verified for over 60 days and its website is listed. Do not change TENROUNDS verification settings unnecessarily.
+- Next: test review page and Neon persistence in preview; contact Supermetrics support about 33 lifetime reviews vs six retrievable individual records; continue other Growth Studio development while the remaining 27 are resolved.
