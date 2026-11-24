@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next'
 
 // Canonical public routes used by the sitemap and analytics allowlist.
-// SEO-only doorway pages are intentionally excluded; retire them with
-// one-to-one redirects after checking backlinks and the final URL inventory.
+// SEO-only doorway pages are intentionally excluded; keep pages with established
+// search visibility in the sitemap even when they are campaign-focused.
 export const publicSiteRoutes: {
   path: string
   priority: number
@@ -15,6 +15,7 @@ export const publicSiteRoutes: {
   { path: '/corporate-wellness', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/free-trial', priority: 0.95, changeFrequency: 'monthly' },
+  { path: '/boxing-gym-pretoria-east', priority: 0.85, changeFrequency: 'monthly' },
   { path: '/privacy-policy', priority: 0.2, changeFrequency: 'yearly' },
   { path: '/terms-and-conditions', priority: 0.2, changeFrequency: 'yearly' },
 ]
