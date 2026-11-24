@@ -135,6 +135,7 @@ export async function POST(request: Request) {
       successfulBookings: booked[1] || 0,
       notBookedUsers: Math.max(0, visitors - bookedUsers),
       conversionRate: visitors ? (bookedUsers / visitors) * 100 : 0,
+      dataStatus: visitors > 0 || bookedUsers > 0 || (cta[0] || 0) > 0 || (form[0] || 0) > 0 ? 'active' : 'no_activity',
       ctaClicks: cta[0] || 0,
       formViews: form[0] || 0,
     })
