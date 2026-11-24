@@ -28,7 +28,8 @@ const MONTHS = [
 function monthKey(value: Date | string) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit' }).format(new Date(value)).slice(0, 7)
 }
-function localDate(value: Date | string) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) }\nfunction pct(value: number) { return `${value > 0 ? '+' : ''}${value.toFixed(1)}%` }
+function localDate(value: Date | string) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) }
+function pct(value: number) { return `${value > 0 ? '+' : ''}${value.toFixed(1)}%` }
 
 function StatPill({ label, value, note, accent = false }: { label: string; value: string | number; note: string; accent?: boolean }) {
   return <div className={`rounded-2xl border p-4 ${accent ? 'border-[#00AEEF]/30 bg-[#00AEEF] text-[#06283D]' : 'border-white/10 bg-white/[.075] text-white'}`}>
