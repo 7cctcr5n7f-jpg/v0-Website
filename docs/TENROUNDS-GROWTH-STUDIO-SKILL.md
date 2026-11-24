@@ -69,3 +69,13 @@ Give concise progress summaries, explain technical changes in plain language, di
 - Thus the website currently displays a selected static set, not the full 30-50 review collection and not a live synchronisation.
 - Keep the existing four quotes as seeded entries in the future review library, but do not represent them as a complete or automatically synced Google review dataset.
 - Next step: acquire the full review corpus through a user-provided export or supported authenticated Google Business Profile API access. Do not scrape Google search result HTML or claim Supermetrics reporting provides full review text unless verified.
+
+
+## Clarification: Testimonials vs Google reviews (2026-11-24)
+- User confirmed the four selected testimonials on the website are distinct from the full Google Reviews collection. Preserve the homepage testimonial section as curated social proof; do not treat those four entries as the full review corpus.
+- The website's "Read & write reviews on Google" CTA currently points to `https://g.page/r/CeLY1IcSU2QsEAE/review`.
+- User supplied the Google Maps listing URL for the actual TENROUNDS location:
+  `https://www.google.com/maps/place//@-25.8036057,28.3111718,17z/data=!3m1!4b1!4m3!3m2!1s0x1e955de4d5300001:0x2c64531287d4d8e2!12e1?entry=ttu`
+- The Maps URL contains the listing's Maps data identifier `0x1e955de4d5300001:0x2c64531287d4d8e2`; it is a listing link, not a direct export/API endpoint. Browser-based automated access to its reviews was not verified in this session.
+- Growth Studio should contain a separate Google Reviews library, distinct from the curated website testimonials. The user expects the Maps listing to expose the full review collection.
+- Next: investigate supported Google Business Profile API access using the correct business listing/account permissions or obtain a review export. Do not assume the existing Supermetrics GBP reporting connector exposes full review text. Do not scrape Google Maps HTML.
