@@ -43,6 +43,49 @@ function percent(current: number, previous: number) {
   if (!previous) return current > 0 ? 100 : 0
   return Math.round(((current - previous) / previous) * 100)
 }
+const ACTION_VARIANTS: Record<string, Array<{ title: string; action: string }>> = {
+  'seo-reach': [
+    { title: 'Recover search visibility on pages losing impressions', action: 'Open Search Console and compare page/query pairs against the previous period. Pick the three pages with the largest impression losses, refresh their local service detail and add internal links from relevant pages. Recheck impressions next review.' },
+    { title: 'Build content around proven local search demand', action: 'Use Search Console queries with rising impressions but weak clicks to choose one focused Pretoria East topic. Add a genuinely useful section to the most relevant page before creating a new page. Measure impressions and clicks for that query group.' },
+    { title: 'Strengthen local relevance on your highest-value pages', action: 'Review the key service pages for clear Garsfontein and Pretoria East relevance, accurate service descriptions, useful FAQs and links to the free-trial journey. Compare page-level impressions after the changes.' },
+  ],
+  'seo-ctr': [
+    { title: 'Win more clicks from the rankings you already have', action: 'Rewrite title tags and meta descriptions for the highest-impression pages. Lead with the local benefit, 30-minute workout and free-trial offer. Change a small group first and compare CTR.' },
+    { title: 'Make search snippets more compelling', action: 'Review the search result wording for the pages with the most impressions. Make each title distinct, state the specific service and location, and use the description to answer why a first-time visitor should choose TENROUNDS.' },
+    { title: 'Test stronger local proof in search snippets', action: 'Where accurate and supported on-page, bring coach support, beginner friendliness, 30-minute sessions and genuine review proof into page titles/descriptions. Avoid repeating the same title pattern across every page.' },
+  ],
+  'seo-position': [
+    { title: 'Push near-page-one pages higher', action: 'Identify pages ranking between positions 8 and 20. Improve the page that best matches local search intent, add missing useful detail and link to it from relevant high-visibility pages. Track its average position.' },
+    { title: 'Improve internal links to priority service pages', action: 'Choose one valuable page outside the top results and add contextual links from the homepage, How It Works and related service content. Use natural descriptive anchor text and measure page-level position.' },
+    { title: 'Close the content gap on a priority search page', action: 'Compare the top-ranking local results with one TENROUNDS page. Identify missing questions or practical details, add original useful content, and check whether impressions and average position improve.' },
+  ],
+  'seo-scale': [
+    { title: 'Expand the local topic already earning clicks', action: 'Find the best-performing non-brand query and its landing page in Search Console. Add a supporting section that answers the next question a searcher is likely to have, then link it to the free-trial page.' },
+    { title: 'Turn organic visits into measurable trial interest', action: 'Add a contextual free-trial link to the organic landing pages receiving the most clicks. Use a consistent CTA and measure trial-page visits from those entry pages.' },
+    { title: 'Protect the search gains with a focused content refresh', action: 'Refresh one established organic landing page with current, accurate service details, stronger internal links and helpful FAQs. Record its baseline clicks, impressions and position before editing.' },
+  ],
+  'web-booking': [
+    { title: 'Make the free-trial booking action clearer', action: 'Make the booking action visible above the fold, shorten the copy before the form and repeat “no payment, no obligation” beside the CTA. Change one element at a time and compare the next page-to-booking rate.' },
+    { title: 'Reduce friction in the trial booking form', action: 'Review the form on a phone. Make the next step obvious, keep field labels clear and explain why date/time and agreement details are needed. Do not remove legally required agreements. Compare form starts with successful bookings.' },
+    { title: 'Add reassurance at the moment of booking', action: 'Place concise beginner reassurance, what to bring, session length and a genuine review near the booking decision. Keep the calendar and booking action visually prominent, then compare booking completion.' },
+  ],
+  'web-member': [
+    { title: 'Improve the first follow-up after a trial', action: 'Create a same-day follow-up routine: personal coach feedback, one recommended membership and a direct signup link. Compare matured trial cohorts rather than appointments that have not happened yet.' },
+    { title: 'Make the trial-to-membership next step personal', action: 'Have the coach record one goal and one positive observation after the session, then use both in a personal follow-up. Measure membership signups among trials whose appointment dates have passed.' },
+    { title: 'Remove uncertainty from the membership decision', action: 'Make pricing, what is included and how to start easy to understand after the trial. Give each trial visitor one clear next step rather than several competing offers.' },
+  ],
+  'web-campaign': [
+    { title: 'Tag every paid and social campaign consistently', action: 'Use utm_source, utm_medium, utm_campaign and utm_content on each campaign link. Keep naming consistent between Meta, Google and social posts. New trial bookings now store first-touch campaign tags after analytics consent.' },
+    { title: 'Compare campaign quality, not just click volume', action: 'For the next campaign, use a unique campaign and creative UTM value. Compare tagged trial bookings and later matched memberships, not only landing-page clicks, before moving budget.' },
+    { title: 'Give each campaign a measurable landing path', action: 'Use distinct campaign tags and send each ad to the most relevant page. Make sure its promise matches the page headline and CTA, then compare tagged bookings and member outcomes.' },
+  ],
+  'web-discovery': [
+    { title: 'Make the free trial the clearest next step', action: 'Place a consistent free-trial CTA in the homepage hero and primary navigation. Add contextual links to How It Works and Pricing, then measure website visitors who reach /free-trial.' },
+    { title: 'Connect high-intent pages to the trial page', action: 'Add a clear next-step CTA to the pages explaining the workout and membership options. Use copy that answers “what happens next?” and compare the share of visitors reaching /free-trial.' },
+    { title: 'Improve the homepage path for first-time visitors', action: 'Make the first screen explain what TENROUNDS is, who it suits and how to try it. Use one dominant free-trial CTA and compare the homepage-to-trial journey.' },
+  ],
+}
+
 function candidate(metrics: Metrics) {
   const seoImpressionChange = percent(metrics.seo.impressions, metrics.seo.previousImpressions)
   const seoClickChange = percent(metrics.seo.clicks, metrics.seo.previousClicks)
@@ -113,8 +156,11 @@ export async function POST(request: Request) {
     const open = store.recommendations.find(row => row.baseId === item.baseId && row.status === 'open')
     if (sameDay || open) { chosen.push(sameDay || open!); continue }
     const count = store.recommendations.filter(row => row.baseId === item.baseId).length + 1
+    const variants = ACTION_VARIANTS[item.baseId] || []
+    const variant = variants.length ? variants[(count - 1) % variants.length] : null
     const rec: Recommendation = {
       ...item,
+      ...(variant || {}),
       id: `${item.baseId}-${count}`,
       baseline: metricValue(metrics, item.metricKey),
       baselineDate: date,
