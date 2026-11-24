@@ -68,31 +68,40 @@ export function TrialBookingForm({ blockedDays = [] }: { blockedDays?: string[] 
   const [attribution, setAttribution] = useState<CampaignAttribution>(emptyAttribution)
 
   useEffect(() => {
-    try {
-      const key = 'tenrounds-first-touch-attribution'
-      const stored = localStorage.getItem(key)
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<CampaignAttribution>
-        setAttribution({ ...emptyAttribution, ...parsed })
-        return
+    function loadAttribution() {
+      try {
+        if (localStorage.getItem('tenrounds-analytics-consent') !== 'granted') {
+          setAttribution(emptyAttribution)
+          return
+        }
+        const key = 'tenrounds-first-touch-attribution'
+        const stored = localStorage.getItem(key)
+        if (stored) {
+          const parsed = JSON.parse(stored) as Partial<CampaignAttribution>
+          setAttribution({ ...emptyAttribution, ...parsed })
+          return
+        }
+        const params = new URLSearchParams(window.location.search)
+        const captured: CampaignAttribution = {
+          utmSource: params.get('utm_source') || '',
+          utmMedium: params.get('utm_medium') || '',
+          utmCampaign: params.get('utm_campaign') || '',
+          utmContent: params.get('utm_content') || '',
+          utmTerm: params.get('utm_term') || '',
+          landingPage: window.location.pathname,
+          referrer: (() => {
+            try { const url = new URL(document.referrer); return url.origin + url.pathname } catch { return '' }
+          })(),
+        }
+        localStorage.setItem(key, JSON.stringify(captured))
+        setAttribution(captured)
+      } catch {
+        setAttribution(emptyAttribution)
       }
-      const params = new URLSearchParams(window.location.search)
-      const captured: CampaignAttribution = {
-        utmSource: params.get('utm_source') || '',
-        utmMedium: params.get('utm_medium') || '',
-        utmCampaign: params.get('utm_campaign') || '',
-        utmContent: params.get('utm_content') || '',
-        utmTerm: params.get('utm_term') || '',
-        landingPage: window.location.pathname,
-        referrer: (() => {
-          try { const url = new URL(document.referrer); return url.origin + url.pathname } catch { return '' }
-        })(),
-      }
-      localStorage.setItem(key, JSON.stringify(captured))
-      setAttribution(captured)
-    } catch {
-      // Attribution is optional. A storage restriction must never block a trial booking.
     }
+    loadAttribution()
+    window.addEventListener('tenrounds:analytics-consent', loadAttribution)
+    return () => window.removeEventListener('tenrounds:analytics-consent', loadAttribution)
   }, [])
 
   const today = useMemo(() => {
