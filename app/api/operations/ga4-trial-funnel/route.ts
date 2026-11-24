@@ -10,7 +10,7 @@ const GA4_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly'
 const PROPERTY_ID = process.env.GA4_PROPERTY_ID || '338885680'
 
 type DateRange = { startDate: string; endDate: string }
-type MetricName = 'activeUsers' | 'sessions' | 'screenPageViews' | 'eventCount'
+type MetricName = 'activeUsers' | 'sessions' | 'screenPageViews' | 'eventCount'\ntype DimensionName = 'pagePath' | 'eventName'
 
 function base64Url(value: string | Buffer) {
   return Buffer.from(value).toString('base64url')
@@ -70,7 +70,7 @@ function andFilter(...expressions: ReturnType<typeof exactFilter>[]) {
   return { andGroup: { expressions } }
 }
 
-async function runReport(accessToken: string, dateRange: DateRange, metricNames: MetricName[], dimensionFilters: unknown) {
+async function runReport(accessToken: string, dateRange: DateRange, metricNames: MetricName[], dimensionNames: DimensionName[], dimensionFilters: unknown) {
   const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runReport`, {
     method: 'POST',
     headers: {
@@ -117,10 +117,10 @@ export async function POST(request: Request) {
     const accessToken = await getAccessToken()
     const trialPageFilter = exactFilter('pagePath', '/free-trial')
     const [landing, booked, cta, form] = await Promise.all([
-      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'sessions', 'screenPageViews'], trialPageFilter),
-      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'eventCount'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_success'))),
-      runReport(accessToken, { startDate, endDate }, ['eventCount'], exactFilter('eventName', 'trial_cta_click')),
-      runReport(accessToken, { startDate, endDate }, ['eventCount'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_form_view'))),
+      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'sessions', 'screenPageViews'], ['pagePath'], trialPageFilter),
+      runReport(accessToken, { startDate, endDate }, ['activeUsers', 'eventCount'], ['pagePath', 'eventName'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_success'))),
+      runReport(accessToken, { startDate, endDate }, ['eventCount'], ['eventName'], exactFilter('eventName', 'trial_cta_click')),
+      runReport(accessToken, { startDate, endDate }, ['eventCount'], ['pagePath', 'eventName'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_form_view'))),
     ])
 
     const visitors = landing[0] || 0
