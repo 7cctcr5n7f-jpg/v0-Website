@@ -4,6 +4,7 @@ import { SpecialsGlobal } from '@/components/specials/specials-global'
 import { JsonLd } from '@/components/json-ld'
 import { SiteShell } from '@/components/site-shell'
 import { AnalyticsConsent } from '@/components/analytics-consent'
+import { CampaignAttributionCapture } from '@/components/campaign-attribution-capture'
 import { localBusinessSchema, websiteSchema } from '@/lib/seo'
 import { business } from '@/lib/business'
 import './globals.css'
@@ -68,6 +69,7 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased">
         <JsonLd data={[localBusinessSchema(), websiteSchema()]} />
+        <CampaignAttributionCapture />
         <SpecialsGlobal />
         <SiteShell>
           {children}
