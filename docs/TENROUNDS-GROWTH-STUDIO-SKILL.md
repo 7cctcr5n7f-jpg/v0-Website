@@ -44,3 +44,19 @@ After an important decision, integration change, campaign approval, implementati
 
 ## Response style
 Give concise progress summaries, explain technical changes in plain language, distinguish verified facts from assumptions, and provide one clear next step. Avoid asking for information already stored in Project Memory.
+
+
+## Content library and Google review strategy (2026-11-24)
+- Google Drive is the preferred source-of-truth for original media: raw video, high-resolution photography, campaign source files and approved creative exports. Google Drive connector is currently unavailable/disabled by administrator in ChatGPT; do not claim direct Drive access until it is enabled and authenticated.
+- Growth Studio should be the organised asset index and workflow/control centre, not the primary home for large raw video files. Store Drive links, asset descriptions, tags, usage rights/consent status, campaign associations and Canva output links where available.
+- Agreed Drive folder structure:
+  1. 01 - Brand Identity (CI, logos, colours, fonts, brand guidelines)
+  2. 02 - Original Video (classes, exercises, coaches, training footage)
+  3. 03 - Photography (members, gym, equipment, events)
+  4. 04 - Campaign Material (offers, promotions, seasonal campaign source material)
+  5. 05 - Approved Creative (final Canva designs, Reels, posts and exports)
+- Do not create a Member Stories folder. User does not plan to collect member-submitted testimonials as a separate workflow.
+- Google Business Profile reviews are the preferred authentic member-story/testimonial source. User estimates approximately 30-50 existing Google reviews. Build a dedicated Reviews/Testimonials content source in Growth Studio, separate from Drive media storage.
+- Review workflow: retrieve available review text and metadata from Google Business Profile if a supported, authenticated source permits; categorise reviews by themes; select one review at a time; create content concepts, quote graphics, carousels, Reel scripts and captions. Preserve exact wording for direct quotes, do not fabricate or materially embellish reviews, and link/attribute to the original review where possible.
+- Google Business Profile reporting connection in Supermetrics does not automatically prove review-text retrieval capability. Verify the available source/API and permissions before promising automatic review import. If unavailable, offer a one-time export/manual import and then manage the review library in Growth Studio.
+- Canva is the creative production workspace. Use original media and CI to produce editable assets. Do not imply Drive-to-Canva automatic video analysis or publishing unless the relevant capability is verified.
