@@ -5,14 +5,16 @@ import { useEffect, useState } from 'react'
 import { Activity, ArrowLeft, ArrowUpRight, BarChart3, BookOpen, CalendarDays, CheckCircle2, FileImage, FolderOpen, Megaphone, Plus, Target, UploadCloud, MessageSquareQuote, Save, Star } from 'lucide-react'
 
 type Asset = { url: string; pathname: string; size: number; uploadedAt?: string; contentType?: string }
-type Review = { id: string; name: string; comment: string; rating: number; date: string; reply: string; category: string[]; usageStatus: 'unused' | 'planned' | 'created' | 'published'; source: string; sourceNote?: string }\ntype Metrics = { updatedAt: string; period: string; trials: { total: number; month: number }; members: { month: number; matchedFromTrials: number }; conversion: { rate: number | null }; attendance: { value: number | null; reason: string }; retention: { value: number | null; reason: string }; campaignRoi: { value: number | null; reason: string }; revenue: { paidSessionPurchases: number; currency: string } }
+type Review = { id: string; name: string; comment: string; rating: number; date: string; reply: string; category: string[]; usageStatus: 'unused' | 'planned' | 'created' | 'published'; source: string; sourceNote?: string }
+type Metrics = { updatedAt: string; period: string; trials: { total: number; month: number }; members: { month: number; matchedFromTrials: number }; conversion: { rate: number | null }; attendance: { value: number | null; reason: string }; retention: { value: number | null; reason: string }; campaignRoi: { value: number | null; reason: string }; revenue: { paidSessionPurchases: number; currency: string } }
 const sections = [
   { id: 'strategy', label: 'ChatGPT Strategy', icon: BookOpen, description: 'Strategy and decisions stay in your ChatGPT workspace.' },
   { id: 'campaigns', label: 'Campaigns', icon: Megaphone, description: 'Plan campaign objectives, dates, offers and creative.' },
   { id: 'calendar', label: 'Content Calendar', icon: CalendarDays, description: 'Review the content plan and approval status.' },
   { id: 'creative', label: 'Creative Studio', icon: FileImage, description: 'Prepare creative briefs and move into Canva.' },
   { id: 'performance', label: 'Performance', icon: BarChart3, description: 'Use verified booking and membership data.' },
-  { id: 'assets', label: 'Assets & Templates', icon: FolderOpen, description: 'Keep the official TENROUNDS CI and brand files together.' },\n  { id: 'reviews', label: 'Google Reviews', icon: MessageSquareQuote, description: 'Turn authentic customer reviews into a reusable content library.' },
+  { id: 'assets', label: 'Assets & Templates', icon: FolderOpen, description: 'Keep the official TENROUNDS CI and brand files together.' },
+  { id: 'reviews', label: 'Google Reviews', icon: MessageSquareQuote, description: 'Turn authentic customer reviews into a reusable content library.' },
 ]
 const money = (value: number) => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value)
 export function GrowthStudioSection({ section }: { section: string }) {
@@ -23,9 +25,14 @@ export function GrowthStudioSection({ section }: { section: string }) {
   const [notice, setNotice] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [campaigns, setCampaigns] = useState<any[]>([])
-  const [posts, setPosts] = useState<any[]>([])\n  const [reviews, setReviews] = useState<Review[]>([])\n  const [reviewsTotal, setReviewsTotal] = useState(33)\n  const [reviewsNotice, setReviewsNotice] = useState('')\n  const [savingReviews, setSavingReviews] = useState(false)
+  const [posts, setPosts] = useState<any[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [reviewsTotal, setReviewsTotal] = useState(33)
+  const [reviewsNotice, setReviewsNotice] = useState('')
+  const [savingReviews, setSavingReviews] = useState(false)
   useEffect(() => {
-    if (section === 'reviews') fetch('/api/growth-studio/reviews', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { setReviews(d.reviews ?? []); setReviewsTotal(d.totalGoogleReviews ?? 33) }).catch(() => setReviewsNotice('Could not load the review library.'))\n    if (section === 'assets') fetch('/api/growth-studio/assets', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => setAssets(d.assets ?? [])).catch(() => setNotice('Asset storage is not available yet. Connect a Vercel Blob store to enable uploads.'))
+    if (section === 'reviews') fetch('/api/growth-studio/reviews', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { setReviews(d.reviews ?? []); setReviewsTotal(d.totalGoogleReviews ?? 33) }).catch(() => setReviewsNotice('Could not load the review library.'))
+    if (section === 'assets') fetch('/api/growth-studio/assets', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => setAssets(d.assets ?? [])).catch(() => setNotice('Asset storage is not available yet. Connect a Vercel Blob store to enable uploads.'))
     if (section === 'performance') fetch('/api/growth-studio/metrics', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(setMetrics).catch(() => setNotice('Could not retrieve verified metrics.'))
     if (section === 'campaigns' || section === 'calendar') fetch('/api/growth-studio/state', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => { setCampaigns(d.state?.campaigns ?? []); setPosts(d.state?.posts ?? []) }).catch(() => setNotice('Could not load the saved campaign workspace.'))
   }, [section])
