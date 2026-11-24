@@ -104,21 +104,21 @@ export function Ga4TrialFunnel() {
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Unique trial-page visitors" value={formatNumber(metrics.visitors)} detail={`${formatNumber(metrics.sessions)} sessions · ${formatNumber(metrics.pageViews)} page views`} />
-            <Metric label="Visitors who didn't book" value={formatNumber(metrics.notBookedUsers)} detail="No successful booking in the same trial-page session" accent />
+            <Metric label="Visitors who didn't book" value={formatNumber(metrics.notBookedUsers)} detail="No trial_success event during this reporting window" accent />
             <Metric label="Completed bookings" value={formatNumber(metrics.bookedUsers)} detail={`${formatNumber(metrics.successfulBookings)} successful booking events`} />
-            <Metric label="Page-to-booking rate" value={`${metrics.conversionRate.toFixed(1)}%`} detail="Unique same-session bookers ÷ unique visitors" />
+            <Metric label="Page-to-booking rate" value={`${metrics.conversionRate.toFixed(1)}%`} detail="Unique users with trial_success ÷ unique page visitors" />
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <Metric label="Trial CTA clicks" value={formatNumber(metrics.ctaClicks)} detail="Click events from sessions landing on /free-trial" />
-            <Metric label="Trial form views" value={formatNumber(metrics.formViews)} detail="Form-view events from sessions landing on /free-trial" />
+            <Metric label="Trial CTA clicks" value={formatNumber(metrics.ctaClicks)} detail="Clicks on free-trial links across the website" />
+            <Metric label="Trial form views" value={formatNumber(metrics.formViews)} detail="Form-view events recorded on /free-trial" />
           </div>
           <div className="mt-5 rounded-xl border border-[#B8E3F1] bg-white/80 p-4">
-            <div className="flex items-center justify-between gap-3 text-xs font-bold text-[#102A43]"><span>Visitor-to-booking journey</span><span>{metrics.conversionRate.toFixed(1)}% booked in the same session</span></div>
+            <div className="flex items-center justify-between gap-3 text-xs font-bold text-[#102A43]"><span>Visitor-to-booking journey</span><span>{metrics.conversionRate.toFixed(1)}% booked during this reporting window</span></div>
             <div className="mt-3 flex h-3 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full bg-[#00AEEF]" style={{ width: `${metrics.visitors ? Math.min(100, metrics.bookedUsers / metrics.visitors * 100) : 0}%` }} />
               <div className="h-full flex-1 bg-[#102A43]/15" />
             </div>
-            <p className="mt-3 text-xs leading-5 text-slate-500">The not-booked figure is a same-session estimate: a visitor who returns later and books in a different session may still appear in this gap. This avoids pretending that GA4's aggregate totals provide person-level, cross-session attribution.</p>
+            <p className="mt-3 text-xs leading-5 text-slate-500">The not-booked figure is the unique-user gap for this reporting window: it counts people who viewed /free-trial but did not trigger trial_success during the selected dates. Someone who books after the date range ends will remain in this gap until the next refresh includes that booking.</p>
           </div>
         </>
       ) : null}
