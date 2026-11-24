@@ -28,7 +28,7 @@ const MONTHS = [
 function monthKey(value: Date | string) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit' }).format(new Date(value)).slice(0, 7)
 }
-function pct(value: number) { return `${value > 0 ? '+' : ''}${value.toFixed(1)}%` }
+function localDate(value: Date | string) { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value)) }\nfunction pct(value: number) { return `${value > 0 ? '+' : ''}${value.toFixed(1)}%` }
 
 function StatPill({ label, value, note, accent = false }: { label: string; value: string | number; note: string; accent?: boolean }) {
   return <div className={`rounded-2xl border p-4 ${accent ? 'border-[#00AEEF]/30 bg-[#00AEEF] text-[#06283D]' : 'border-white/10 bg-white/[.075] text-white'}`}>
@@ -58,13 +58,13 @@ export default async function KpiPage() {
     conversion: getTrialConversion(booking, signupIndex, purchaseIndex, today),
   }))
   const monthly = MONTHS.map(month => {
-    const monthTrials = cohort.filter(row => monthKey(row.booking.createdAt) === month.key)
+    const monthTrials = cohort.filter(row => monthKey(row.booking.createdAt) === month.key && localDate(row.booking.createdAt) <= month.key + '-23')
     const monthSignups = allSignups.filter(row => monthKey(row.createdAt) === month.key)
     const converted = monthTrials.filter(row => row.conversion.status === 'converted').length
     const eligible = monthTrials.filter(row => row.conversion.status !== 'upcoming').length
     return { ...month, bookings: monthTrials.length, signups: monthSignups.length, converted, eligible, conversionRate: eligible ? Math.round(converted / eligible * 100) : 0 }
   })
-  const current = monthly[2]
+  const current = monthly[2]\n  const currentMonthBookings = cohort.filter(row => monthKey(row.booking.createdAt) === '2026-11').length
   const latestTrials = cohort.slice(0, 4)
   const allConverted = cohort.filter(row => row.conversion.status === 'converted').length
   const allEligible = cohort.filter(row => row.conversion.status !== 'upcoming').length
@@ -95,7 +95,7 @@ export default async function KpiPage() {
           <p className="mt-2 max-w-xl text-xs leading-5 text-slate-300">Your live operating picture, with the signal separated from the noise. Start with the outcome, then see what is driving it.</p>
         </div>
         <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-2.5">
-          <StatPill label="Trial bookings" value={current.bookings} note="Nov · 1–24"/>
+          <StatPill label="Trial bookings" value={currentMonthBookings} note="Nov · 1–24"/>
           <StatPill label="Matched members" value={current.converted} note="After trial"/>
           <StatPill label="Matured conversion" value={`${current.conversionRate}%`} note={`${current.eligible} eligible`} accent/>
           <StatPill label="Trial-page visitors" value={current.trialVisitors} note="Vercel · 1–23"/>
@@ -128,11 +128,11 @@ export default async function KpiPage() {
 
         <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#D8E9F0] bg-[linear-gradient(155deg,#F8FCFE,#EAF7FB)] p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
           <div className="flex items-start justify-between gap-3">
-            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">02 / Turn interest into revenue</p><h2 className="mt-1 text-lg font-black tracking-tight">Trial conversion engine</h2><p className="text-[11px] text-slate-500">Booking database · email-matched outcomes</p></div>
+            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">02 / Turn interest into revenue</p><h2 className="mt-1 text-lg font-black tracking-tight">Trial conversion engine</h2><p className="text-[11px] text-slate-500">Vercel visitor data + email-matched booking outcomes</p></div>
             <span className="rounded-xl bg-white p-2 text-[#008FC4]"><Zap size={17}/></span>
           </div>
           <div className="mt-5 rounded-2xl bg-[#102A43] p-4 text-white">
-            <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.15em] text-slate-300">Free-trial page visitors · Nov 1–23</span><span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-[#FFE36E]">LIVE DATABASE</span></div>
+            <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.15em] text-slate-300">Free-trial page visitors · Nov 1–23</span><span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-[#FFE36E]">VERCEL ANALYTICS</span></div>
             <div className="mt-2 flex items-end justify-between"><span className="text-4xl font-black tracking-[-.05em]">{current.trialVisitors}</span><span className="pb-1 text-[10px] text-slate-300">{current.trialPageViews} page views · checked 24 Nov</span></div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#00B5EF]" style={{width:`${Math.max(current.conversionRate,2)}%`}}/></div>
             <div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-slate-300">Matured trial cohort</span><strong className="text-[#FFE36E]">{current.conversionRate}% converted</strong></div>
