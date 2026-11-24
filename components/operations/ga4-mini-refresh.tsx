@@ -10,6 +10,7 @@ type Result = {
   ctaClicks: number
   formViews: number
   dataStatus: 'active' | 'no_activity'
+  realtime?: { trialSuccess: number; trialSubmit: number; trialCtaClick: number }
 }
 
 function localDate(value: Date) {
@@ -55,9 +56,9 @@ export function Ga4MiniRefresh() {
           <div><p className="text-[9px] text-slate-400">CTA clicks</p><p className="text-lg font-black">{result.ctaClicks}</p></div>
           <div><p className="text-[9px] text-slate-400">Form views</p><p className="text-lg font-black">{result.formViews}</p></div>
           <div><p className="text-[9px] text-slate-400">Bookings</p><p className="text-lg font-black">{result.bookedUsers}</p></div>
-          <p className="col-span-4 flex items-center gap-1 text-[9px] text-emerald-700"><CheckCircle2 size={11}/> GA4 data returned for {result.dateRange.startDate} to {result.dateRange.endDate}</p>
+          <p className="col-span-4 flex items-center gap-1 text-[9px] text-emerald-700"><CheckCircle2 size={11}/> GA4 standard report returned data for {result.dateRange.startDate} to {result.dateRange.endDate}; Realtime events are checked separately</p>
         </div>
-      ) : <p role="status" className="mt-2 flex gap-2 text-[10px] leading-4 text-amber-800"><CircleAlert size={13} className="mt-0.5 shrink-0"/>The API responded, but GA4 has no trial-page views or trial funnel events in this reporting window. This is not proof of zero website visitors.</p> : !error ? <p className="mt-2 text-[10px] leading-4 text-slate-500">Owner-triggered check only. Pulls this month's GA4 trial-page visits, CTA clicks, form views and successful bookings.</p> : null}
+      ) : <p role="status" className="mt-2 flex gap-2 text-[10px] leading-4 text-amber-800"><CircleAlert size={13} className="mt-0.5 shrink-0"/>Standard GA4 reporting has no trial-page activity in this date range. Realtime (last 30 minutes): CTA {result.realtime?.trialCtaClick ?? 0}, form submits {result.realtime?.trialSubmit ?? 0}, successful bookings {result.realtime?.trialSuccess ?? 0}. If you just tested, these Realtime counts should appear first; standard reports can take longer to process.</p> : !error ? <p className="mt-2 text-[10px] leading-4 text-slate-500">Owner-triggered check only. Pulls this month's GA4 trial-page visits, CTA clicks, form views and successful bookings.</p> : null}
     </div>
   )
 }

@@ -95,6 +95,30 @@ async function runReport(accessToken: string, dateRange: DateRange, metricNames:
   return (body.rows?.[0]?.metricValues || []).map(value => Number(value.value || 0))
 }
 
+
+async function runRealtimeReport(accessToken: string) {
+  const response = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${PROPERTY_ID}:runRealtimeReport`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      minuteRanges: [{ startMinutesAgo: 29, endMinutesAgo: 0 }],
+      dimensions: [{ name: 'eventName' }],
+      metrics: [{ name: 'eventCount' }],
+      limit: 250,
+    }),
+    cache: 'no-store',
+  })
+  const body = await response.json() as {
+    rows?: Array<{ dimensionValues?: Array<{ value?: string }>; metricValues?: Array<{ value?: string }> }>
+    error?: { message?: string }
+  }
+  if (!response.ok) throw new Error(body.error?.message || 'Google Analytics Realtime report failed.')
+  return Object.fromEntries((body.rows || []).map(row => [
+    row.dimensionValues?.[0]?.value || '',
+    Number(row.metricValues?.[0]?.value || 0),
+  ]))
+}
+
 function validDate(value: unknown): value is string {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`))
 }
@@ -118,11 +142,12 @@ export async function POST(request: Request) {
   try {
     const accessToken = await getAccessToken()
     const trialPageFilter = exactFilter('pagePath', '/free-trial')
-    const [landing, booked, cta, form] = await Promise.all([
+    const [landing, booked, cta, form, realtimeEvents] = await Promise.all([
       runReport(accessToken, { startDate, endDate }, ['activeUsers', 'sessions', 'screenPageViews'], ['pagePath'], trialPageFilter),
       runReport(accessToken, { startDate, endDate }, ['activeUsers', 'eventCount'], ['pagePath', 'eventName'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_success'))),
       runReport(accessToken, { startDate, endDate }, ['eventCount'], ['eventName'], exactFilter('eventName', 'trial_cta_click')),
       runReport(accessToken, { startDate, endDate }, ['eventCount'], ['pagePath', 'eventName'], andFilter(trialPageFilter, exactFilter('eventName', 'trial_form_view'))),
+      runRealtimeReport(accessToken),
     ])
 
     const visitors = landing[0] || 0
@@ -138,6 +163,7 @@ export async function POST(request: Request) {
       notBookedUsers: Math.max(0, visitors - bookedUsers),
       conversionRate: visitors ? (bookedUsers / visitors) * 100 : 0,
       dataStatus: visitors > 0 || bookedUsers > 0 || (cta[0] || 0) > 0 || (form[0] || 0) > 0 ? 'active' : 'no_activity',
+      realtime: { trialSuccess: realtimeEvents.trial_success || 0, trialSubmit: realtimeEvents.trial_submit || 0, trialCtaClick: realtimeEvents.trial_cta_click || 0, events: realtimeEvents },
       ctaClicks: cta[0] || 0,
       formViews: form[0] || 0,
     })

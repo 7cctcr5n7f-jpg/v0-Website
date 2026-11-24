@@ -7,11 +7,13 @@ import { trialBookings, membershipSignups, sessionPurchases } from '@/lib/db/sch
 import { isOperationsAuthed } from '@/lib/operations-auth'
 import { OperationsLogin } from '@/components/operations/operations-login'
 import { Ga4MiniRefresh } from '@/components/operations/ga4-mini-refresh'
+import { FullGrowthFunnel } from '@/components/operations/full-growth-funnel'
 import {
   buildSignupEmailIndex,
   buildSessionPurchaseEmailIndex,
   getTrialConversion,
   ymdInJohannesburg,
+  normalizeEmail,
 } from '@/lib/trial-conversion'
 
 export const metadata: Metadata = {
@@ -76,8 +78,8 @@ export default async function KpiPage() {
   const positionChange = monthly[0].position - monthly[2].position
   const nowLabel = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
 
-  return <main className="min-h-screen bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:h-screen lg:overflow-hidden lg:px-7 lg:py-4">
-    <div className="mx-auto flex min-h-full max-w-[1600px] flex-col gap-3">
+  return <main className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:h-screen lg:overflow-hidden lg:px-7 lg:py-4">
+    <div className="mx-auto flex min-h-full w-full min-w-0 max-w-[1600px] flex-col gap-3">
       <header className="flex h-11 shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#102A43] text-sm font-black text-white">10<span className="text-[#00AEEF]">.</span></div>
@@ -90,7 +92,7 @@ export default async function KpiPage() {
         </div>
       </header>
 
-      <section className="relative grid shrink-0 gap-5 overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_80%_5%,rgba(0,174,239,.26),transparent_27%),linear-gradient(115deg,#081B2D,#102A43_60%,#17496B)] p-5 text-white shadow-[0_18px_50px_rgba(16,42,67,.15)] sm:p-6 lg:min-h-[190px] lg:grid-cols-[1.1fr_1fr] lg:items-center">
+      <section className="relative grid min-w-0 shrink-0 gap-5 overflow-hidden rounded-[28px] bg-[radial-gradient(circle_at_80%_5%,rgba(0,174,239,.26),transparent_27%),linear-gradient(115deg,#081B2D,#102A43_60%,#17496B)] p-5 text-white shadow-[0_18px_50px_rgba(16,42,67,.15)] sm:p-6 lg:min-h-[190px] lg:grid-cols-[1.1fr_1fr] lg:items-center">
         <div className="pointer-events-none absolute -right-10 -top-28 size-72 rounded-full border-[38px] border-white/[.045]" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.08] px-3 py-1.5 text-[9px] font-black uppercase tracking-[.19em] text-[#FFE36E]"><Sparkles size={11}/> The business, in one view</div>
@@ -105,8 +107,8 @@ export default async function KpiPage() {
         </div>
       </section>
 
-      <section className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[1.05fr_1.05fr_.9fr]">
-        <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#E0E8EE] bg-white p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
+      <section className="grid min-h-0 min-w-0 flex-1 gap-3 xl:grid-cols-[1fr_1.08fr_.95fr]">
+        <article className="flex min-w-0 min-h-[290px] flex-col rounded-[24px] border border-[#E0E8EE] bg-white p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
           <div className="flex items-start justify-between gap-3">
             <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">01 / Get discovered</p><h2 className="mt-1 text-lg font-black tracking-tight">Search demand</h2><p className="text-[11px] text-slate-500">Google organic · matching 23-day windows</p></div>
             <span className="rounded-xl bg-[#EAF8FD] p-2 text-[#008FC4]"><Search size={17}/></span>
@@ -129,26 +131,7 @@ export default async function KpiPage() {
           </div>
         </article>
 
-        <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#D8E9F0] bg-[linear-gradient(155deg,#F8FCFE,#EAF7FB)] p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
-          <div className="flex items-start justify-between gap-3">
-            <div><p className="text-[9px] font-black uppercase tracking-[.18em] text-[#008FC4]">02 / Turn interest into revenue</p><h2 className="mt-1 text-lg font-black tracking-tight">Trial conversion engine</h2><p className="text-[11px] text-slate-500">Vercel visitor data + email-matched booking outcomes</p></div>
-            <span className="rounded-xl bg-white p-2 text-[#008FC4]"><Zap size={17}/></span>
-          </div>
-          <div className="mt-5 rounded-2xl bg-[#102A43] p-4 text-white">
-            <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[.15em] text-slate-300">Free-trial page visitors · Nov 1–23</span><span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-[#FFE36E]">VERCEL ANALYTICS</span></div>
-            <div className="mt-2 flex items-end justify-between"><span className="text-4xl font-black tracking-[-.05em]">{current.trialVisitors}</span><span className="pb-1 text-[10px] text-slate-300">{current.trialPageViews} page views · checked 24 Nov</span></div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#00B5EF]" style={{width:`${Math.max(current.conversionRate,2)}%`}}/></div>
-            <div className="mt-2 flex items-center justify-between text-[10px]"><span className="text-slate-300">Matured trial cohort</span><strong className="text-[#FFE36E]">{current.conversionRate}% converted</strong></div>
-          </div>
-          <div className="mt-3 grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-1.5">
-            <div className="rounded-xl border border-[#DDEAF0] bg-white p-3"><Users size={14} className="text-[#008FC4]"/><p className="mt-2 text-2xl font-black">{current.bookings}</p><p className="text-[9px] font-bold text-slate-500">Booked</p></div>
-            <ArrowRight size={14} className="text-[#8DA6B6]"/>
-            <div className="rounded-xl border border-[#DDEAF0] bg-white p-3"><CalendarDays size={14} className="text-[#008FC4]"/><p className="mt-2 text-2xl font-black">{current.eligible}</p><p className="text-[9px] font-bold text-slate-500">Trial date passed</p></div>
-            <ArrowRight size={14} className="text-[#8DA6B6]"/>
-            <div className="rounded-xl border border-[#B8E6F4] bg-white p-3"><CheckCircle2 size={14} className="text-emerald-600"/><p className="mt-2 text-2xl font-black text-[#008FC4]">{current.converted}</p><p className="text-[9px] font-bold text-slate-500">Converted</p></div>
-          </div>
-          <div className="mt-auto flex items-center justify-between border-t border-[#DDEAF0] pt-3 text-[10px]"><span className="text-slate-500">All-time: {allTrials.length} trials · {allConverted} matched conversions</span><span className="font-black text-[#102A43]">{allRate}% matured</span></div>
-        </article>
+        <FullGrowthFunnel bookings={currentMonthBookings} trialsReached={current.eligible} members={new Set(cohort.filter(row => monthKey(row.booking.createdAt) === "2026-11" && (row.conversion.source === "membership" || row.booking.manuallyConverted)).map(row => normalizeEmail(row.booking.email) || `manual-${row.booking.id}`)).size} />
 
         <article className="flex min-h-[290px] flex-col rounded-[24px] border border-[#E0E8EE] bg-white p-5 shadow-[0_8px_28px_rgba(16,42,67,.045)]">
           <div className="flex items-start justify-between gap-3">
