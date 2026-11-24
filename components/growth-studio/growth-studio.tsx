@@ -7,6 +7,7 @@ import { Activity, ArrowRight, BarChart3, CalendarDays, Check, ChevronLeft, Chev
 type Campaign = { id: string; title: string; objective: string; status: string; startDate: string; endDate: string; image: string }
 type Post = { id: string; campaignId: string; title: string; caption: string; date: string; time: string; platforms: string[]; status: 'draft' | 'approved' | 'scheduled' | 'published'; format: 'Reel' | 'Carousel' | 'Post' | 'Story'; image: string }
 type State = { campaigns: Campaign[]; posts: Post[]; activeCampaignId: string }
+type Metrics = { trials: { month: number }; members: { month: number }; retention: { value: number | null }; campaignRoi: { value: number | null } }
 
 const starter: State = {
   campaigns: [
@@ -39,6 +40,7 @@ export function GrowthStudio() {
   const [notice, setNotice] = useState('')
   const [month, setMonth] = useState({ year: 2026, month: 11 })
   const [selectedId, setSelectedId] = useState<string | null>('p1')
+  const [metrics, setMetrics] = useState<Metrics | null>(null)
 
   useEffect(() => {
     fetch('/api/growth-studio/state', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
@@ -90,22 +92,22 @@ export function GrowthStudio() {
         <Link href="/KPI" className="growth-nav-link"><BarChart3 size={18}/>Analysis Cockpit</Link>
         <Link href="/growth-studio" className="growth-nav-link active"><Megaphone size={18}/>Growth Studio</Link>
         <div className="growth-nav-label">GROWTH STUDIO</div>
-        <a href="#strategy" className="growth-nav-link"><ExternalLink size={18}/>ChatGPT Strategy</a>
-        <a href="#campaigns" className="growth-nav-link"><Layers3 size={18}/>Campaigns</a>
-        <a href="#calendar" className="growth-nav-link"><CalendarDays size={18}/>Content Calendar</a>
-        <a href="#creative" className="growth-nav-link"><FileImage size={18}/>Creative Studio</a>
-        <a href="#performance" className="growth-nav-link"><BarChart3 size={18}/>Performance</a>
-        <a href="#assets" className="growth-nav-link"><FolderOpen size={18}/>Assets &amp; Templates</a>
+        <Link href="/growth-studio/strategy" className="growth-nav-link"><ExternalLink size={18}/>ChatGPT Strategy</Link>
+        <Link href="/growth-studio/campaigns" className="growth-nav-link"><Layers3 size={18}/>Campaigns</Link>
+        <Link href="/growth-studio/calendar" className="growth-nav-link"><CalendarDays size={18}/>Content Calendar</Link>
+        <Link href="/growth-studio/creative" className="growth-nav-link"><FileImage size={18}/>Creative Studio</Link>
+        <Link href="/growth-studio/performance" className="growth-nav-link"><BarChart3 size={18}/>Performance</Link>
+        <Link href="/growth-studio/assets" className="growth-nav-link"><FolderOpen size={18}/>Assets &amp; Templates</Link>
       </nav>
       <div className="growth-sidebar-foot"><span>OWNER WORKSPACE</span><strong>Private · Approval-first</strong></div>
     </aside>
     <main className="growth-main">
       <header className="growth-topbar"><div><h1>TENROUNDS Growth Hub</h1><p>Your central business growth workspace for members, marketing and performance.</p></div><div className="growth-topbar-meta"><span><i className="live-dot"/>Connected workspace</span><span className="growth-avatar">RR</span></div></header>
       <div className="growth-content">
-        <div className="growth-page-head"><div className="growth-page-title"><Megaphone size={29}/><div><h2>Growth Studio</h2><p>Collaborate, plan and execute campaigns that grow TENROUNDS.</p></div></div><nav className="growth-tabs"><Link href="/growth-studio" className="selected"><Activity size={15}/>Overview</Link><a href="#strategy"><ExternalLink size={15}/>ChatGPT Strategy</a><a href="#campaigns"><Layers3 size={15}/>Campaigns</a><a href="#calendar"><CalendarDays size={15}/>Calendar</a><a href="#creative"><FileImage size={15}/>Creative Studio</a><a href="#performance"><BarChart3 size={15}/>Performance</a></nav></div>
+        <div className="growth-page-head"><div className="growth-page-title"><Megaphone size={29}/><div><h2>Growth Studio</h2><p>Collaborate, plan and execute campaigns that grow TENROUNDS.</p></div></div><nav className="growth-tabs"><Link href="/growth-studio" className="selected"><Activity size={15}/>Overview</Link><Link href="/growth-studio/strategy"><ExternalLink size={15}/>ChatGPT Strategy</Link><Link href="/growth-studio/campaigns"><Layers3 size={15}/>Campaigns</Link><Link href="/growth-studio/calendar"><CalendarDays size={15}/>Calendar</Link><Link href="/growth-studio/creative"><FileImage size={15}/>Creative Studio</Link><Link href="/growth-studio/performance"><BarChart3 size={15}/>Performance</Link></nav></div>
         <section className="growth-hero"><div className="growth-hero-copy"><span>GROWTH STUDIO</span><h2>PLAN. CREATE. PUBLISH. <em>GROW.</em></h2><p>Turn insights into campaigns, content and more members for TENROUNDS.</p></div><Image src="/hero-athlete.png" alt="TENROUNDS training" fill priority className="growth-hero-image"/><ul><li><Check size={16}/>More trial bookings</li><li><Check size={16}/>Higher conversions</li><li><Check size={16}/>Stronger member retention</li></ul></section>
         <section className="growth-metrics" id="performance">
-          <div><Users/><span>Trial Bookings</span><strong>—</strong><small>Connect verified booking data</small></div><div><Users/><span>New Members</span><strong>—</strong><small>Connect membership conversions</small></div><div><Activity/><span>Retention Rate</span><strong>—</strong><small>Requires reliable member history</small></div><div><Megaphone/><span>Campaign ROI</span><strong>—</strong><small>Awaiting attributed spend and revenue</small></div>
+          <div><Users/><span>Trial Bookings</span><strong>{metrics ? metrics.trials.month : "—"}</strong><small>This month · live database</small></div><div><Users/><span>New Members</span><strong>{metrics ? metrics.members.month : "—"}</strong><small>This month · sign-up records</small></div><div><Activity/><span>Retention Rate</span><strong>{metrics?.retention.value == null ? "Data required" : metrics.retention.value + "%"}</strong><small>Needs member history</small></div><div><Megaphone/><span>Campaign ROI</span><strong>{metrics?.campaignRoi.value == null ? "Data required" : metrics.campaignRoi.value + "%"}</strong><small>Needs attributed spend</small></div>
         </section>
         <section className="growth-workspace">
           <div className="growth-panel growth-chat-panel growth-chatgpt-panel" id="strategy">
@@ -139,7 +141,7 @@ export function GrowthStudio() {
           </div>
           <div className="growth-panel growth-seasonal"><div className="growth-panel-head"><h3><CalendarDays/>Seasonal Growth Plan</h3><span>Annual campaign themes</span></div><div className="seasonal-grid">{seasonal.map(item => <div className="seasonal-tile" key={item.month}><Image src={item.image} alt="" fill/><span>{item.month}</span><strong>{item.title}</strong></div>)}</div></div>
         </section>
-        <section className="growth-footer-links"><div id="creative"><WandSparkles/><strong>Creative Studio</strong><span>Canva designs, video and reusable templates</span><button onClick={() => setNotice('Canva API connection is required to create and edit designs from this website.')}>Connect Canva <ArrowRight size={13}/></button></div><div id="assets"><FolderOpen/><strong>Brand Assets</strong><span>Use TENROUNDS photography, logos and existing Canva designs</span><a href="https://www.canva.com/" target="_blank" rel="noreferrer">Open Canva <ArrowRight size={13}/></a></div><div><Instagram/><strong>Publishing setup</strong><span>Instagram scheduling is available through the connected publishing service. Facebook Page publishing needs its own verified route.</span><span className="setup-status">Approval required before every post</span></div></section>
+        <section className="growth-footer-links"><div id="creative"><WandSparkles/><strong>Creative Studio</strong><span>Canva designs, video and reusable templates</span><button >Open Creative Studio <ArrowRight size={13}/></button></div><div id="assets"><FolderOpen/><strong>Brand Assets</strong><span>Use TENROUNDS photography, logos and existing Canva designs</span><Link href="/growth-studio/assets">Manage brand assets <ArrowRight size={13}/></Link></div><div><Instagram/><strong>Publishing setup</strong><span>Instagram scheduling is available through the connected publishing service. Facebook Page publishing needs its own verified route.</span><span className="setup-status">Approval required before every post</span></div></section>
       </div>
     </main>
   </div>
