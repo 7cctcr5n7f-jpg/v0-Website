@@ -66,7 +66,8 @@ export default async function KpiPage() {
     const eligible = monthTrials.filter(row => row.conversion.status !== 'upcoming').length
     return { ...month, bookings: monthTrials.length, signups: monthSignups.length, converted, eligible, conversionRate: eligible ? Math.round(converted / eligible * 100) : 0 }
   })
-  const current = monthly[2]\n  const currentMonthBookings = cohort.filter(row => monthKey(row.booking.createdAt) === '2026-11').length
+  const current = monthly[2]
+  const currentMonthBookings = cohort.filter(row => monthKey(row.booking.createdAt) === '2026-11').length
   const latestTrials = cohort.slice(0, 4)
   const allConverted = cohort.filter(row => row.conversion.status === 'converted').length
   const allEligible = cohort.filter(row => row.conversion.status !== 'upcoming').length
