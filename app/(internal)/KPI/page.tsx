@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { desc } from 'drizzle-orm'
 import Link from 'next/link'
-import { Activity, ArrowDownRight, ArrowUpRight, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Compass, MousePointer2, Search, Settings2, Sparkles, Users, Zap } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, ArrowRight, BarChart3, CalendarDays, CheckCircle2, CircleAlert, Compass, Search, Settings2, Sparkles, Users, Zap } from 'lucide-react'
 import { db } from '@/lib/db'
 import { trialBookings, membershipSignups, sessionPurchases } from '@/lib/db/schema'
 import { isOperationsAuthed } from '@/lib/operations-auth'
@@ -65,7 +65,6 @@ export default async function KpiPage() {
     return { ...month, bookings: monthTrials.length, signups: monthSignups.length, converted, eligible, conversionRate: eligible ? Math.round(converted / eligible * 100) : 0 }
   })
   const current = monthly[2]
-  const previous = monthly[1]
   const latestTrials = cohort.slice(0, 4)
   const allConverted = cohort.filter(row => row.conversion.status === 'converted').length
   const allEligible = cohort.filter(row => row.conversion.status !== 'upcoming').length
