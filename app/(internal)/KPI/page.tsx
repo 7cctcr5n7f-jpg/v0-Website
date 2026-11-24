@@ -79,7 +79,7 @@ export default async function KpiPage() {
   const positionChange = monthly[0].position - monthly[2].position
   const nowLabel = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
 
-  return <main className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:h-screen lg:overflow-hidden lg:px-7 lg:py-4">
+  return <main className="min-h-screen w-full min-w-0 overflow-x-hidden bg-[#EEF3F7] px-4 py-4 text-[#102A43] sm:px-6 lg:min-h-screen lg:overflow-y-auto lg:px-7 lg:py-4">
     <div className="mx-auto flex min-h-full w-full min-w-0 max-w-[1600px] flex-col gap-3">
       <header className="flex h-11 shrink-0 items-center justify-between">
         <div className="flex items-center gap-3">
