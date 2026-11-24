@@ -31,17 +31,6 @@ function monthKey(value: Date | string) {
 function money(value: number) {
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value)
 }
-function change(current: number, previous: number) {
-  if (!previous) return null
-  const value = ((current - previous) / previous) * 100
-  return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
-}
-function Trend({ value, inverse = false }: { value: string | null; inverse?: boolean }) {
-  if (!value) return <span className="text-xs text-slate-400">No comparison</span>
-  const positive = value.startsWith('+')
-  const good = inverse ? !positive : positive
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${good ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{value}</span>
-}
 function Bar({ label, value, max, suffix = '' }: { label: string; value: number; max: number; suffix?: string }) {
   return <div className="grid grid-cols-[86px_1fr_64px] items-center gap-3">
     <span className="text-xs font-semibold text-slate-500">{label}</span>
@@ -87,7 +76,6 @@ export default async function KpiPage() {
   const previous = monthly[1]
   const latestTrials = allTrials.slice(0, 6)
   const maxClicks = Math.max(...monthly.map(m => m.seo.clicks))
-  const maxBookings = Math.max(1, ...monthly.map(m => m.bookings))
   const nowLabel = new Intl.DateTimeFormat('en-ZA', { timeZone: 'Africa/Johannesburg', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date())
 
   return <main className="min-h-screen bg-[#F4F7FA] text-[#102A43]">
@@ -124,7 +112,7 @@ export default async function KpiPage() {
         <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.2em] text-[#008FC4]">01 / Month-on-month performance</p><h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Are we actually improving?</h2><p className="mt-1 text-sm text-slate-500">Three-month view. November is month-to-date through 23 November.</p></div><span className="rounded-full bg-white px-3 py-2 text-[10px] font-bold text-slate-500 shadow-sm">September → October → November</span></div>
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           {monthly.map((m, i) => <article key={m.key} className={`rounded-[24px] border p-5 shadow-sm ${i === 2 ? 'border-[#00AEEF]/40 bg-[#EAF8FD]' : 'border-white bg-white'}`}>
-            <div className="flex items-center justify-between"><h3 className="text-lg font-black">{m.label}</h3>{i === 2 ? <span className="rounded-full bg-[#102A43] px-2.5 py-1 text-[10px] font-bold text-white">MONTH TO DATE</span> : <span className="text-[10px] font-semibold text-slate-400">FULL MONTH</span>}</div>
+            <div className="flex items-center justify-between"><h3 className="text-lg font-black">{m.label}</h3>{i === 2 ? <span className="rounded-full bg-[#102A43] px-2.5 py-1 text-[10px] font-bold text-white">MONTH TO DATE</span> : <span className="text-[10px] font-semibold text-slate-400">1ST–23RD</span>}</div>
             <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-5">
               <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Search clicks</p><p className="mt-1 text-3xl font-black">{m.seo.clicks}</p></div>
               <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Impressions</p><p className="mt-1 text-3xl font-black">{m.seo.impressions.toLocaleString('en-ZA')}</p></div>
