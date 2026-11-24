@@ -2,17 +2,22 @@ import type { Metadata } from 'next'
 import { LandingTemplate, type LandingConfig } from '@/components/landing/landing-template'
 
 export const metadata: Metadata = {
-  title: 'Boxing Fitness Gym Pretoria East | Coach-Led HIIT',
+  title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
   description:
-    'Looking for boxing fitness in Pretoria East? Train on four dedicated bag stations with coach-guided technique, strength work and a 30-minute HIIT circuit at TENROUNDS in Garsfontein. No sparring or class times. Try your first session free.',
+    'Looking for a boxing gym in Pretoria East? Train on boxing bags with coach-led technique and 30-minute HIIT at TENROUNDS in Garsfontein. Beginners welcome. Book your free trial.',
   alternates: { canonical: '/boxing-gym-pretoria-east' },
   openGraph: {
-    title: 'Boxing Gym Pretoria East | TENROUNDS Garsfontein',
+    title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
     description:
-      'Four boxing-bag stations, coach-led technique and 30-minute HIIT in Pretoria East. No class times. Free trial available.',
+      'Boxing-bag training, coach-led technique and 30-minute HIIT in Garsfontein, Pretoria East. Beginners welcome. Book your free trial at TENROUNDS.',
     images: [{ url: '/round-boxing-bag.webp', width: 1200, height: 630, alt: 'Boxing gym Pretoria East — TENROUNDS Garsfontein' }],
   },
-  twitter: { card: 'summary_large_image', images: ['/round-boxing-bag.webp'] },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
+    description: 'Boxing-bag training and coach-led 30-minute HIIT in Garsfontein, Pretoria East. Beginners welcome. Book your free trial.',
+    images: ['/round-boxing-bag.webp'],
+  },
   keywords: ['boxing gym Pretoria East', 'boxing gym Garsfontein', 'boxing bag Pretoria', 'boxing fitness Pretoria East', 'HIIT boxing Garsfontein'],
 }
 
