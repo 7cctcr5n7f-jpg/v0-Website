@@ -2,15 +2,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, ArrowRight, BarChart3, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, FileImage, FolderOpen, Instagram, Layers3, Megaphone, MessageCircle, Plus, Send, Sparkles, Target, Users, Video, WandSparkles } from 'lucide-react'
+import { Activity, ArrowRight, BarChart3, CalendarDays, Check, ChevronLeft, ChevronRight, ExternalLink, FileImage, FolderOpen, Instagram, Layers3, Megaphone, Plus, Target, Users, Video, WandSparkles } from 'lucide-react'
 
-type Message = { id: string; role: 'user' | 'assistant'; content: string; createdAt: string }
 type Campaign = { id: string; title: string; objective: string; status: string; startDate: string; endDate: string; image: string }
 type Post = { id: string; campaignId: string; title: string; caption: string; date: string; time: string; platforms: string[]; status: 'draft' | 'approved' | 'scheduled' | 'published'; format: 'Reel' | 'Carousel' | 'Post' | 'Story'; image: string }
-type State = { messages: Message[]; campaigns: Campaign[]; posts: Post[]; activeCampaignId: string }
+type State = { campaigns: Campaign[]; posts: Post[]; activeCampaignId: string }
 
 const starter: State = {
-  messages: [{ id: 'welcome', role: 'assistant', content: 'Welcome to your Growth Studio. This is our shared strategy space. Bring me a business challenge, campaign idea or seasonal opportunity and we will work it through together. Nothing is published until you approve it.', createdAt: new Date().toISOString() }],
   campaigns: [
     { id: 'dec-finish-strong', title: 'December: Finish Strong', objective: 'Generate free-trial bookings before the holiday slowdown.', status: 'planning', startDate: '2026-12-01', endDate: '2026-12-14', image: '/hero-athlete.png' },
     { id: 'jan-new-strength', title: 'January: New Year, New Strength', objective: 'Convert New Year motivation into consistent trial bookings and memberships.', status: 'idea', startDate: '2027-01-01', endDate: '2027-01-31', image: '/community-members.png' },
@@ -37,20 +35,15 @@ const iso = (y: number, m: number, d: number) => [y, String(m + 1).padStart(2, '
 
 export function GrowthStudio() {
   const [hub, setHub] = useState<State>(starter)
-  const [loaded, setLoaded] = useState(false)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
-  const [draft, setDraft] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [mode, setMode] = useState<'global' | 'campaign'>('global')
   const [month, setMonth] = useState({ year: 2026, month: 11 })
   const [selectedId, setSelectedId] = useState<string | null>('p1')
 
   useEffect(() => {
     fetch('/api/growth-studio/state', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(data => {
       if (data?.state) setHub({ ...starter, ...data.state })
-      setLoaded(true)
-    }).catch(() => setLoaded(true))
+    }).catch(() => undefined)
   }, [])
 
   const save = async (next: State) => {
@@ -73,27 +66,6 @@ export function GrowthStudio() {
   }, [month])
   const monthName = new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric' }).format(new Date(month.year, month.month, 1))
   const changeMonth = (by: number) => setMonth(s => { const d = new Date(s.year, s.month + by, 1); return { year: d.getFullYear(), month: d.getMonth() } })
-
-  const send = async () => {
-    const text = draft.trim()
-    if (!text || busy) return
-    const userMessage: Message = { id: crypto.randomUUID(), role: 'user', content: text, createdAt: new Date().toISOString() }
-    const next = { ...hub, messages: [...hub.messages, userMessage] }
-    setDraft('')
-    await save(next)
-    setBusy(true)
-    try {
-      const response = await fetch('/api/growth-studio/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: next.messages.slice(-16), campaign }) })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Chat service unavailable')
-      await save({ ...next, messages: [...next.messages, { id: crypto.randomUUID(), role: 'assistant', content: data.reply, createdAt: new Date().toISOString() }] })
-    } catch (error) {
-      const reply = error instanceof Error && error.message.includes('not configured')
-        ? 'Your message is saved. Live AI collaboration in this website still needs an OpenAI API key and model configured in Vercel. This is separate from your ChatGPT subscription. No background agent will run.'
-        : 'Your message is saved, but I could not reach the AI service. We can retry after the connection is configured.'
-      await save({ ...next, messages: [...next.messages, { id: crypto.randomUUID(), role: 'assistant', content: reply, createdAt: new Date().toISOString() }] })
-    } finally { setBusy(false) }
-  }
 
   const toggleApproval = async (post: Post) => save({ ...hub, posts: hub.posts.map(p => p.id === post.id ? { ...p, status: p.status === 'approved' ? 'draft' : 'approved' } : p) })
   const addPost = async () => {
@@ -118,7 +90,7 @@ export function GrowthStudio() {
         <Link href="/KPI" className="growth-nav-link"><BarChart3 size={18}/>Analysis Cockpit</Link>
         <Link href="/growth-studio" className="growth-nav-link active"><Megaphone size={18}/>Growth Studio</Link>
         <div className="growth-nav-label">GROWTH STUDIO</div>
-        <a href="#strategy" className="growth-nav-link"><MessageCircle size={18}/>Strategy &amp; Chat</a>
+        <a href="#strategy" className="growth-nav-link"><ExternalLink size={18}/>ChatGPT Strategy</a>
         <a href="#campaigns" className="growth-nav-link"><Layers3 size={18}/>Campaigns</a>
         <a href="#calendar" className="growth-nav-link"><CalendarDays size={18}/>Content Calendar</a>
         <a href="#creative" className="growth-nav-link"><FileImage size={18}/>Creative Studio</a>
@@ -130,18 +102,24 @@ export function GrowthStudio() {
     <main className="growth-main">
       <header className="growth-topbar"><div><h1>TENROUNDS Growth Hub</h1><p>Your central business growth workspace for members, marketing and performance.</p></div><div className="growth-topbar-meta"><span><i className="live-dot"/>Connected workspace</span><span className="growth-avatar">RR</span></div></header>
       <div className="growth-content">
-        <div className="growth-page-head"><div className="growth-page-title"><Megaphone size={29}/><div><h2>Growth Studio</h2><p>Collaborate, plan and execute campaigns that grow TENROUNDS.</p></div></div><nav className="growth-tabs"><Link href="/growth-studio" className="selected"><Activity size={15}/>Overview</Link><a href="#strategy"><MessageCircle size={15}/>Strategy &amp; Chat</a><a href="#campaigns"><Layers3 size={15}/>Campaigns</a><a href="#calendar"><CalendarDays size={15}/>Calendar</a><a href="#creative"><FileImage size={15}/>Creative Studio</a><a href="#performance"><BarChart3 size={15}/>Performance</a></nav></div>
+        <div className="growth-page-head"><div className="growth-page-title"><Megaphone size={29}/><div><h2>Growth Studio</h2><p>Collaborate, plan and execute campaigns that grow TENROUNDS.</p></div></div><nav className="growth-tabs"><Link href="/growth-studio" className="selected"><Activity size={15}/>Overview</Link><a href="#strategy"><ExternalLink size={15}/>ChatGPT Strategy</a><a href="#campaigns"><Layers3 size={15}/>Campaigns</a><a href="#calendar"><CalendarDays size={15}/>Calendar</a><a href="#creative"><FileImage size={15}/>Creative Studio</a><a href="#performance"><BarChart3 size={15}/>Performance</a></nav></div>
         <section className="growth-hero"><div className="growth-hero-copy"><span>GROWTH STUDIO</span><h2>PLAN. CREATE. PUBLISH. <em>GROW.</em></h2><p>Turn insights into campaigns, content and more members for TENROUNDS.</p></div><Image src="/hero-athlete.png" alt="TENROUNDS training" fill priority className="growth-hero-image"/><ul><li><Check size={16}/>More trial bookings</li><li><Check size={16}/>Higher conversions</li><li><Check size={16}/>Stronger member retention</li></ul></section>
         <section className="growth-metrics" id="performance">
           <div><Users/><span>Trial Bookings</span><strong>—</strong><small>Connect verified booking data</small></div><div><Users/><span>New Members</span><strong>—</strong><small>Connect membership conversions</small></div><div><Activity/><span>Retention Rate</span><strong>—</strong><small>Requires reliable member history</small></div><div><Megaphone/><span>Campaign ROI</span><strong>—</strong><small>Awaiting attributed spend and revenue</small></div>
         </section>
         <section className="growth-workspace">
-          <div className="growth-panel growth-chat-panel" id="strategy">
-            <div className="growth-panel-head"><h3><MessageCircle/>Collaboration Workspace</h3><div className="growth-chat-toggle"><button className={mode === 'global' ? 'on' : ''} onClick={() => setMode('global')}>Global Strategy</button><button className={mode === 'campaign' ? 'on' : ''} onClick={() => setMode('campaign')}>Campaign Chat</button></div><button className="icon-button" aria-label="Chat options"><ChevronDown size={16}/></button></div>
-            {mode === 'campaign' && <div className="growth-campaign-select"><label htmlFor="campaign-select">Discuss campaign</label><select id="campaign-select" value={hub.activeCampaignId} onChange={e => setHub({ ...hub, activeCampaignId: e.target.value })}>{hub.campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}</select></div>}
-            <div className="growth-chat-thread">{hub.messages.map(m => <div className={'growth-message ' + m.role} key={m.id}><span className="message-avatar">{m.role === 'user' ? 'RR' : '✳'}</span><div><div className="message-meta"><strong>{m.role === 'user' ? 'You' : 'ChatGPT'}</strong><time>{new Date(m.createdAt).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</time></div><p>{m.content}</p></div></div>)}{busy && <div className="growth-chat-working"><Sparkles size={15}/>Thinking through the strategy…</div>}</div>
-            <form className="growth-chat-compose" onSubmit={e => { e.preventDefault(); void send() }}><input value={draft} onChange={e => setDraft(e.target.value)} placeholder="Continue the conversation…" aria-label="Message ChatGPT"/><button disabled={!draft.trim() || busy} aria-label="Send message"><Send size={17}/></button></form>
-            <div className="growth-chat-foot">{loaded ? 'Conversation saved to your TENROUNDS workspace' : 'Loading saved workspace…'}<span>{saving ? 'Saving…' : notice || 'Private'}</span></div>
+          <div className="growth-panel growth-chat-panel growth-chatgpt-panel" id="strategy">
+            <div className="growth-panel-head"><h3><ExternalLink/>Marketing Intelligence</h3><span className="setup-status">ChatGPT-led</span></div>
+            <div className="growth-chatgpt-content">
+              <div className="growth-chatgpt-mark">✳</div>
+              <span className="growth-eyebrow">YOUR MARKETING BRAIN</span>
+              <h3>Strategy lives in ChatGPT.</h3>
+              <p>Use this ChatGPT conversation as the central intelligence for TENROUNDS. Bring campaign ideas, performance results, creative reviews and business questions here. I’ll help decide what to do next, using the context and data you share.</p>
+              <a className="growth-chatgpt-button" href="https://chatgpt.com/" target="_blank" rel="noreferrer">Open ChatGPT <ExternalLink size={15}/></a>
+              <small>Continue the existing TENROUNDS Growth Studio conversation in ChatGPT. The website does not run a separate AI model or background agent.</small>
+              <div className="growth-chatgpt-principles"><span><Check size={13}/>One strategic brain</span><span><Check size={13}/>No extra API usage</span><span><Check size={13}/>Human approval before publishing</span></div>
+            </div>
+            <div className="growth-chat-foot"><span>ChatGPT is the strategy workspace</span><span>{saving ? 'Saving…' : notice || 'Private'}</span></div>
           </div>
           <div className="growth-panel growth-campaign-panel" id="campaigns">
             <div className="growth-panel-head"><h3><Target/>Active Campaigns</h3><button className="text-action" onClick={addCampaign}>+ New</button></div>
