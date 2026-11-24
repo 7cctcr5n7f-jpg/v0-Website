@@ -93,7 +93,7 @@ export default async function KpiPage() {
         <div className="relative">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[.08] px-3 py-1.5 text-[9px] font-black uppercase tracking-[.19em] text-[#FFE36E]"><Sparkles size={11}/> The business, in one view</div>
           <h1 className="mt-3 text-3xl font-black leading-[.98] tracking-[-.05em] sm:text-4xl">Turn attention into <span className="text-[#00B5EF]">trials.</span><br/>Turn trials into members.</h1>
-          <p className="mt-2 max-w-xl text-xs leading-5 text-slate-300">Your live operating picture, with the signal separated from the noise. Start with the outcome, then see what is driving it.</p>
+          <p className="mt-2 max-w-xl text-xs leading-5 text-slate-300">One screen for discovery, trial demand and member conversion. The sources are labelled so you can tell verified outcomes from analytics snapshots.</p>
         </div>
         <div className="relative grid grid-cols-2 gap-2 sm:grid-cols-4 lg:gap-2.5">
           <StatPill label="Trial bookings" value={currentMonthBookings} note="Nov · 1–24"/>
@@ -155,7 +155,7 @@ export default async function KpiPage() {
           </div>
           <div className="mt-4 rounded-2xl border border-amber-200 bg-[#FFFAEA] p-3.5">
             <div className="flex items-center gap-2"><CircleAlert size={15} className="text-amber-700"/><p className="text-[10px] font-black uppercase tracking-wider text-amber-900">Tracking setup incomplete</p></div>
-            <p className="mt-1.5 text-xs font-semibold leading-5 text-amber-950">GA4 is authenticated in Supermetrics, but the dashboard Google API service-account email and private-key variables are empty in Vercel.</p>
+            <p className="mt-1.5 text-xs font-semibold leading-5 text-amber-950">GA4 is connected in Supermetrics, but standard reporting has not returned /free-trial page views or trial_* events. I found and corrected a report-query bug that omitted the filtered dimensions.</p>
             <p className="mt-2 text-[10px] font-bold text-amber-800">Vercel Analytics independently recorded 61 unique trial-page visitors in November.</p>
           </div>
           <div className="mt-3 rounded-2xl border border-[#DDE8EF] bg-[#F7FAFC] p-3.5">
@@ -168,7 +168,7 @@ export default async function KpiPage() {
 
       <section className="grid shrink-0 gap-3 lg:grid-cols-[1.1fr_.9fr]">
         <article className="rounded-[20px] border border-[#E0E8EE] bg-white px-5 py-3.5">
-          <div className="flex items-center justify-between gap-2"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">04 / Momentum</p><h3 className="text-sm font-black">Three months. One clear direction.</h3></div><span className="text-[9px] font-semibold text-slate-400">Vercel Analytics · /free-trial · 1st–23rd</span></div>
+          <div className="flex items-center justify-between gap-2"><div><p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">04 / Momentum</p><h3 className="text-sm font-black">Trial-page visitors and bookings, side by side.</h3></div><span className="text-[9px] font-semibold text-slate-400">Vercel Analytics · /free-trial · 1st–23rd</span></div>
           <div className="mt-3 grid grid-cols-3 divide-x divide-[#E7EDF1]">
             {monthly.map((m,i)=><div key={m.key} className={`px-3 first:pl-0 last:pr-0 ${i===2?'text-[#008FC4]':''}`}><p className="text-[9px] font-bold uppercase text-slate-400">{m.full}</p><div className="mt-1 flex items-center gap-2"><span className="text-xl font-black tabular-nums">{m.trialVisitors}</span><span className="text-[9px] font-semibold text-slate-400">visitors</span><span className="ml-auto text-[10px] font-black">{m.bookings} bookings</span></div></div>)}
           </div>
