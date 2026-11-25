@@ -3,18 +3,18 @@ import { LandingTemplate, type LandingConfig } from '@/components/landing/landin
 import type { Testimonial } from '@/lib/content'
 
 export const metadata: Metadata = {
-  title: 'Boxing Fitness Pretoria East',
+  title: 'Boxing-Inspired Fitness Pretoria East',
   description:
-    'Boxing fitness in Pretoria East without getting punched. Burn fat, build conditioning and relieve stress with coach-supported boxing-style HIIT at TENROUNDS in Garsfontein. Free trial available.',
+    'Enjoy boxing-inspired fitness as part of a coach-supported 30-minute HIIT workout at TENROUNDS in Pretoria East. Build strength and conditioning with no sparring or boxing experience needed.',
   alternates: { canonical: '/boxing-fitness-pretoria-east' },
   openGraph: {
     title: 'Boxing Fitness Pretoria East | TENROUNDS',
     description:
-      'Coach-supported boxing fitness in Pretoria East. Weight loss, conditioning and confidence — no sparring, no class times.',
-    images: [{ url: '/coach-support.png', width: 1200, height: 630, alt: 'Boxing fitness Pretoria East — TENROUNDS Garsfontein' }],
+      'Coach-supported HIIT fitness in Pretoria East, with boxing-inspired bag rounds, strength and cardio. No sparring and no class times.',
+    images: [{ url: '/coach-support.png', width: 1200, height: 630, alt: 'Boxing-inspired fitness at TENROUNDS Pretoria East' }],
   },
   twitter: { card: 'summary_large_image', images: ['/coach-support.png'] },
-  keywords: ['boxing fitness Pretoria East', 'boxing workout Garsfontein', 'non-contact boxing Pretoria', 'boxing HIIT Pretoria East', 'boxing bag workout Pretoria'],
+  keywords: ['boxing-inspired fitness Pretoria East', 'HIIT gym Pretoria East', 'fitness studio Pretoria East', '30 minute workout Pretoria East', 'boxing fitness Garsfontein'],
 }
 
 const boxingTestimonials: Testimonial[] = [
@@ -46,21 +46,21 @@ const boxingTestimonials: Testimonial[] = [
 
 const config: LandingConfig = {
   slug: 'boxing-fitness-pretoria-east',
-  breadcrumb: 'Boxing Fitness Pretoria East',
-  heroEyebrow: 'Boxing Fitness Pretoria East',
-  heroTitle: 'Boxing Fitness Without',
-  heroHighlight: 'Getting Punched',
+  breadcrumb: 'Boxing-Inspired Fitness Pretoria East',
+  heroEyebrow: 'Boxing-Inspired Fitness Pretoria East',
+  heroTitle: 'HIIT Fitness With',
+  heroHighlight: 'Boxing-Inspired Rounds',
   heroSubtitle:
-    'Get the fat-burning, stress-busting power of boxing training without ever taking a hit. TENROUNDS brings coach-supported boxing fitness to Pretoria East in focused 30-minute sessions.',
+    'Enjoy boxing-inspired bag rounds as one part of a complete, coach-supported 30-minute HIIT workout. TENROUNDS combines strength, cardio and conditioning in Pretoria East, with no sparring or boxing experience required.',
   heroImage: '/coach-support.png',
   heroImageAlt: 'Coach-supported boxing fitness session at TENROUNDS Pretoria East',
   intro:
-    'Boxing is one of the most effective full-body workouts on earth. At TENROUNDS we capture all of that intensity — the conditioning, the power, the stress relief — in a safe, coached environment with zero contact.',
+    'TENROUNDS is a boutique HIIT fitness studio, not a traditional boxing gym. Boxing-inspired bag rounds add energy and variety to a balanced workout that also includes strength, cardio and functional training, all supported by a coach.',
   blocks: [
     {
       type: 'features',
       eyebrow: 'The Benefits',
-      title: 'Why People Box For Fitness',
+      title: 'Why Members Enjoy Boxing-Inspired Fitness',
       description:
         'A boxing-style workout hits everything at once — and it is genuinely fun, which is why members keep coming back.',
       items: [
@@ -68,14 +68,14 @@ const config: LandingConfig = {
         { icon: 'heart', title: 'Fitness & Conditioning', desc: 'Build serious cardio and muscular endurance fast.' },
         { icon: 'zap', title: 'Stress Relief', desc: 'There is nothing like hitting pads to clear your head.' },
         { icon: 'target', title: 'Confidence', desc: 'Move with power and walk out standing taller.' },
-        { icon: 'dumbbell', title: 'Full-Body Strength', desc: 'Combine boxing with functional strength training.' },
+        { icon: 'dumbbell', title: 'Full-Body Strength', desc: 'Combine boxing-inspired bag rounds with functional strength training.' },
         { icon: 'timer', title: '30 Minutes Flat', desc: 'A complete boxing-fitness session that fits your day.' },
       ],
     },
     {
       type: 'split',
       eyebrow: 'The Science',
-      title: 'Why Boxing Burns More Calories',
+      title: 'A Full-Body Mix Of Strength And Cardio',
       body: [
         'Boxing fitness blends explosive intervals with constant movement, recruiting your entire body. That elevates your heart rate into fat-burning zones and keeps your metabolism elevated for hours afterwards.',
         'At TENROUNDS every round is coached and tracked, so you stay in the right intensity zone for maximum results — no wasted effort, no guesswork.',
@@ -118,12 +118,12 @@ const config: LandingConfig = {
     {
       question: 'Do I need boxing experience?',
       answer:
-        'None at all. TENROUNDS boxing fitness is fully coached and scaled to beginners, so you will learn safely from your very first session.',
+        'None at all. Our HIIT workouts are fully coached and scaled to beginners. No boxing experience is needed to enjoy the boxing-inspired bag rounds.',
     },
     {
       question: 'Will I get hit or have to spar?',
       answer:
-        'No. This is boxing for fitness — all the conditioning and stress relief of boxing with zero contact and no sparring.',
+        'No. Boxing-inspired bag work is non-contact fitness. There is no sparring or fighting at TENROUNDS.',
     },
     {
       question: 'Where are you based?',
@@ -133,7 +133,7 @@ const config: LandingConfig = {
     {
       question: 'How long is a session?',
       answer:
-        'Each coached boxing-fitness session is 30 minutes — a complete, high-intensity full-body workout.',
+        'Each TENROUNDS session is 30 minutes and combines HIIT, strength, cardio and boxing-inspired fitness.',
     },
     {
       question: 'Can I try a session for free?',
@@ -143,9 +143,9 @@ const config: LandingConfig = {
   ],
   testimonials: boxingTestimonials,
   showMap: true,
-  ctaHeadline: 'Box Your Way Fit In Pretoria East',
+  ctaHeadline: 'Get Fitter With TENROUNDS In Pretoria East',
   ctaSub:
-    'All the power of boxing, none of the punches. Claim your free coach-supported session at TENROUNDS today.',
+    'Experience coach-supported HIIT, strength, cardio and boxing-inspired rounds in one 30-minute workout. Claim your free trial at TENROUNDS today.',
 }
 
 export default function Page() {
