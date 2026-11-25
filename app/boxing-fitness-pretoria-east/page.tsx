@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     'Enjoy boxing-inspired fitness as part of a coach-supported 30-minute HIIT workout at TENROUNDS in Pretoria East. Build strength and conditioning with no sparring or boxing experience needed.',
   alternates: { canonical: '/boxing-fitness-pretoria-east' },
   openGraph: {
-    title: 'Boxing Fitness Pretoria East | TENROUNDS',
+    title: 'Boxing-Inspired Fitness Pretoria East | TENROUNDS',
     description:
       'Coach-supported HIIT fitness in Pretoria East, with boxing-inspired bag rounds, strength and cardio. No sparring and no class times.',
     images: [{ url: '/coach-support.png', width: 1200, height: 630, alt: 'Boxing-inspired fitness at TENROUNDS Pretoria East' }],
@@ -69,7 +69,7 @@ const config: LandingConfig = {
         { icon: 'zap', title: 'Stress Relief', desc: 'There is nothing like hitting pads to clear your head.' },
         { icon: 'target', title: 'Confidence', desc: 'Move with power and walk out standing taller.' },
         { icon: 'dumbbell', title: 'Full-Body Strength', desc: 'Combine boxing-inspired bag rounds with functional strength training.' },
-        { icon: 'timer', title: '30 Minutes Flat', desc: 'A complete boxing-fitness session that fits your day.' },
+        { icon: 'timer', title: '30 Minutes Flat', desc: 'A complete HIIT fitness session that fits your day.' },
       ],
     },
     {
@@ -107,7 +107,7 @@ const config: LandingConfig = {
       reverse: true,
       body: [
         'You arrive whenever it suits you — no class times. Your coach warms you up, then guides you through boxing-style intervals layered with strength and functional movement.',
-        'Thirty minutes later you walk out sweaty, energised and a step closer to your goals. Every session is different, every session is coached.',
+        'Thirty minutes later you walk out sweaty, energised and a step closer to your goals. Every session is different, coach-supported and built around full-body fitness.',
       ],
       image: '/coach-support.png',
       imageAlt: 'TENROUNDS coach guiding a boxing fitness member',
