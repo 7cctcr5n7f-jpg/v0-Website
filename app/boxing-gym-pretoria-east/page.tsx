@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     'Enjoy boxing-inspired fitness as part of a coach-supported 30-minute HIIT workout at TENROUNDS in Pretoria East. No boxing experience needed. Book your free trial.',
   alternates: { canonical: '/boxing-gym-pretoria-east' },
   openGraph: {
-    title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
+    title: 'Boxing-Inspired Fitness Pretoria East | TENROUNDS',
     description:
       'Boxing-inspired rounds are one part of our coach-supported 30-minute HIIT workouts. Build fitness with strength and cardio at TENROUNDS.',
     images: [{ url: '/round-boxing-bag.webp', width: 1200, height: 630, alt: 'Boxing-inspired fitness as part of a TENROUNDS HIIT workout in Pretoria East' }],
