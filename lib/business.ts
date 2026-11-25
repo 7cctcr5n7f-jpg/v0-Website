@@ -5,7 +5,7 @@ export const business = {
   name: 'TENROUNDS',
   legalName: 'TENROUNDS Fitness',
   description:
-    'Premium 30-minute HIIT boxing fitness gym in Garsfontein, Pretoria East. Coach-supported, data-driven workouts with no class times.',
+    'Boutique fitness studio in Garsfontein, Pretoria East offering coach-supported 30-minute HIIT workouts combining strength, cardio and boxing-inspired fitness, with no class times.',
   url: 'https://tenrounds.co.za',
   // Phone / WhatsApp
   phoneDisplay: '+27 65 983 4172',
