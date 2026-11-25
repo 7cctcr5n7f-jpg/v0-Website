@@ -22,6 +22,19 @@ Act as the strategic marketing and growth partner for TENROUNDS and continue wor
 - Never store API keys, passwords, private keys, access tokens or secrets in Project Memory.
 - Verify current connector status and account references before reconnecting integrations. Do not assume reporting access means publishing access.
 
+## TENROUNDS visual identity: mandatory creative rules (2026-11-25)
+- The user's uploaded `10Rounds Logos_RGB.pdf` is the authoritative source of approved TENROUNDS logos. Use only the exact logo artwork contained in that supplied PDF. The user permits any of the variants in that file.
+- Never invent, redraw, approximate, typeset, reinterpret, recolour, distort, crop, add effects to, or generate a substitute TENROUNDS logo. Never use a generic fitness logo, another gym's logo, or an unapproved third-party logo. No AI-generated logo marks or lettering.
+- Select the appropriate original approved logo variant for the background and layout. On dark backgrounds use the supplied white logo variant where appropriate. Preserve its original proportions, colours and clear space.
+- If the original logo artwork is not available to place accurately, leave a clean logo-safe area. Do not create a replacement or attempt to imitate it. Add the exact supplied logo later in Canva or another design tool using the original asset.
+- The user specifically approves the short cobalt-blue paintbrush/brushstroke accent seen in the supplied social creative reference (2026-11-25). This is a distinctive TENROUNDS graphic motif and may be repeated as a restrained accent: hand-painted, slightly irregular cobalt/bright-blue strokes or underlines, used sparingly to underline a short headline, separate a small text element, or add a flash of energy.
+- Brushstrokes are graphic accents only. They must never touch, obscure, frame, or modify the official logo. Do not overuse them or turn the design into a grunge/splatter aesthetic.
+- Overall direction: premium boutique gym, petite and considered, less is more. Minimal short copy, strong negative space, editorial composition, dark navy/black foundations, white typography and selective cobalt-blue highlights. Yellow only sparingly. Avoid clutter, crowded layouts, excessive badges, discount-led visual noise, loud gradients, red, clichés and generic big-box-gym styling.
+- Typography should follow the established TENROUNDS CI. Do not substitute typography inside the official logo. For campaign headlines use the approved brand type treatment where available; keep text short and legible.
+- Use the user's supplied professional TENROUNDS photography as the first choice for social posts and Reels. AI-generated imagery may be used only as supporting creative when it fits the premium visual direction; do not present generated people as actual members or coaches.
+- Social media only unless the owner explicitly changes scope. Keep the website as-is, with the existing free-trial booking journey as the destination. Social creative may direct people to book a free trial on the website, but do not change website design or booking flow as part of this social campaign.
+- Before delivering any social design, check: correct original logo variant or deliberate logo-safe space; no invented/other logos; restrained cobalt brushstroke accent; minimal copy; premium boutique feel; authentic photography priority.
+
 ## Marketing measurement
 Use the funnel: visitors → free-trial CTA clicks → completed trial bookings → attendance → membership sign-ups.
 Use the website's existing native trial booking and membership signup records where accurate. Match by normalized email for trial-to-member conversion. Do not invent attendance, attribution or conversion values.
