@@ -88,46 +88,59 @@ function Empty({children}:{children:React.ReactNode}){return <p className="round
 
 
 type DriveAsset = { id: string; name: string; mimeType: string; url: string; category: string; addedAt: string; iconUrl?: string; sizeBytes?: number }
+type DriveFolder = { id: string; name: string; category: string; addedAt: string }
 const DRIVE_CATEGORIES = ['01 - Brand Identity', '02 - Original Video', '03 - Photography', '04 - Campaign Material', '05 - Approved Creative']
 function DriveAssetLibrary() {
   const [assets, setAssets] = useState<DriveAsset[]>([])
+  const [folders, setFolders] = useState<DriveFolder[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [filter, setFilter] = useState('All assets')
-  useEffect(() => { fetch('/api/growth-studio/drive-assets', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => setAssets(d.assets ?? [])).catch(() => setMessage('Could not load your saved Drive library.')) }, [])
-  const connect = async () => {
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/growth-studio/drive-assets', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject()),
+      fetch('/api/growth-studio/drive-folders', { cache: 'no-store' }).then(r => r.ok ? r.json() : Promise.reject())
+    ]).then(([a, f]) => { setAssets(a.assets ?? []); setFolders(f.folders ?? []) }).catch(() => setMessage('Could not load your saved Drive library.'))
+  }, [])
+  const loadGoogle = async () => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID
-    if (!apiKey || !clientId) { setMessage('Google Drive credentials are missing from this Vercel deployment.'); return }
-    setBusy(true); setMessage('Opening secure Google Drive connection…')
+    if (!apiKey || !clientId) throw new Error('Google Drive credentials are missing from this Vercel deployment.')
+    const load = (src: string) => new Promise<void>((resolve, reject) => {
+      if (document.querySelector('script[src="' + src + '"]')) { resolve(); return }
+      const script = document.createElement('script'); script.src = src; script.async = true; script.defer = true
+      script.onload = () => resolve(); script.onerror = () => reject(new Error('Could not load Google sign-in.')); document.head.appendChild(script)
+    })
+    await load('https://accounts.google.com/gsi/client')
+    await load('https://apis.google.com/js/api.js')
+    const w = window as any
+    await new Promise<void>((resolve, reject) => w.gapi.load('picker', { callback: resolve, onerror: () => reject(new Error('Google Picker failed to load.')) }))
+    const token = await new Promise<string>((resolve, reject) => {
+      const tokenClient = w.google.accounts.oauth2.initTokenClient({
+        client_id: clientId, scope: 'https://www.googleapis.com/auth/drive.readonly',
+        callback: (response: any) => response.access_token ? resolve(response.access_token) : reject(new Error(response.error_description || response.error || 'Google sign-in was not completed.'))
+      })
+      tokenClient.requestAccessToken({ prompt: 'consent' })
+    })
+    return { apiKey, token, w }
+  }
+  const chooseFolders = async () => {
+    setBusy(true); setMessage('Requesting Google Drive read-only permission…')
     try {
-      const load = (src: string) => new Promise<void>((resolve, reject) => {
-        const existing = document.querySelector('script[src="' + src + '"]')
-        if (existing) { resolve(); return }
-        const script = document.createElement('script'); script.src = src; script.async = true; script.defer = true
-        script.onload = () => resolve(); script.onerror = () => reject(new Error('Could not load Google sign-in.')); document.head.appendChild(script)
-      })
-      await load('https://accounts.google.com/gsi/client')
-      await load('https://apis.google.com/js/api.js')
-      const w = window as any
-      await new Promise<void>((resolve, reject) => w.gapi.load('picker', { callback: resolve, onerror: () => reject(new Error('Google Picker failed to load.')) }))
-      const token = await new Promise<string>((resolve, reject) => {
-        const tokenClient = w.google.accounts.oauth2.initTokenClient({ client_id: clientId, scope: 'https://www.googleapis.com/auth/drive.file', callback: (response: any) => response.access_token ? resolve(response.access_token) : reject(new Error(response.error_description || 'Google sign-in was not completed.')) })
-        tokenClient.requestAccessToken({ prompt: 'consent' })
-      })
+      const { apiKey, token, w } = await loadGoogle()
       await new Promise<void>((resolve, reject) => {
-        const picker = new w.google.picker.PickerBuilder()
-          .setDeveloperKey(apiKey).setAppId('867819328339').setOAuthToken(token).setOrigin(window.location.origin)
-          .addView(new w.google.picker.DocsView(w.google.picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false).setEnableDrives(true))
-          .enableFeature(w.google.picker.Feature.MULTISELECT_ENABLED)
+        const view = new w.google.picker.DocsView(w.google.picker.ViewId.FOLDERS).setIncludeFolders(true).setSelectFolderEnabled(true)
+        const picker = new w.google.picker.PickerBuilder().setDeveloperKey(apiKey).setAppId('867819328339').setOAuthToken(token).setOrigin(window.location.origin)
+          .addView(view).enableFeature(w.google.picker.Feature.MULTISELECT_ENABLED)
           .setCallback(async (data: any) => {
             if (data.action === w.google.picker.Action.PICKED) {
-              const selected = (data.docs || []).map((doc: any) => ({ id: doc.id, name: doc.name, mimeType: doc.mimeType || 'application/octet-stream', iconUrl: doc.iconUrl, sizeBytes: doc.sizeBytes, category: DRIVE_CATEGORIES[0] }))
+              const selected = (data.docs || []).filter((doc: any) => doc.mimeType === 'application/vnd.google-apps.folder').map((doc: any) => ({ id: doc.id, name: doc.name }))
               try {
-                const response = await fetch('/api/growth-studio/drive-assets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assets: selected }) })
-                const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not save selected files.')
-                setAssets(result.assets ?? []); setMessage(selected.length + ' file(s) added to your TENROUNDS library.')
-              } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save files.') }
+                if (!selected.length) throw new Error('Please select one or more folders.')
+                const response = await fetch('/api/growth-studio/drive-folders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folders: selected }) })
+                const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not save folders.')
+                setFolders(result.folders ?? []); setMessage(selected.length + ' folder(s) connected. Use Sync folders to index their contents.')
+              } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save folders.') }
               resolve()
             } else if (data.action === w.google.picker.Action.CANCEL) resolve()
           }).build()
@@ -135,6 +148,45 @@ function DriveAssetLibrary() {
       })
     } catch (error) { setMessage(error instanceof Error ? error.message : 'Google Drive connection failed.') }
     finally { setBusy(false) }
+  }
+  const syncFolders = async () => {
+    if (!folders.length) { setMessage('Connect your five TENROUNDS folders first.'); return }
+    setBusy(true); setMessage('Scanning approved folders and their subfolders…')
+    try {
+      const { token } = await loadGoogle()
+      const all: any[] = []
+      const visited = new Set<string>()
+      const listChildren = async (parentId: string, category: string, depth: number): Promise<void> => {
+        if (depth > 8 || visited.has(parentId) || all.length >= 2000) return
+        visited.add(parentId)
+        let pageToken = ''
+        do {
+          const params = new URLSearchParams({ q: "'" + parentId.replace(/'/g, "\\'") + "' in parents and trashed = false", pageSize: '1000', fields: 'nextPageToken,files(id,name,mimeType,webViewLink,iconLink,size,modifiedTime)' })
+          if (pageToken) params.set('pageToken', pageToken)
+          const response = await fetch('https://www.googleapis.com/drive/v3/files?' + params.toString(), { headers: { Authorization: 'Bearer ' + token } })
+          const data = await response.json()
+          if (!response.ok) throw new Error(data.error?.message || 'Google Drive could not list folder contents.')
+          for (const file of data.files ?? []) {
+            if (file.mimeType === 'application/vnd.google-apps.folder') await listChildren(file.id, category, depth + 1)
+            else all.push({ id: file.id, name: file.name, mimeType: file.mimeType, iconUrl: file.iconLink, sizeBytes: Number(file.size) || undefined, category })
+            if (all.length >= 2000) break
+          }
+          pageToken = data.nextPageToken || ''
+        } while (pageToken && all.length < 2000)
+      }
+      for (const folder of folders) await listChildren(folder.id, folder.category, 0)
+      const response = await fetch('/api/growth-studio/drive-assets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assets: all.slice(0, 500) }) })
+      const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not save Drive index.')
+      setAssets(result.assets ?? [])
+      setMessage('Sync complete: found ' + all.length + ' files across ' + folders.length + ' approved folders. The library stores metadata and Drive links, not file copies.')
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Drive sync failed.') }
+    finally { setBusy(false) }
+  }
+  const removeFolder = async (id: string) => {
+    const response = await fetch('/api/growth-studio/drive-folders', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+    const data = await response.json()
+    if (response.ok) { setFolders(data.folders ?? []); setMessage('Folder removed from the approved index. Original Drive files are untouched.') }
+    else setMessage(data.error || 'Could not remove folder.')
   }
   const updateCategory = async (id: string, category: string) => {
     const response = await fetch('/api/growth-studio/drive-assets', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, category }) })
@@ -147,12 +199,13 @@ function DriveAssetLibrary() {
   const visible = filter === 'All assets' ? assets : assets.filter(asset => asset.category === filter)
   return <Panel title="TENROUNDS · Google Drive asset library">
     <div className="rounded-2xl border border-[#C9DCEB] bg-[#F5FAFE] p-5">
-      <div className="flex flex-wrap items-center justify-between gap-4"><div><h3 className="font-black">Your private Google Drive</h3><p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600">Browse your Drive, open folders and select multiple files. Only the files you select are added here. Your originals stay in Google Drive.</p></div><button onClick={connect} disabled={busy} className="rounded-xl bg-[#0878EF] px-5 py-3 text-xs font-black text-white disabled:opacity-50">{busy ? 'Connecting…' : '＋ Add files from Google Drive'}</button></div>
-      <p className="mt-3 text-[11px] text-slate-500">Permission: Google Drive file access only (drive.file). No background sync or access to unselected files.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4"><div><h3 className="font-black">Approved Google Drive folders</h3><p className="mt-1 max-w-2xl text-xs leading-5 text-slate-600">Connect the five TENROUNDS folders once. Sync scans files and nested folders, then stores searchable file details and Drive links here. Original files remain in Google Drive.</p></div><button onClick={chooseFolders} disabled={busy} className="rounded-xl bg-[#0878EF] px-5 py-3 text-xs font-black text-white disabled:opacity-50">＋ Connect folders</button></div>
+      <div className="mt-3 flex flex-wrap gap-2"><button onClick={syncFolders} disabled={busy || !folders.length} className="rounded-xl bg-[#102A43] px-5 py-3 text-xs font-black text-white disabled:opacity-40">{busy ? 'Working…' : '↻ Sync approved folders'}</button><span className="self-center text-[11px] text-slate-500">Read-only access · no uploads, edits or deletions in Drive</span></div>
+      {folders.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">{folders.map(folder=><div key={folder.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3"><div className="min-w-0"><p className="truncate text-xs font-bold">{folder.name}</p><p className="text-[10px] text-slate-400">{folder.category}</p></div><button onClick={()=>removeFolder(folder.id)} className="text-[10px] font-bold text-slate-500">Remove</button></div>)}</div> : <p className="mt-4 text-xs text-slate-500">No folders connected yet. Choose Connect folders and select your five numbered folders.</p>}
     </div>
-    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-black">Selected assets ({assets.length})</h3><p className="text-xs text-slate-500">Organise each selected file into the TENROUNDS library.</p></div><select aria-label="Filter assets by category" value={filter} onChange={e=>setFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"><option>All assets</option>{DRIVE_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select></div>
-    {visible.length ? <div className="mt-3 grid gap-3 md:grid-cols-2">{visible.map(asset=><article key={asset.id} className="rounded-xl border border-slate-200 bg-white p-4"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#EAF4FF] text-[#0878EF]">↗</div><div className="min-w-0 flex-1"><a href={asset.url} target="_blank" rel="noreferrer" className="break-words text-sm font-bold text-[#0878EF] hover:underline">{asset.name}</a><p className="mt-1 truncate text-[10px] text-slate-400">{asset.mimeType}</p></div></div><div className="mt-3 flex items-center gap-2"><select aria-label={'Category for '+asset.name} value={asset.category} onChange={e=>updateCategory(asset.id,e.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-[10px] font-semibold">{DRIVE_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select><button onClick={()=>remove(asset.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-bold text-slate-500">Remove</button></div></article>)}</div> : <Empty>{assets.length ? 'No assets in this category.' : 'No Drive files selected yet. Choose Add files from Google Drive to get started.'}</Empty>}
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-black">Indexed assets ({assets.length})</h3><p className="text-xs text-slate-500">Metadata and links from your approved folders.</p></div><select aria-label="Filter assets by category" value={filter} onChange={e=>setFilter(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"><option>All assets</option>{DRIVE_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select></div>
+    {visible.length ? <div className="mt-3 grid gap-3 md:grid-cols-2">{visible.map(asset=><article key={asset.id} className="rounded-xl border border-slate-200 bg-white p-4"><div className="flex items-start gap-3"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#EAF4FF] text-[#0878EF]">↗</div><div className="min-w-0 flex-1"><a href={asset.url} target="_blank" rel="noreferrer" className="break-words text-sm font-bold text-[#0878EF] hover:underline">{asset.name}</a><p className="mt-1 truncate text-[10px] text-slate-400">{asset.mimeType}</p></div></div><div className="mt-3 flex items-center gap-2"><select aria-label={'Category for '+asset.name} value={asset.category} onChange={e=>updateCategory(asset.id,e.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-[10px] font-semibold">{DRIVE_CATEGORIES.map(category=><option key={category}>{category}</option>)}</select><button onClick={()=>remove(asset.id)} className="rounded-lg border border-slate-200 px-3 py-2 text-[10px] font-bold text-slate-500">Remove</button></div></article>)}</div> : <Empty>{assets.length ? 'No assets in this category.' : 'No files indexed yet. Connect folders, then sync them.'}</Empty>}
     <p className="mt-4 text-xs text-slate-500">{message}</p>
-    <p className="mt-3 text-[10px] leading-5 text-slate-400">Folder browsing is supported in the Picker. With Google’s restricted file-by-file permission, selecting a folder does not automatically import all its contents or future additions. Select the files you want to use.</p>
+    <p className="mt-3 text-[10px] leading-5 text-slate-400">The folder IDs are the approved application index. Google OAuth itself grants read-only Drive scope, so the underlying permission is broader than these folders. Sync is manual and owner-triggered. It indexes up to 500 files per sync and scans nested folders up to eight levels deep.</p>
   </Panel>
 }
