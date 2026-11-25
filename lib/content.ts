@@ -35,7 +35,7 @@ export const generalFaqs: Faq[] = [
   {
     question: 'How is TENROUNDS different from a normal gym?',
     answer:
-      'There are no class times and no crowded machine queues. You walk in, a coach guides you through a structured 30-minute, heart-rate-guided HIIT workout across our stations — including four boxing-bag stations — and you are done. It is the efficiency of personal training with the energy of a group floor.',
+      'There are no class times and no crowded machine queues. You walk in, a coach guides you through a structured 30-minute, heart-rate-guided HIIT workout across our stations, including four boxing-inspired bag stations, and you are done. It is the efficiency of personal training with the energy of a group floor.',
   },
   {
     question: 'What should I bring to my first session?',
@@ -50,7 +50,7 @@ export const generalFaqs: Faq[] = [
   {
     question: 'What are your opening hours?',
     answer:
-      'We are open early until late, seven days a week, so you can train around work and family. Anytime access lets you train during all opening hours, while Off-Peak access covers our quieter daytime window.',
+      'We are open Monday to Friday from 05:00–10:00 and 13:00–19:00, and Saturdays from 07:00–10:00. We are closed on Sundays. Anytime access lets you train during all published opening hours, while Off-Peak access covers our quieter daytime window.',
   },
 ]
 
@@ -68,7 +68,7 @@ export const pricingFaqs: Faq[] = [
   {
     question: 'What is the difference between Anytime and Off-Peak access?',
     answer:
-      'Anytime access lets you train during all opening hours, seven days a week. Off-Peak access is a more affordable option that covers our quieter daytime window. Off-Peak plans do not include the free boxing gloves perk.',
+      'Anytime access lets you train during all published opening hours, Monday to Saturday. TENROUNDS is closed on Sundays. Off-Peak access is a more affordable option that covers our quieter daytime window. Off-Peak plans do not include the free boxing gloves perk.',
   },
   {
     question: 'What is a Pair-Up membership?',
