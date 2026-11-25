@@ -17,6 +17,7 @@ type Funnel = {
   notes: { trialReached: string }
 }
 type MonthResult = Funnel & { label: string }
+type BaselineComparison = { before: Funnel; after: Funnel }
 type Props = { bookings: number; trialsReached: number; members: number }
 
 function fmt(value: number) { return new Intl.NumberFormat('en-ZA').format(value) }
@@ -48,22 +49,30 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
   const [selectedMonth, setSelectedMonth] = useState(2)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [baselineComparison, setBaselineComparison] = useState<BaselineComparison | null>(null)
 
   async function refresh() {
     setLoading(true)
     setError('')
     try {
       const windows = [2, 1, 0].map(offset => monthWindow(offset, new Date()))
-      const results = await Promise.all(windows.map(async window => {
+      const loadRange = async (startDate: string, endDate: string, label: string) => {
         const response = await fetch('/api/operations/growth-funnel', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ startDate: window.startDate, endDate: window.endDate }),
+          body: JSON.stringify({ startDate, endDate }),
         })
         const body = await response.json()
-        if (!response.ok) throw new Error(body.error || `Could not load ${window.label}.`)
-        return { ...(body as Funnel), label: window.label }
-      }))
+        if (!response.ok) throw new Error(body.error || `Could not load ${label}.`)
+        return body as Funnel
+      }
+      const today = dateInJohannesburg(new Date())
+      const [results, before, after] = await Promise.all([
+        Promise.all(windows.map(async window => ({ ...(await loadRange(window.startDate, window.endDate, window.label)), label: window.label }))),
+        loadRange('2026-10-28', '2026-11-24', 'the 28-day pre-change baseline'),
+        loadRange('2026-11-25', today < '2026-11-25' ? '2026-11-25' : today, 'the post-change period'),
+      ])
       setHistory(results)
+      setBaselineComparison({ before, after })
       setSelectedMonth(2)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not refresh the funnel history.')
@@ -81,6 +90,7 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
     { label: 'Became a member', key: 'members', icon: UserRoundCheck, values: history.map(row => row.members), current: latest?.members, note: 'Email-matched membership signups' },
   ]
   const period = latest ? `${latest.dateRange.startDate} to ${latest.dateRange.endDate}` : 'Refresh to load live history'
+  const afterDays = baselineComparison ? Math.max(1, Math.round((Date.parse(baselineComparison.after.dateRange.endDate + 'T00:00:00Z') - Date.parse(baselineComparison.after.dateRange.startDate + 'T00:00:00Z')) / 86400000) + 1) : 0
   const maxDaily = Math.max(1, ...(selected?.website.daily || []).map(row => row.visitors), ...(selected?.trialPage.daily || []).map(row => row.visitors))
 
   return (
@@ -96,12 +106,48 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
         </button>
       </div>
 
+      <section className="mt-3 rounded-2xl border border-[#CDE3EF] bg-white/90 p-3.5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[.17em] text-[#008FC4]">Growth change log · measurement marker</p>
+            <h3 className="mt-1 text-sm font-black text-[#102A43]">25 November 2026 · Website & Google positioning update</h3>
+            <p className="mt-1 max-w-3xl text-[10px] leading-4 text-slate-600">Homepage SEO title, description and hero positioning updated to boutique HIIT fitness; boxing pages repositioned as boxing-inspired fitness; How It Works, footer and opening-hours FAQ copy corrected; Google Business Profile updated by owner.</p>
+          </div>
+          <span className="shrink-0 rounded-full bg-[#EAF7FC] px-2.5 py-1 text-[9px] font-black text-[#007FAE]">BASELINE · 25 NOV</span>
+        </div>
+        {baselineComparison ? <>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">Before changes · 28 days</p>
+              <p className="mt-1 text-xs font-black text-[#102A43]">28 Oct – 24 Nov 2026</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                <div><span className="block text-slate-500">Website visitors</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.website.visitors)}</strong></div>
+                <div><span className="block text-slate-500">Trial-page visitors</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.trialPage.visitors)}</strong></div>
+                <div><span className="block text-slate-500">Trial bookings</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.bookings)}</strong></div>
+                <div><span className="block text-slate-500">Trial-matched members</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.members)}</strong></div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[#B9E4F2] bg-[#F0FAFE] p-3">
+              <p className="text-[9px] font-black uppercase tracking-wider text-[#007FAE]">After changes · live</p>
+              <p className="mt-1 text-xs font-black text-[#102A43]">25 Nov – {baselineComparison.after.dateRange.endDate}</p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[10px]">
+                <div><span className="block text-slate-500">Website visitors</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.after.website.visitors)}</strong><small className="block text-slate-500">{(baselineComparison.after.website.visitors / afterDays).toFixed(1)} per day</small></div>
+                <div><span className="block text-slate-500">Trial-page visitors</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.after.trialPage.visitors)}</strong><small className="block text-slate-500">{(baselineComparison.after.trialPage.visitors / afterDays).toFixed(1)} per day</small></div>
+                <div><span className="block text-slate-500">Trial bookings</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.after.bookings)}</strong><small className="block text-slate-500">{(baselineComparison.after.bookings / afterDays).toFixed(2)} per day</small></div>
+                <div><span className="block text-slate-500">New members</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.after.members)}</strong><small className="block text-slate-500">{(baselineComparison.after.members / afterDays).toFixed(2)} per day</small></div>
+              </div>
+            </div>
+          </div>
+          <p className="mt-2 text-[9px] leading-4 text-slate-500">The post-change window is currently {afterDays} day(s). Compare daily averages rather than raw totals until both periods are 28 days long. Refresh is manual and retrieves Vercel visitor data plus verified booking and email-matched member records.</p>
+        </> : <p className="mt-2 text-[10px] leading-4 text-slate-500">Select Refresh to capture the 28-day pre-change baseline and start the live post-change measurement. This is a one-time comparison marker; no background refresh is running.</p>}
+      </section>
+
       {error ? <div role="alert" className="mt-3 rounded-xl border border-amber-200 bg-[#FFF9EA] p-2.5 text-[10px] leading-4 text-amber-900"><AlertTriangle size={12} className="mr-1 inline"/> {error}</div> : null}
 
       {!history.length ? (
         <div className="mt-4 rounded-xl border border-dashed border-[#BBD7E4] bg-white/70 p-5 text-center">
           <p className="text-xs font-bold text-[#17344C]">Load live visitor-to-member history</p>
-          <p className="mt-1 text-[10px] leading-4 text-slate-500">Refresh retrieves matching month-to-date windows for the last three months, including daily website and trial-page traffic.</p>
+          <p className="mt-1 text-[10px] leading-4 text-slate-500">Refresh retrieves the last three monthly windows and the fixed before/after comparison around 25 November 2026, including daily website and trial-page traffic.</p>
           <p className="mt-2 text-[9px] text-slate-400">Bookings and member outcomes come from the TENROUNDS database. Visitor counts come from Vercel Web Analytics.</p>
         </div>
       ) : (
