@@ -9,7 +9,7 @@ export function Hero() {
       <div className="absolute inset-0">
         <Image
           src="/hero-home.png"
-          alt="Smiling member throwing a punch during a coach-supported boxing workout at TENROUNDS"
+          alt="Member enjoying a coach-supported HIIT workout at TENROUNDS"
           fill
           priority
           sizes="100vw"
@@ -30,14 +30,16 @@ export function Hero() {
           </span>
 
           <h1 className="mt-6 font-display text-6xl font-black uppercase leading-[0.9] tracking-tight text-balance sm:text-7xl lg:text-8xl">
-            30 Minutes.
+            Get Leaner.
             <br />
-            <span className="text-neon-blue text-glow">Real Results.</span>
+            Get Stronger.
+            <br />
+            <span className="text-neon-blue text-glow">Get Fitter.</span>
           </h1>
 
           <p className="mt-6 max-w-xl text-pretty text-lg leading-relaxed text-light-grey">
-            Train when it suits you. No class times. No waiting. Just efficient,
-            coach-supported workouts designed to transform your fitness.
+            Coach-supported HIIT, strength and boxing-inspired fitness. No class times.
+            No waiting. Just effective 30-minute workouts built around your life.
           </p>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">

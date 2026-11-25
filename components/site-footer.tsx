@@ -21,7 +21,7 @@ const linkGroups = [
     links: [
       { href: '/hiit-gym-garsfontein', label: 'HIIT Gym Garsfontein' },
       { href: '/weight-loss-gym-pretoria-east', label: 'Weight Loss Gym' },
-      { href: '/boxing-gym-pretoria-east', label: 'Boxing Gym' },
+      { href: '/boxing-gym-pretoria-east', label: 'Boxing-Inspired Fitness' },
       { href: '/kickboxing-classes-pretoria-east', label: 'Kickboxing Classes' },
       { href: '/group-fitness-classes-pretoria-east', label: 'Group Fitness Classes' },
       { href: '/30-minute-workout-pretoria-east', label: '30 Minute Workout' },
@@ -33,7 +33,7 @@ const linkGroups = [
       { href: '/gym-near-moreleta-park', label: 'Gym Near Moreleta Park' },
       { href: '/gym-near-woodhill', label: 'Gym Near Woodhill' },
       { href: '/gym-near-faerie-glen', label: 'Gym Near Faerie Glen' },
-      { href: '/boxing-fitness-pretoria-east', label: 'Boxing Fitness Pretoria East' },
+      { href: '/boxing-fitness-pretoria-east', label: 'Boxing-Inspired Fitness' },
       { href: '/gym-for-busy-professionals-pretoria-east', label: 'Gym For Busy Professionals' },
     ],
   },
@@ -46,8 +46,8 @@ export function SiteFooter() {
         <div className="lg:col-span-2">
           <Logo className="h-10" />
           <p className="mt-4 max-w-sm text-pretty text-sm leading-relaxed text-light-grey">
-            Coach-supported 30-minute HIIT workouts in Garsfontein, Pretoria East.
-            No class times. No waiting. Just real results on your schedule.
+            Boutique fitness studio offering coach-supported 30-minute HIIT workouts in Garsfontein, Pretoria East.
+            Strength, cardio and boxing-inspired fitness. No class times. No waiting. Just real results.
           </p>
 
           <address className="mt-6 space-y-2 text-sm not-italic text-light-grey">

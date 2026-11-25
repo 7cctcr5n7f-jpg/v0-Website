@@ -14,13 +14,13 @@ import { breadcrumbSchema } from '@/lib/seo'
 export const metadata: Metadata = {
   title: 'How TENROUNDS Works | 10 Rounds in 30 Minutes',
   description:
-    'See how a TENROUNDS workout works: ten coach-supported rounds combining boxing, functional strength and heart-rate-guided HIIT. Each round has 2.5 minutes of work and 30 seconds of recovery, with no fixed class times.',
+    'See how a TENROUNDS workout works: ten coach-supported rounds combining boxing-inspired fitness, functional strength and heart-rate-guided HIIT. Each round has 2.5 minutes of work and 30 seconds of recovery, with no fixed class times.',
   alternates: { canonical: '/how-it-works' },
   openGraph: {
     title: 'How It Works | TENROUNDS',
     description:
-      'Ten structured rounds combining boxing, functional strength and heart-rate guided intensity — a complete 30-minute workout with no class times.',
-    images: [{ url: '/round-warmup.webp', width: 1200, height: 630, alt: 'How a TENROUNDS 30-minute HIIT boxing workout works' }],
+      'Ten structured rounds combining boxing-inspired fitness, functional strength and heart-rate guided intensity — a complete 30-minute workout with no class times.',
+    images: [{ url: '/round-warmup.webp', width: 1200, height: 630, alt: 'How a TENROUNDS 30-minute HIIT workout with boxing-inspired fitness works' }],
   },
 }
 
@@ -81,9 +81,9 @@ export default function HowItWorksPage() {
       <PageHero
         eyebrow="How It Works"
         title="Show Up When It Suits You. Start At Round One."
-        description="TENROUNDS runs as a continuous, coach-supported circuit: ten structured rounds combining boxing, functional strength and heart-rate-guided intensity. Arrive during opening hours and start when a station is ready."
+        description="TENROUNDS runs as a continuous, coach-supported circuit: ten structured rounds combining boxing-inspired fitness, functional strength and heart-rate-guided intensity. Arrive during opening hours and start when a station is ready."
         image="/round-warmup.webp"
-        imageAlt="Boxer training on a TENROUNDS bag"
+        imageAlt="Member using a boxing bag as part of a TENROUNDS HIIT workout"
       />
 
       {/* System overview */}
