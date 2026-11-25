@@ -22,7 +22,8 @@ export async function POST(request: Request) {
   if (!(await isOperationsAuthed())) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   let body: any
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
-  if (!Array.isArray(body.assets) || body.assets.length > 100) return NextResponse.json({ error: 'Expected an asset list of up to 100 files.' }, { status: 400 })
+  // Folder sync can return up to 500 indexed files per run. Keep the API limit aligned with the client.
+  if (!Array.isArray(body.assets) || body.assets.length > 500) return NextResponse.json({ error: 'Expected an asset list of up to 500 files.' }, { status: 400 })
   const current = await readAssets()
   const map = new Map(current.map(asset => [asset.id, asset]))
   for (const item of body.assets) {
