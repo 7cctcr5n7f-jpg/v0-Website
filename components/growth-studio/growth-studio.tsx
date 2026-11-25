@@ -2,7 +2,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { Activity, ArrowRight, BarChart3, CalendarDays, Check, ChevronLeft, ChevronRight, ExternalLink, FileImage, FolderOpen, Instagram, Layers3, Megaphone, Plus, Target, Users, Video, WandSparkles } from 'lucide-react'
+import { Activity, ArrowRight, BarChart3, CalendarDays, Check, ChevronLeft, ChevronRight, ExternalLink, FileImage, FolderOpen, Instagram, Layers3, Megaphone, MessageSquareQuote, Plus, Target, Users, Video, WandSparkles } from 'lucide-react'
 
 type Campaign = { id: string; title: string; objective: string; status: string; startDate: string; endDate: string; image: string }
 type Post = { id: string; campaignId: string; title: string; caption: string; date: string; time: string; platforms: string[]; status: 'draft' | 'approved' | 'scheduled' | 'published'; format: 'Reel' | 'Carousel' | 'Post' | 'Story'; image: string }
