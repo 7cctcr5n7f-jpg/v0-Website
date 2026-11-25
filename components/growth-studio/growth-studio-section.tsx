@@ -118,7 +118,7 @@ function DriveAssetLibrary() {
       await new Promise<void>((resolve, reject) => {
         const picker = new w.google.picker.PickerBuilder()
           .setDeveloperKey(apiKey).setAppId('867819328339').setOAuthToken(token).setOrigin(window.location.origin)
-          .addView(new w.google.picker.DocsView(w.google.picker.ViewId.DOCS).setIncludeFolders(false))
+          .addView(new w.google.picker.DocsView(w.google.picker.ViewId.DOCS).setIncludeFolders(true).setSelectFolderEnabled(false).setEnableDrives(true))
           .enableFeature(w.google.picker.Feature.MULTISELECT_ENABLED)
           .setCallback(async (data: any) => {
             if (data.action === w.google.picker.Action.PICKED) {
