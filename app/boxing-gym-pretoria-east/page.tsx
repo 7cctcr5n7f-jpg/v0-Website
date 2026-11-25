@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
+    title: 'Boxing-Inspired Fitness Pretoria East | TENROUNDS',
     description: 'Coach-supported 30-minute HIIT with boxing-inspired rounds, strength and cardio. No boxing experience needed.',
     images: ['/round-boxing-bag.webp'],
   },
