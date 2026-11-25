@@ -33,7 +33,7 @@ const linkGroups = [
       { href: '/gym-near-moreleta-park', label: 'Gym Near Moreleta Park' },
       { href: '/gym-near-woodhill', label: 'Gym Near Woodhill' },
       { href: '/gym-near-faerie-glen', label: 'Gym Near Faerie Glen' },
-      { href: '/boxing-fitness-pretoria-east', label: 'Boxing Fitness Pretoria East' },
+      { href: '/boxing-fitness-pretoria-east', label: 'Boxing-Inspired Fitness' },
       { href: '/gym-for-busy-professionals-pretoria-east', label: 'Gym For Busy Professionals' },
     ],
   },
