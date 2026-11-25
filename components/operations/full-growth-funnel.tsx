@@ -90,7 +90,6 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
     { label: 'Became a member', key: 'members', icon: UserRoundCheck, values: history.map(row => row.members), current: latest?.members, note: 'Email-matched membership signups' },
   ]
   const period = latest ? `${latest.dateRange.startDate} to ${latest.dateRange.endDate}` : 'Refresh to load live history'
-  const beforeDays = 28
   const afterDays = baselineComparison ? Math.max(1, Math.round((Date.parse(baselineComparison.after.dateRange.endDate + 'T00:00:00Z') - Date.parse(baselineComparison.after.dateRange.startDate + 'T00:00:00Z')) / 86400000) + 1) : 0
   const maxDaily = Math.max(1, ...(selected?.website.daily || []).map(row => row.visitors), ...(selected?.trialPage.daily || []).map(row => row.visitors))
 
@@ -125,7 +124,7 @@ export function FullGrowthFunnel({ bookings, trialsReached, members }: Props) {
                 <div><span className="block text-slate-500">Website visitors</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.website.visitors)}</strong></div>
                 <div><span className="block text-slate-500">Trial-page visitors</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.trialPage.visitors)}</strong></div>
                 <div><span className="block text-slate-500">Trial bookings</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.bookings)}</strong></div>
-                <div><span className="block text-slate-500">New members</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.members)}</strong></div>
+                <div><span className="block text-slate-500">Trial-matched members</span><strong className="text-lg tabular-nums">{fmt(baselineComparison.before.members)}</strong></div>
               </div>
             </div>
             <div className="rounded-xl border border-[#B9E4F2] bg-[#F0FAFE] p-3">
