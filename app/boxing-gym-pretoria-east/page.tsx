@@ -2,79 +2,79 @@ import type { Metadata } from 'next'
 import { LandingTemplate, type LandingConfig } from '@/components/landing/landing-template'
 
 export const metadata: Metadata = {
-  title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
+  title: 'Boxing-Inspired Fitness Pretoria East',
   description:
-    'Looking for a boxing gym in Pretoria East? Train on boxing bags with coach-led technique and 30-minute HIIT at TENROUNDS in Garsfontein. Beginners welcome. Book your free trial.',
+    'Enjoy boxing-inspired fitness as part of a coach-supported 30-minute HIIT workout at TENROUNDS in Pretoria East. No boxing experience needed. Book your free trial.',
   alternates: { canonical: '/boxing-gym-pretoria-east' },
   openGraph: {
     title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
     description:
-      'Boxing-bag training, coach-led technique and 30-minute HIIT in Garsfontein, Pretoria East. Beginners welcome. Book your free trial at TENROUNDS.',
-    images: [{ url: '/round-boxing-bag.webp', width: 1200, height: 630, alt: 'Boxing gym Pretoria East — TENROUNDS Garsfontein' }],
+      'Boxing-inspired rounds are one part of our coach-supported 30-minute HIIT workouts. Build fitness with strength and cardio at TENROUNDS.',
+    images: [{ url: '/round-boxing-bag.webp', width: 1200, height: 630, alt: 'Boxing-inspired fitness as part of a TENROUNDS HIIT workout in Pretoria East' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Boxing Gym Pretoria East | Free Trial | TENROUNDS',
-    description: 'Boxing-bag training and coach-led 30-minute HIIT in Garsfontein, Pretoria East. Beginners welcome. Book your free trial.',
+    description: 'Coach-supported 30-minute HIIT with boxing-inspired rounds, strength and cardio. No boxing experience needed.',
     images: ['/round-boxing-bag.webp'],
   },
-  keywords: ['boxing gym Pretoria East', 'boxing gym Garsfontein', 'boxing bag Pretoria', 'boxing fitness Pretoria East', 'HIIT boxing Garsfontein'],
+  keywords: ['boxing-inspired fitness Pretoria East', 'boxing fitness Pretoria East', 'HIIT gym Pretoria East', '30 minute workout Pretoria East', 'fitness studio Garsfontein'],
 }
 
 const config: LandingConfig = {
   slug: 'boxing-gym-pretoria-east',
-  breadcrumb: 'Boxing Gym Pretoria East',
-  heroEyebrow: 'Boxing Gym Pretoria East',
-  heroTitle: 'The Boxing Gym For',
-  heroHighlight: 'Pretoria East',
+  breadcrumb: 'Boxing-Inspired Fitness Pretoria East',
+  heroEyebrow: 'Boxing-Inspired Fitness Pretoria East',
+  heroTitle: 'Fitness With A',
+  heroHighlight: 'Boxing-Inspired Edge',
   heroSubtitle:
-    'Get the energy of boxing without a fight-gym commitment. TENROUNDS combines four dedicated bag stations, coach-guided technique and full-body HIIT in a 30-minute workout. Beginners are welcome, sessions are scaled to your level, and there are no fixed class times.',
+    'Boxing-inspired rounds bring energy and variety to our full-body HIIT workout. At TENROUNDS, they are combined with functional strength and cardio in a coach-supported 30-minute session. No boxing experience, sparring or fight training required.',
   heroImage: '/round-boxing-bag.webp',
-  heroImageAlt: 'Boxing-bag stations at the TENROUNDS boxing gym in Pretoria East',
+  heroImageAlt: 'Boxing-bag stations used for boxing-inspired fitness at TENROUNDS',
   intro:
-    'If you want to hit the bags, improve your conditioning and learn the basics of striking without sparring, TENROUNDS gives you a coached place to start. Every visit combines boxing-style bag work with functional strength and cardio across a structured 30-minute circuit.',
+    'TENROUNDS is a boutique fitness studio, not a traditional boxing gym. Boxing-inspired bag work is one part of our structured 30-minute HIIT circuit, alongside strength, cardio and functional training. Your coach guides you through the workout and scales each round to your fitness level.',
   blocks: [
     {
       type: 'features',
-      eyebrow: 'What You Get',
-      title: 'A Real Boxing Workout',
+      eyebrow: 'Part Of The Workout',
+      title: 'A Full-Body HIIT Workout With Boxing-Inspired Rounds',
       description:
-        'Everything you need to train like a boxer without the intimidation of a traditional fight gym.',
+        'Enjoy the energy of bag work as part of a balanced workout that develops strength, cardio fitness and conditioning.',
       items: [
-        { icon: 'zap', title: 'Four Bag Stations', desc: 'Dedicated boxing bags so you get genuine striking work every session.' },
-        { icon: 'users', title: 'Coach-Led Technique', desc: 'Learn proper punches, combinations and footwork from qualified coaches.' },
+        { icon: 'zap', title: 'Boxing-Inspired Bag Work', desc: 'Use the dedicated bags for energetic, non-contact fitness rounds.' },
+        { icon: 'users', title: 'Coach Support', desc: 'Your coach guides the workout, demonstrates movements and helps you train with good form.' },
         { icon: 'heart', title: 'Heart-Rate Tracking', desc: 'See your effort live and train in the zones that build conditioning fastest.' },
-        { icon: 'dumbbell', title: 'Strength + Boxing', desc: 'Bag rounds combined with functional strength for a complete body.' },
-        { icon: 'timer', title: '30-Minute Rounds', desc: 'A full boxing-style conditioning session in half an hour.' },
-        { icon: 'target', title: 'All Levels', desc: 'From total beginners to seasoned athletes, every round is scaled to you.' },
+        { icon: 'dumbbell', title: 'Strength + Cardio', desc: 'Combine bag rounds with functional strength and cardio for a complete workout.' },
+        { icon: 'timer', title: '30-Minute Sessions', desc: 'A complete, coach-supported workout in half an hour.' },
+        { icon: 'target', title: 'All Levels', desc: 'Every round is adapted to your current ability and fitness goals.' },
       ],
     },
     {
       type: 'compare',
-      eyebrow: 'The Difference',
-      title: 'Why Not A Traditional Fight Gym',
-      failTitle: 'Old-School Boxing Gyms',
-      winTitle: 'TENROUNDS Boxing',
+      eyebrow: 'The TENROUNDS Difference',
+      title: 'Fitness Studio, Not A Fight Gym',
+      failTitle: 'Traditional Boxing Training',
+      winTitle: 'TENROUNDS HIIT Fitness',
       fail: [
-        'Intimidating atmosphere that puts beginners off',
-        'Sparring and contact when you just want fitness',
-        'Little structure unless you pay for private coaching',
+        'Focused on learning boxing as a sport',
+        'May include sparring or contact training',
+        'Often follows scheduled classes',
         'Fixed training times that clash with work and family',
       ],
       win: [
-        'A welcoming floor where everyone trains together',
-        'Bag-based conditioning with zero contact required',
-        'Coaches guiding your technique in every session',
+        'A balanced workout combining HIIT, strength and cardio',
+        'Boxing-inspired bag work with no sparring or contact',
+        'A coach-supported 30-minute full-body session',
         'No class times — train whenever it suits you',
       ],
     },
     {
       type: 'split',
       eyebrow: 'Why It Works',
-      title: 'Power, Conditioning, Confidence',
+      title: 'Variety, Energy And A Stronger You',
       body: [
-        'Hitting the bag is a full-body effort — legs, core, shoulders and back all fire with every punch. Add our HIIT and strength stations and you build real athletic conditioning, not just gym fitness.',
-        'And there is the mental side: few workouts beat boxing for stress relief and confidence. Members across Pretoria East tell us the bag is the best part of their day.',
+        'Boxing-inspired bag rounds add variety and intensity to the workout, while strength and functional stations help develop full-body fitness.',
+        'Every session is coach-supported and designed to help you improve conditioning, build strength and enjoy the process of getting fitter.',
       ],
       image: '/boxing-gloves-perk.png',
       imageAlt: 'Free TENROUNDS boxing gloves with membership in Pretoria East',
@@ -88,19 +88,19 @@ const config: LandingConfig = {
   ],
   faqs: [
     {
-      question: 'Is this a real boxing gym or fitness boxing?',
+      question: 'Is TENROUNDS a traditional boxing gym?',
       answer:
-        'TENROUNDS is a fitness-focused boxing gym. You get genuine bag work and coach-led technique combined with HIIT and strength training, but without sparring or contact — so you build boxing skills and serious fitness safely.',
+        'No. TENROUNDS is a boutique HIIT fitness studio. Boxing-inspired bag work is one element of our coach-supported 30-minute workout, alongside strength, cardio and functional training. We do not offer fight training or sparring.',
     },
     {
       question: 'Do I need boxing experience?',
       answer:
-        'No. Our coaches teach you proper punching technique and footwork from your first session and scale the intensity to your level, so beginners are completely at home.',
+        'Not at all. No boxing experience is needed. Your coach explains the movements and helps you work at a level that suits your fitness.',
     },
     {
       question: 'Are gloves provided?',
       answer:
-        'You can bring your own, and all 6-month and 12-month memberships include a free pair of TENROUNDS boxing gloves to keep.',
+        'You can bring your own gloves if you prefer. All 6-month and 12-month memberships include a free pair of TENROUNDS training gloves to keep.',
     },
     {
       question: 'How many boxing stations do you have?',
@@ -114,9 +114,9 @@ const config: LandingConfig = {
     },
   ],
   showMap: true,
-  ctaHeadline: 'Step Into The Ring In Pretoria East',
+  ctaHeadline: 'Try A Different Kind Of Fitness In Pretoria East',
   ctaSub:
-    'Try real bag work and coach-led conditioning in one 30-minute session. Your first round in Garsfontein is on us.',
+    'Experience coach-supported HIIT, strength, cardio and boxing-inspired rounds in one 30-minute workout. Your first session is free.',
 }
 
 export default function Page() {
